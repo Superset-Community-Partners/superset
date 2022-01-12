@@ -17,7 +17,7 @@
  * under the License.
  */
 import rison from 'rison';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Row, Col } from 'src/common/components';
 import { Radio } from 'src/components/Radio';
@@ -440,8 +440,91 @@ function OwnersSelector({ datasource, onChange }) {
   );
 }
 
+// break out props
+function DatasourceEditor(props) {
+  const [datasource, setDatasource] = useState({
+    ...props.datasource,
+    owners: props.datasource.owners.map(owner => ({
+      value: owner.value || owner.id,
+      label: owner.label || `${owner.first_name} ${owner.last_name}`,
+    })),
+    metrics: props.datasource.metrics?.map(metric => {
+      const {
+        certified_by: certifiedByMetric,
+        certification_details: certificationDetails,
+      } = metric;
+      const {
+        certification: { details, certified_by: certifiedBy } = {},
+        warning_markdown: warningMarkdown,
+      } = JSON.parse(metric.extra || '{}') || {};
+      return {
+        ...metric,
+        certification_details: certificationDetails || details,
+        warning_markdown: warningMarkdown || '',
+        certified_by: certifiedBy || certifiedByMetric,
+      };
+    }),
+  });
+
+  const [error, setError] = useState([]);
+
+  const [isDruid, setIsDruid] = useState(
+    props.datasource.type === 'druid' ||
+      props.datasource.datasource_type === 'druid',
+  );
+
+  const [isSqla, setIsSqla] = useState(
+    props.datasource.datasource_type === 'table' ||
+      props.datasource.type === 'table',
+  );
+
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  const [databaseColumns, setDatabaseColumns] = useState(
+    props.datasource.columns.filter(col => !col.expression),
+  );
+
+  const [calculatedColumns, setCalculatedColumns] = useState(
+    props.datasource.columns.filter(col => !!col.expression),
+  );
+
+  const [metadataLoading, setMetadataLoading] = useState(false);
+
+  const [activeTabKey, setActiveTabKey] = useState(0);
+
+  const [datasourceType, setDatasourceType] = useState(
+    props.datasource.sql
+      ? DATASOURCE_TYPES.virtual.key
+      : DATASOURCE_TYPES.physical.key,
+  );
+
+  const onChange = () => {
+    // Emptying SQL if "Physical" radio button is selected
+    // Currently the logic to know whether the source is
+    // physical or virtual is based on whether SQL is empty or not.
+    const sql =
+      datasourceType === DATASOURCE_TYPES.physical.key ? '' : datasource.sql;
+    const newDatasource = {
+      ...datasource,
+      sql,
+      columns: [...databaseColumns, ...calculatedColumns],
+    };
+    props.onChange(newDatasource, errors);
+  };
+
+  const onChangeEditMode = () => {
+    setIsEditMode(!isEditMode);
+  };
+
+  const onDatasourceChange = (datasource, callback = validateAndChange) => {
+    this.setState({ datasource }, callback);
+    setDatasource();
+  };
+}
+
 class DatasourceEditor extends React.PureComponent {
   constructor(props) {
+    console.log(props);
     super(props);
     this.state = {
       datasource: {

@@ -40,19 +40,19 @@ function connect() {
   const socket = new WebSocket(url);
 
   // Connection opened
-  socket.addEventListener('open', function () {
-    socketCount++;
+  socket.addEventListener('open', () => {
+  socketCount++;
     document.getElementById('socket-count').innerHTML = socketCount;
     connect();
 
     socket.send('Hello Server!');
-  });
+});
 
   // Listen for messages
-  socket.addEventListener('message', function (event) {
-    messageCount++;
+  socket.addEventListener('message', (event) => {
+  messageCount++;
     lastMessage = event.data;
-  });
+});
 }
 
 connect();

@@ -23,55 +23,55 @@ import moment from 'moment';
 import nv from 'nvd3-fork';
 import PropTypes from 'prop-types';
 import {
-  CategoricalColorNamespace,
-  evalExpression,
-  getNumberFormatter,
-  getTimeFormatter,
-  isDefined,
-  NumberFormats,
-  smartDateVerboseFormatter,
-  t,
+    CategoricalColorNamespace,
+    evalExpression,
+    getNumberFormatter,
+    getTimeFormatter,
+    isDefined,
+    NumberFormats,
+    smartDateVerboseFormatter,
+    t,
 } from '@superset-ui/core';
 
 import 'nvd3-fork/build/nv.d3.css';
 
 /* eslint-disable-next-line */
 import ANNOTATION_TYPES, {
-  applyNativeColumns,
+    applyNativeColumns,
 } from './vendor/superset/AnnotationTypes';
 import isTruthy from './utils/isTruthy';
 import {
-  cleanColorInput,
-  computeBarChartWidth,
-  computeYDomain,
-  computeStackedYDomain,
-  drawBarValues,
-  generateBubbleTooltipContent,
-  generateCompareTooltipContent,
-  generateMultiLineTooltipContent,
-  generateRichLineTooltipContent,
-  generateTimePivotTooltip,
-  generateTooltipClassName,
-  generateAreaChartTooltipContent,
-  getMaxLabelSize,
-  getTimeOrNumberFormatter,
-  hideTooltips,
-  tipFactory,
-  tryNumify,
-  removeTooltip,
-  setAxisShowMaxMin,
-  stringifyTimeRange,
-  wrapTooltip,
+    cleanColorInput,
+    computeBarChartWidth,
+    computeYDomain,
+    computeStackedYDomain,
+    drawBarValues,
+    generateBubbleTooltipContent,
+    generateCompareTooltipContent,
+    generateMultiLineTooltipContent,
+    generateRichLineTooltipContent,
+    generateTimePivotTooltip,
+    generateTooltipClassName,
+    generateAreaChartTooltipContent,
+    getMaxLabelSize,
+    getTimeOrNumberFormatter,
+    hideTooltips,
+    tipFactory,
+    tryNumify,
+    removeTooltip,
+    setAxisShowMaxMin,
+    stringifyTimeRange,
+    wrapTooltip,
 } from './utils';
 import {
-  annotationLayerType,
-  boxPlotValueType,
-  bulletDataType,
-  categoryAndValueXYType,
-  rgbObjectType,
-  numericXYType,
-  numberOrAutoType,
-  stringOrObjectWithLabelType,
+    annotationLayerType,
+    boxPlotValueType,
+    bulletDataType,
+    categoryAndValueXYType,
+    rgbObjectType,
+    numericXYType,
+    numberOrAutoType,
+    stringOrObjectWithLabelType,
 } from './PropTypes';
 
 const NO_DATA_RENDER_DATA = [
@@ -85,7 +85,7 @@ const NO_DATA_RENDER_DATA = [
 
 // Override the noData render function to make a prettier UX
 // Code adapted from https://github.com/novus/nvd3/blob/master/src/utils.js#L653
-nv.utils.noData = function noData(chart, container) {
+nv.utils.noData = (chart, container) => {
   const opt = chart.options();
   const margin = opt.margin();
   const height = nv.utils.availableHeight(null, container, margin);
@@ -344,8 +344,8 @@ function nvd3Vis(element, props) {
     return types.includes(vizType);
   }
 
-  const drawGraph = function drawGraph() {
-    const d3Element = d3.select(element);
+  const drawGraph = () => {
+  const d3Element = d3.select(element);
     d3Element.classed('superset-legacy-chart-nvd3', true);
     d3Element.classed(`superset-legacy-chart-nvd3-${kebabCase(vizType)}`, true);
     let svg = d3Element.select('svg');
@@ -1284,7 +1284,7 @@ function nvd3Vis(element, props) {
     wrapTooltip(chart);
 
     return chart;
-  };
+};
 
   // Remove tooltips before rendering chart, if the chart is being re-rendered sometimes
   // there are left over tooltips in the dom,

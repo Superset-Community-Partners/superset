@@ -21,7 +21,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const config = require('../../../config.json');
 
-router.get('/', function (req, res) {
+router.get('/', (req, res) => {
   let numTokens = req.query.sockets ? Number(req.query.sockets) : 100;
   let tokens = [];
   for (let i = 0; i < numTokens; i++) {

@@ -16,15 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import Mustache from 'mustache';
 import { scaleLinear } from 'd3-scale';
 import TableView from 'src/components/TableView';
 import { formatNumber, formatTime, styled } from '@superset-ui/core';
 import {
-  InfoTooltipWithTrigger,
-  MetricOption,
+    InfoTooltipWithTrigger,
+    MetricOption,
 } from '@superset-ui/chart-controls';
 import moment from 'moment';
 import sortNumericValues from 'src/utils/sortNumericValues';
@@ -222,12 +222,12 @@ const TimeTable = ({
         v = null;
         if (reversedEntries.length > 0) {
           const stats = reversedEntries.slice(undefined, column.timeLag).reduce(
-            function ({ count, sum }, entry) {
-              return entry[valueField] !== undefined &&
+            ({ count, sum }, entry) => {
+  return entry[valueField] !== undefined &&
                 entry[valueField] !== null
                 ? { count: count + 1, sum: sum + entry[valueField] }
                 : { count, sum };
-            },
+},
             { count: 0, sum: 0 },
           );
           if (stats.count > 0) {

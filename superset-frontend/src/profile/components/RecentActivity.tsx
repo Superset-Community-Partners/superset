@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
 import moment from 'moment';
 
 import TableLoader from '../../components/TableLoader';
@@ -29,8 +28,8 @@ interface RecentActivityProps {
 
 export default function RecentActivity({ user }: RecentActivityProps) {
   const rowLimit = 50;
-  const mutator = function (data: Activity[]) {
-    return data
+  const mutator = (data: Activity[]) => {
+  return data
       .filter(row => row.action === 'dashboard' || row.action === 'explore')
       .map(row => ({
         name: <a href={row.item_url}>{row.item_title}</a>,
@@ -38,7 +37,7 @@ export default function RecentActivity({ user }: RecentActivityProps) {
         time: moment.utc(row.time).fromNow(),
         _time: row.time,
       }));
-  };
+};
   return (
     <div>
       <TableLoader

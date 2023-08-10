@@ -18,30 +18,30 @@
  */
 import memoizeOne from 'memoize-one';
 import {
-  DataRecord,
-  extractTimegrain,
-  GenericDataType,
-  getMetricLabel,
-  getNumberFormatter,
-  getTimeFormatter,
-  getTimeFormatterForGranularity,
-  NumberFormats,
-  QueryMode,
-  smartDateFormatter,
-  TimeFormats,
-  TimeFormatter,
+    DataRecord,
+    extractTimegrain,
+    GenericDataType,
+    getMetricLabel,
+    getNumberFormatter,
+    getTimeFormatter,
+    getTimeFormatterForGranularity,
+    NumberFormats,
+    QueryMode,
+    smartDateFormatter,
+    TimeFormats,
+    TimeFormatter,
 } from '@superset-ui/core';
 import {
-  ColorFormatters,
-  getColorFormatters,
+    ColorFormatters,
+    getColorFormatters,
 } from '@superset-ui/chart-controls';
 
 import isEqualColumns from './utils/isEqualColumns';
 import DateWithFormatter from './utils/DateWithFormatter';
 import {
-  DataColumnMeta,
-  TableChartProps,
-  TableChartTransformedProps,
+    DataColumnMeta,
+    TableChartProps,
+    TableChartTransformedProps,
 } from './types';
 
 const { PERCENT_3_POINT } = NumberFormats;
@@ -53,10 +53,8 @@ function isNumeric(key: string, data: DataRecord[] = []) {
   );
 }
 
-const processDataRecords = memoizeOne(function processDataRecords(
-  data: DataRecord[] | undefined,
-  columns: DataColumnMeta[],
-) {
+const processDataRecords = memoizeOne((data: DataRecord[] | undefined,
+  columns: DataColumnMeta[]) => {
   if (!data || !data[0]) {
     return data || [];
   }
@@ -80,9 +78,7 @@ const processDataRecords = memoizeOne(function processDataRecords(
   return data;
 });
 
-const processColumns = memoizeOne(function processColumns(
-  props: TableChartProps,
-) {
+const processColumns = memoizeOne((props: TableChartProps) => {
   const {
     datasource: { columnFormats, verboseMap },
     rawFormData: {

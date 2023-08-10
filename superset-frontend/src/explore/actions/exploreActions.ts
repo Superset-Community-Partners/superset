@@ -21,8 +21,8 @@ import { Dataset } from '@superset-ui/chart-controls';
 import { t, SupersetClient, QueryFormData } from '@superset-ui/core';
 import { Dispatch } from 'redux';
 import {
-  addDangerToast,
-  toastActions,
+    addDangerToast,
+    toastActions,
 } from 'src/components/MessageToasts/actions';
 import { Slice } from 'src/types/Chart';
 
@@ -63,21 +63,21 @@ export function toggleFaveStar(isStarred: boolean) {
 
 export const FETCH_FAVE_STAR = 'FETCH_FAVE_STAR';
 export function fetchFaveStar(sliceId: string) {
-  return function (dispatch: Dispatch) {
-    SupersetClient.get({
+  return (dispatch: Dispatch) => {
+  SupersetClient.get({
       endpoint: `${FAVESTAR_BASE_URL}/${sliceId}/count/`,
     }).then(({ json }) => {
       if (json.count > 0) {
         dispatch(toggleFaveStar(true));
       }
     });
-  };
+};
 }
 
 export const SAVE_FAVE_STAR = 'SAVE_FAVE_STAR';
 export function saveFaveStar(sliceId: string, isStarred: boolean) {
-  return function (dispatch: Dispatch) {
-    const urlSuffix = isStarred ? 'unselect' : 'select';
+  return (dispatch: Dispatch) => {
+  const urlSuffix = isStarred ? 'unselect' : 'select';
     SupersetClient.get({
       endpoint: `${FAVESTAR_BASE_URL}/${sliceId}/${urlSuffix}/`,
     })
@@ -87,7 +87,7 @@ export function saveFaveStar(sliceId: string, isStarred: boolean) {
           addDangerToast(t('An error occurred while starring this chart')),
         );
       });
-  };
+};
 }
 
 export const SET_FIELD_VALUE = 'SET_FIELD_VALUE';

@@ -20,14 +20,14 @@
 /* eslint-disable react/sort-prop-types */
 import { select as d3Select, selectAll as d3SelectAll } from 'd3-selection';
 import {
-  treemap as d3Treemap,
-  hierarchy as d3Hierarchy,
-  treemapSquarify,
+    treemap as d3Treemap,
+    hierarchy as d3Hierarchy,
+    treemapSquarify,
 } from 'd3-hierarchy';
 import PropTypes from 'prop-types';
 import {
-  getNumberFormatter,
-  CategoricalColorNamespace,
+    getNumberFormatter,
+    CategoricalColorNamespace,
 } from '@superset-ui/core';
 
 // Declare PropTypes for recursive data structures
@@ -68,13 +68,13 @@ const propTypes = {
 };
 
 function hovered(hover) {
-  return function (node) {
-    d3SelectAll(node.ancestors().map(d => d.node))
+  return (node) => {
+  d3SelectAll(node.ancestors().map(d => d.node))
       .classed('node--hover', hover)
       .select('rect')
       .attr('width', d => d.x1 - d.x0 - hover)
       .attr('height', d => d.y1 - d.y0 - hover);
-  };
+};
 }
 
 /* Modified from https://bl.ocks.org/mbostock/911ad09bdead40ec0061 */

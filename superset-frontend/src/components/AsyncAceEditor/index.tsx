@@ -18,15 +18,15 @@
  */
 import React, { forwardRef } from 'react';
 import {
-  Editor as OrigEditor,
-  IEditSession,
-  Position,
-  TextMode as OrigTextMode,
+    Editor as OrigEditor,
+    IEditSession,
+    Position,
+    TextMode as OrigTextMode,
 } from 'brace';
 import AceEditor, { IAceEditorProps } from 'react-ace';
 import { acequire } from 'ace-builds/src-noconflict/ace';
 import AsyncEsmComponent, {
-  PlaceholderProps,
+    PlaceholderProps,
 } from 'src/components/AsyncEsmComponent';
 
 export interface AceCompleterKeywordData {
@@ -114,8 +114,7 @@ export default function AsyncAceEditor(
       aceModules.find(x => x.startsWith('theme/'))?.replace('theme/', '');
 
     return forwardRef<AceEditor, AsyncAceEditorProps>(
-      function ExtendedAceEditor(
-        {
+      ({
           keywords,
           mode = inferredMode,
           theme = inferredTheme,
@@ -123,9 +122,8 @@ export default function AsyncAceEditor(
           defaultValue = '',
           ...props
         },
-        ref,
-      ) {
-        if (keywords) {
+        ref) => {
+  if (keywords) {
           const langTools = acequire('ace/ext/language_tools');
           const completer = {
             getCompletions: (
@@ -156,7 +154,7 @@ export default function AsyncAceEditor(
             {...props}
           />
         );
-      },
+},
     );
   }, placeholder);
 }

@@ -30,11 +30,7 @@ import { WebSocket } from 'ws';
 const mockRedisXrange = jest.fn();
 
 jest.mock('ws');
-jest.mock('ioredis', () => {
-  return jest.fn().mockImplementation(() => {
-    return { xrange: mockRedisXrange };
-  });
-});
+jest.mock('ioredis', () => jest.fn().mockImplementation(() => { xrange: mockRedisXrange }));
 
 const wsMock = WebSocket as jest.Mocked<typeof WebSocket>;
 const channelId = 'bc9e040c-7b4a-4817-99b9-292832d97ec7';

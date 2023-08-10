@@ -28,11 +28,11 @@ test('generator-superset:app:creates files', () =>
       subgenerator: 'package',
       name: 'my-package',
     })
-    .then(function () {
-      assert.file([
+    .then(() => {
+  assert.file([
         'package.json',
         'README.md',
         'src/index.ts',
         'test/index.test.ts',
       ]);
-    }));
+}));

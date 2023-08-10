@@ -20,8 +20,8 @@
 import $ from 'jquery';
 import { SupersetClient } from '@superset-ui/core';
 import {
-  getClientErrorObject,
-  ClientErrorObject,
+    getClientErrorObject,
+    ClientErrorObject,
 } from 'src/utils/getClientErrorObject';
 import setupErrorMessages from 'src/setup/setupErrorMessages';
 
@@ -60,8 +60,8 @@ function toggleCheckbox(apiUrlPrefix: string, selector: string) {
 }
 
 export default function setupApp() {
-  $(document).ready(function () {
-    $(':checkbox[data-checkbox-api-prefix]').change(function (
+  $(document).ready(() => {
+  $(':checkbox[data-checkbox-api-prefix]').change(function (
       this: HTMLElement,
     ) {
       const $this = $(this);
@@ -71,23 +71,21 @@ export default function setupApp() {
     });
 
     // for language picker dropdown
-    $('#language-picker a').click(function (
-      ev: JQuery.ClickEvent<
+    $('#language-picker a').click((ev: JQuery.ClickEvent<
         HTMLLinkElement,
         null,
         HTMLLinkElement,
         HTMLLinkElement
-      >,
-    ) {
-      ev.preventDefault();
+      >) => {
+  ev.preventDefault();
       SupersetClient.get({
         url: ev.currentTarget.href,
         parseMethod: null,
       }).then(() => {
         window.location.reload();
       });
-    });
-  });
+});
+});
 
   // A set of hacks to allow apps to run within a FAB template
   // this allows for the server side generated menus to function

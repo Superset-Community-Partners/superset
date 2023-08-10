@@ -23,16 +23,16 @@ import { t, SupersetClient } from '@superset-ui/core';
 import { getControlsState } from 'src/explore/store';
 import { isFeatureEnabled, FeatureFlag } from 'src/featureFlags';
 import {
-  getAnnotationJsonUrl,
-  getExploreUrl,
-  getLegacyEndpointType,
-  buildV1ChartDataPayload,
-  shouldUseLegacyApi,
-  getChartDataUri,
+    getAnnotationJsonUrl,
+    getExploreUrl,
+    getLegacyEndpointType,
+    buildV1ChartDataPayload,
+    shouldUseLegacyApi,
+    getChartDataUri,
 } from 'src/explore/exploreUtils';
 import {
-  requiresQuery,
-  ANNOTATION_SOURCE_TYPES,
+    requiresQuery,
+    ANNOTATION_SOURCE_TYPES,
 } from 'src/modules/AnnotationTypes';
 
 import { addDangerToast } from 'src/components/MessageToasts/actions';
@@ -252,8 +252,8 @@ export function runAnnotationQuery({
   isDashboardRequest = false,
   force = false,
 }) {
-  return function (dispatch, getState) {
-    const sliceKey = key || Object.keys(getState().charts)[0];
+  return (dispatch, getState) => {
+  const sliceKey = key || Object.keys(getState().charts)[0];
     // make a copy of formData, not modifying original formData
     const fd = {
       ...(formData || getState().charts[sliceKey].latestQueryFormData),
@@ -325,7 +325,7 @@ export function runAnnotationQuery({
           }
         }),
       );
-  };
+};
 }
 
 export const TRIGGER_QUERY = 'TRIGGER_QUERY';

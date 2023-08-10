@@ -23,10 +23,10 @@ import { styled, t, SupersetClient, QueryResponse } from '@superset-ui/core';
 import { debounce } from 'lodash';
 import Loading from 'src/components/Loading';
 import {
-  now,
-  epochTimeXHoursAgo,
-  epochTimeXDaysAgo,
-  epochTimeXYearsAgo,
+    now,
+    epochTimeXHoursAgo,
+    epochTimeXDaysAgo,
+    epochTimeXYearsAgo,
 } from 'src/utils/dates';
 import AsyncSelect from 'src/components/AsyncSelect';
 import { STATUS_OPTIONS, TIME_OPTIONS } from 'src/SqlLab/constants';
@@ -109,9 +109,9 @@ function QuerySearch({ actions, displayLimit }: QuerySearchProps) {
   };
 
   const insertParams = (baseUrl: string, params: string[]) => {
-    const validParams = params.filter(function (p) {
-      return p !== '';
-    });
+    const validParams = params.filter((p) => {
+  return p !== '';
+});
     return `${baseUrl}?${validParams.join('&')}`;
   };
 

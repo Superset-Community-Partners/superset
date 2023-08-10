@@ -42,13 +42,13 @@ export const dragConfig = [
       };
     },
   },
-  function dragStateToProps(connect, monitor) {
-    return {
+  (connect, monitor) => {
+  return {
       dragSourceRef: connect.dragSource(),
       dragPreviewRef: connect.dragPreview(),
       isDragging: monitor.isDragging(),
     };
-  },
+},
 ];
 
 export const dropConfig = [
@@ -73,11 +73,11 @@ export const dropConfig = [
       return undefined;
     },
   },
-  function dropStateToProps(connect, monitor) {
-    return {
+  (connect, monitor) => {
+  return {
       droppableRef: connect.dropTarget(),
       isDraggingOver: monitor.isOver(),
       isDraggingOverShallow: monitor.isOver({ shallow: true }),
     };
-  },
+},
 ];

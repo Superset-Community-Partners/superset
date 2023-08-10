@@ -69,13 +69,13 @@ function getOptionValue(x: SizeOption) {
   return Array.isArray(x) ? x[0] : x;
 }
 
-export default React.memo(function SelectPageSize({
+export default React.memo(({
   total,
   options: sizeOptions,
   current: currentSize,
   selectRenderer,
   onChange,
-}: SelectPageSizeProps) {
+}: SelectPageSizeProps) => {
   const sizeOptionValues = sizeOptions.map(getOptionValue);
   let options = [...sizeOptions];
   // insert current size to list

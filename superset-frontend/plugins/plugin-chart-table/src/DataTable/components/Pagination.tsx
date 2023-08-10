@@ -72,17 +72,15 @@ export function generatePageItems(
 }
 
 export default React.memo(
-  forwardRef(function Pagination(
-    {
+  forwardRef(({
       style,
       pageCount,
       currentPage = 0,
       maxPageItemCount = 9,
       onPageChange,
     }: PaginationProps,
-    ref: React.Ref<HTMLDivElement>,
-  ) {
-    const pageItems = generatePageItems(
+    ref: React.Ref<HTMLDivElement>) => {
+  const pageItems = generatePageItems(
       pageCount,
       currentPage,
       maxPageItemCount,
@@ -117,5 +115,5 @@ export default React.memo(
         </ul>
       </div>
     );
-  }),
+}),
 );

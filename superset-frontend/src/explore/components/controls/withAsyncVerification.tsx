@@ -16,16 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, {
-  ComponentType,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
+import {
+    ComponentType,
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
 } from 'react';
 import {
-  ExtraControlProps,
-  sharedControlComponents,
+    ExtraControlProps,
+    sharedControlComponents,
 } from '@superset-ui/chart-controls';
 import { JsonArray, JsonValue, t } from '@superset-ui/core';
 import { ControlProps } from 'src/explore/components/Control';
@@ -136,8 +136,8 @@ export default function withAsyncVerification({
       ? controlComponentMap[baseControl]
       : baseControl;
 
-  return function ControlWithVerification(props: FullControlProps) {
-    const {
+  return (props: FullControlProps) => {
+  const {
       hovered,
       onChange: basicOnChange,
       needAsyncVerification = false,
@@ -222,5 +222,5 @@ export default function withAsyncVerification({
         {...verifiedProps}
       />
     );
-  };
+};
 }

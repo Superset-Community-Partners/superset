@@ -27,10 +27,9 @@ const pluginChartModule = require('../generators/plugin-chart');
 test('generator-superset:plugin-chart:creates files', () =>
   helpers
     .run(pluginChartModule)
-    .inTmpDir(function (dir) {
-      // `dir` is the path to the new temporary directory
-      fs.copySync(path.join(__dirname, '../generators/plugin-chart'), dir);
-    })
+    .inTmpDir((dir) => {
+  fs.copySync(path.join(__dirname, '../generators/plugin-chart'), dir);
+})
     .withPrompts({
       packageName: 'cold-map',
       description: 'Cold Map',
@@ -38,8 +37,8 @@ test('generator-superset:plugin-chart:creates files', () =>
       chartType: 'regular',
     })
     .withOptions({ skipInstall: true })
-    .then(function () {
-      assert.file([
+    .then(() => {
+  assert.file([
         '.gitignore',
         'babel.config.js',
         'jest.config.js',
@@ -58,4 +57,4 @@ test('generator-superset:plugin-chart:creates files', () =>
         'types/external.d.ts',
         'src/images/thumbnail.png',
       ]);
-    }));
+}));

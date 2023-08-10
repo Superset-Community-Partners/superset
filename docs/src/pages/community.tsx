@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
 import styled from '@emotion/styled';
 import { List } from 'antd';
 import Layout from '@theme/Layout';
@@ -81,8 +80,7 @@ const StyledGetInvolved = styled('div')`
   margin-bottom: 25px;
 `;
 
-const Community = () => {
-  return (
+const Community = () => (
     <Layout
       title="Community"
       description="Community website for Apache Superset, a data visualization and data exploration platform"
@@ -114,6 +112,5 @@ const Community = () => {
       </StyledMain>
     </Layout>
   );
-};
 
 export default Community;

@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
 import { render, screen } from 'spec/helpers/testing-library';
 import { Provider } from 'react-redux';
 import fetchMock from 'fetch-mock';
@@ -75,12 +74,12 @@ test('renders without mutator', async () => {
 });
 
 test('renders with mutator', async () => {
-  const mutator = function (data: { id: number; name: string }[]) {
-    return data.map(row => ({
+  const mutator = (data: { id: number; name: string }[]) => {
+  return data.map(row => ({
       id: row.id,
       name: <h4>{row.name}</h4>,
     }));
-  };
+};
 
   renderWithProps({ ...defaultProps, mutator });
 

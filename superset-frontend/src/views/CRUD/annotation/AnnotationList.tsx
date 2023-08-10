@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useHistory } from 'react-router-dom';
 import { css, t, styled, SupersetClient } from '@superset-ui/core';
 import moment from 'moment';
@@ -92,8 +92,8 @@ function AnnotationList({
   };
 
   const fetchAnnotationLayer = useCallback(
-    async function fetchAnnotationLayer() {
-      try {
+    () => {
+  try {
         const response = await SupersetClient.get({
           endpoint: `/api/v1/annotation_layer/${annotationLayerId}`,
         });
@@ -103,7 +103,7 @@ function AnnotationList({
           addDangerToast(error.error || error.statusText || error);
         });
       }
-    },
+},
     [annotationLayerId],
   );
 

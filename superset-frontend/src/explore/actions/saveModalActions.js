@@ -31,8 +31,8 @@ export function fetchDashboardsFailed(userId) {
 }
 
 export function fetchDashboards(userId) {
-  return function fetchDashboardsThunk(dispatch) {
-    return SupersetClient.get({
+  return (dispatch) => {
+  return SupersetClient.get({
       endpoint: `/dashboardasync/api/read?_flt_0_owners=${userId}`,
     })
       .then(({ json }) => {
@@ -44,7 +44,7 @@ export function fetchDashboards(userId) {
         return dispatch(fetchDashboardsSucceeded(choices));
       })
       .catch(() => dispatch(fetchDashboardsFailed(userId)));
-  };
+};
 }
 
 export const SAVE_SLICE_FAILED = 'SAVE_SLICE_FAILED';

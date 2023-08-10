@@ -17,31 +17,31 @@
  * under the License.
  */
 import React, {
-  useCallback,
-  useRef,
-  ReactNode,
-  HTMLProps,
-  MutableRefObject,
-  CSSProperties,
+    useCallback,
+    useRef,
+    ReactNode,
+    HTMLProps,
+    MutableRefObject,
+    CSSProperties,
 } from 'react';
 import {
-  useTable,
-  usePagination,
-  useSortBy,
-  useGlobalFilter,
-  useColumnOrder,
-  PluginHook,
-  TableOptions,
-  FilterType,
-  IdType,
-  Row,
+    useTable,
+    usePagination,
+    useSortBy,
+    useGlobalFilter,
+    useColumnOrder,
+    PluginHook,
+    TableOptions,
+    FilterType,
+    IdType,
+    Row,
 } from 'react-table';
 import { matchSorter, rankings } from 'match-sorter';
 import { typedMemo } from '@superset-ui/core';
 import GlobalFilter, { GlobalFilterProps } from './components/GlobalFilter';
 import SelectPageSize, {
-  SelectPageSizeProps,
-  SizeOption,
+    SelectPageSizeProps,
+    SizeOption,
 } from './components/SelectPageSize';
 import SimplePagination from './components/Pagination';
 import useSticky from './hooks/useSticky';
@@ -77,7 +77,7 @@ const sortTypes = {
 };
 
 // Be sure to pass our updateMyData and the skipReset option
-export default typedMemo(function DataTable<D extends object>({
+export default typedMemo(({
   tableClassName,
   columns,
   data,
@@ -99,7 +99,7 @@ export default typedMemo(function DataTable<D extends object>({
   wrapperRef: userWrapperRef,
   onColumnOrderChange,
   ...moreUseTableOptions
-}: DataTableProps<D>): JSX.Element {
+}: DataTableProps<D>) => {
   const tableHooks: PluginHook<D>[] = [
     useGlobalFilter,
     useSortBy,

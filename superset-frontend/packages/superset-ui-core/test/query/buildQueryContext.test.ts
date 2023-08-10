@@ -80,9 +80,9 @@ describe('buildQueryContext', () => {
         target: 'target_column',
         target_category: 'target_category_column',
       },
-      function addExtraColumn(queryObject) {
-        return [{ ...queryObject, columns: ['dummy_column'] }];
-      },
+      (queryObject) => {
+  return [{ ...queryObject, columns: ['dummy_column'] }];
+},
     );
     expect(queryContext.datasource.id).toBe(5);
     expect(queryContext.datasource.type).toBe('table');

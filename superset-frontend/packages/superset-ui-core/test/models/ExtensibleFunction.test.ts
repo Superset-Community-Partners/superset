@@ -53,10 +53,9 @@ describe('ExtensibleFunction', () => {
 
     constructor(x: unknown) {
       // @ts-ignore
-      super(function customName() {
-        // @ts-ignore
-        return customName.x;
-      }); // named function
+      super(() => {
+  return customName.x;
+}); // named function
       this.x = x;
     }
   }

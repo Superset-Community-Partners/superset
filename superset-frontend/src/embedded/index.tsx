@@ -16,14 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import { makeApi, t, logging } from '@superset-ui/core';
 import { Switchboard } from '@superset-ui/switchboard';
 import { bootstrapData } from 'src/preamble';
 import setupClient from 'src/setup/setupClient';
-import { RootContextProviders } from 'src/views/RootContextProviders';
 import { store, USER_LOADED } from 'src/views/store';
 import ErrorBoundary from 'src/components/ErrorBoundary';
 import Loading from 'src/components/Loading';
@@ -163,7 +162,7 @@ function validateMessageEvent(event: MessageEvent) {
   }
 }
 
-window.addEventListener('message', function embeddedPageInitializer(event) {
+window.addEventListener('message', (event) => {
   try {
     validateMessageEvent(event);
   } catch (err) {

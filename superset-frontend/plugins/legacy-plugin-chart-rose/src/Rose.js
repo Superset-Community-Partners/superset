@@ -23,9 +23,9 @@ import d3 from 'd3';
 import PropTypes from 'prop-types';
 import nv from 'nvd3-fork';
 import {
-  getTimeFormatter,
-  getNumberFormatter,
-  CategoricalColorNamespace,
+    getTimeFormatter,
+    getNumberFormatter,
+    CategoricalColorNamespace,
 } from '@superset-ui/core';
 
 const propTypes = {
@@ -291,11 +291,11 @@ function Rose(element, props) {
   let arcSt = computeArcStates(datum);
 
   function tween(target, resFunc) {
-    return function doTween(d) {
-      const interpolate = d3.interpolate(copyArc(d), copyArc(target));
+    return (d) => {
+  const interpolate = d3.interpolate(copyArc(d), copyArc(target));
 
       return t => resFunc(Object.assign(d, interpolate(t)));
-    };
+};
   }
 
   function arcTween(target) {

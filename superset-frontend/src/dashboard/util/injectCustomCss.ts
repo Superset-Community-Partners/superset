@@ -58,7 +58,7 @@ export default function injectCustomCss(css: string) {
 
   head.appendChild(style);
 
-  return function removeCustomCSS() {
-    style.remove();
-  };
+  return () => {
+  style.remove();
+};
 }

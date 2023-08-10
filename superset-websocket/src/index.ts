@@ -310,15 +310,15 @@ export const wsConnection = (ws: WebSocket, request: http.IncomingMessage) => {
   }
 
   // init event handler for `pong` events (connection management)
-  ws.on('pong', function pong(data: Buffer) {
-    const socketId = data.toString();
+  ws.on('pong', (data: Buffer) => {
+  const socketId = data.toString();
     const socketInstance = sockets[socketId];
     if (!socketInstance) {
       logger.warn(`pong received for nonexistent socket ${socketId}`);
     } else {
       socketInstance.pongTs = Date.now();
     }
-  });
+});
 };
 
 /**
@@ -365,9 +365,9 @@ export const httpUpgrade = (
     request,
     socket,
     head,
-    function cb(ws: WebSocket, request: http.IncomingMessage) {
-      wss.emit('connection', ws, request);
-    },
+    (ws: WebSocket, request: http.IncomingMessage) => {
+  wss.emit('connection', ws, request);
+},
   );
 };
 
@@ -442,12 +442,11 @@ if (startServer) {
 
   // init garbage collection routines
   setInterval(checkSockets, opts.pingSocketsIntervalMs);
-  setInterval(function gc() {
-    // clean all channels
-    for (const channel in channels) {
+  setInterval(() => {
+  for (const channel in channels) {
       cleanChannel(channel);
     }
-  }, opts.gcChannelsIntervalMs);
+}, opts.gcChannelsIntervalMs);
 }
 
 // test utilities

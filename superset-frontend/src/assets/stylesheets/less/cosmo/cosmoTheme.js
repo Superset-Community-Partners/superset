@@ -17,19 +17,19 @@
  * under the License.
  */
 /* eslint-disable */
-(function () {
-  $(window).scroll(function () {
-    var top = $(document).scrollTop();
+(() => {
+  $(window).scroll(() => {
+  var top = $(document).scrollTop();
     $('.splash').css({
       'background-position': '0px -' + (top / 3).toFixed(2) + 'px',
     });
     if (top > 50) $('#home > .navbar').removeClass('navbar-transparent');
     else $('#home > .navbar').addClass('navbar-transparent');
-  });
+});
 
-  $("a[href='#']").click(function (e) {
-    e.preventDefault();
-  });
+  $("a[href='#']").click((e) => {
+  e.preventDefault();
+});
 
   var $button = $(
     "<div id='source-button' class='btn btn-primary btn-xs'>&lt; &gt;</div>",
@@ -48,9 +48,9 @@
       $(this).append($button);
       $button.show();
     },
-    function () {
-      $button.hide();
-    },
+    () => {
+  $button.hide();
+},
   );
 
   function cleanSource(html) {
@@ -69,13 +69,13 @@
     var indentSize = lines[0].length - lines[0].trim().length,
       re = new RegExp(' {' + indentSize + '}');
 
-    lines = lines.map(function (line) {
-      if (line.match(re)) {
+    lines = lines.map((line) => {
+  if (line.match(re)) {
         line = line.substring(indentSize);
       }
 
       return line;
-    });
+});
 
     lines = lines.join('\n');
 

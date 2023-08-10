@@ -19,10 +19,10 @@
 import memoizeOne from 'memoize-one';
 import { getChartControlPanelRegistry } from '@superset-ui/core';
 import {
-  ControlPanelConfig,
-  ControlPanelSectionConfig,
-  expandControlConfig,
-  isControlPanelSectionConfig,
+    ControlPanelConfig,
+    ControlPanelSectionConfig,
+    expandControlConfig,
+    isControlPanelSectionConfig,
 } from '@superset-ui/chart-controls';
 
 /**
@@ -60,10 +60,8 @@ const getMemoizedControlConfig = memoizeOne(
   },
 );
 
-export const getControlConfig = function getControlConfig(
-  controlKey: string,
-  vizType: string,
-) {
+export const getControlConfig = (controlKey: string,
+  vizType: string) => {
   const controlPanelConfig = getChartControlPanelRegistry().get(vizType) || {};
   return getMemoizedControlConfig(
     controlKey,

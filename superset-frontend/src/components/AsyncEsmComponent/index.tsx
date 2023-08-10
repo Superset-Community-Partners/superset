@@ -17,11 +17,11 @@
  * under the License.
  */
 import React, {
-  CSSProperties,
-  useEffect,
-  useState,
-  RefObject,
-  forwardRef,
+    CSSProperties,
+    useEffect,
+    useState,
+    RefObject,
+    forwardRef,
 } from 'react';
 import Loading from '../Loading';
 
@@ -102,11 +102,9 @@ export default function AsyncEsmComponent<
     preload?: typeof waitForPromise;
   };
 
-  const AsyncComponent: AsyncComponent = forwardRef(function AsyncComponent(
-    props: FullProps,
-    ref: RefObject<React.ComponentType<FullProps>>,
-  ) {
-    const [loaded, setLoaded] = useState(component !== undefined);
+  const AsyncComponent: AsyncComponent = forwardRef((props: FullProps,
+    ref: RefObject<React.ComponentType<FullProps>>) => {
+  const [loaded, setLoaded] = useState(component !== undefined);
     useEffect(() => {
       let isMounted = true;
       if (!loaded) {
@@ -126,7 +124,7 @@ export default function AsyncEsmComponent<
       // placeholder does not get the ref
       <Component ref={Component === component ? ref : null} {...props} />
     ) : null;
-  });
+});
   // preload the async component before rendering
   AsyncComponent.preload = waitForPromise;
 

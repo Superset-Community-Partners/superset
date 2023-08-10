@@ -21,8 +21,8 @@ import { isEqual } from 'lodash';
 import { Datasource, QueryFormData, JsonObject } from '@superset-ui/core';
 
 import {
-  DeckGLContainerStyledWrapper,
-  DeckGLContainer,
+    DeckGLContainerStyledWrapper,
+    DeckGLContainer,
 } from './DeckGLContainer';
 import CategoricalDeckGLContainer from './CategoricalDeckGLContainer';
 import fitViewport, { Viewport } from './utils/fitViewport';
@@ -140,8 +140,8 @@ export function createCategoricalDeckGLComponent(
   getLayer: getLayerType<unknown>,
   getPoints: getPointsType<Point[]>,
 ) {
-  return function Component(props: deckGLComponentProps) {
-    const {
+  return (props: deckGLComponentProps) => {
+  const {
       datasource,
       formData,
       height,
@@ -165,5 +165,5 @@ export function createCategoricalDeckGLComponent(
         height={height}
       />
     );
-  };
+};
 }

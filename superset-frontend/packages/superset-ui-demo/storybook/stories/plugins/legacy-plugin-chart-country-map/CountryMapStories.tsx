@@ -16,16 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  JsonObject,
-  seedRandom,
-  SuperChart,
-  SequentialD3,
-  useTheme,
+    JsonObject,
+    seedRandom, SequentialD3,
+    useTheme
 } from '@superset-ui/core';
 import CountryMapChartPlugin, {
-  countries,
+    countries,
 } from '@superset-ui/legacy-plugin-chart-country-map';
 import { withKnobs, select } from '@storybook/addon-knobs';
 import { withResizableChartDemo } from '../../../shared/components/ResizableChartDemo';
@@ -44,7 +42,7 @@ function generateData(geojson: JsonObject) {
   }));
 }
 
-export const basic = function BasicCountryMapStory({ width, height }) {
+export const basic = ({ width, height }) => {
   const theme = useTheme();
   const country = select('Country', Object.keys(countries!), 'france');
   const colorSchema = select<any>(

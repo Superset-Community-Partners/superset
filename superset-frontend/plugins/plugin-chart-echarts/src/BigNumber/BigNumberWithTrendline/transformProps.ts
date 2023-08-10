@@ -17,23 +17,23 @@
  * under the License.
  */
 import {
-  DTTM_ALIAS,
-  extractTimegrain,
-  getNumberFormatter,
-  NumberFormats,
-  QueryFormData,
-  GenericDataType,
-  getMetricLabel,
-  t,
-  smartDateVerboseFormatter,
-  NumberFormatter,
-  TimeFormatter,
+    DTTM_ALIAS,
+    extractTimegrain,
+    getNumberFormatter,
+    NumberFormats,
+    QueryFormData,
+    GenericDataType,
+    getMetricLabel,
+    t,
+    smartDateVerboseFormatter,
+    NumberFormatter,
+    TimeFormatter,
 } from '@superset-ui/core';
 import { EChartsCoreOption, graphic } from 'echarts';
 import {
-  BigNumberDatum,
-  BigNumberWithTrendlineChartProps,
-  TimeSeriesDatum,
+    BigNumberDatum,
+    BigNumberWithTrendlineChartProps,
+    TimeSeriesDatum,
 } from '../types';
 import { getDateFormatter, parseMetricValue } from '../utils';
 
@@ -42,8 +42,8 @@ export function renderTooltipFactory(
   formatDate: TimeFormatter = smartDateVerboseFormatter,
   formatValue: NumberFormatter | TimeFormatter = defaultNumberFormatter,
 ) {
-  return function renderTooltip(params: { data: TimeSeriesDatum }[]) {
-    return `
+  return (params: { data: TimeSeriesDatum }[]) => {
+  return `
       ${formatDate(params[0].data[0])}
       <br />
       <strong>
@@ -52,7 +52,7 @@ export function renderTooltipFactory(
         }
       </strong>
     `;
-  };
+};
 }
 
 const formatPercentChange = getNumberFormatter(

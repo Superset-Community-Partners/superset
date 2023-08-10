@@ -76,8 +76,8 @@ function PropertiesModal({
   }
 
   const fetchChartOwners = useCallback(
-    async function fetchChartOwners() {
-      try {
+    () => {
+  try {
         const response = await SupersetClient.get({
           endpoint: `/api/v1/chart/${slice.slice_id}`,
         });
@@ -92,7 +92,7 @@ function PropertiesModal({
         const clientError = await getClientErrorObject(response);
         showError(clientError);
       }
-    },
+},
     [slice.slice_id],
   );
 

@@ -20,7 +20,7 @@
 import PropTypes from 'prop-types';
 import { t } from '@superset-ui/core';
 
-const addSeparators = function (nStr, thousandsSep, decimalSep) {
+const addSeparators = (nStr, thousandsSep, decimalSep) => {
   const x = String(nStr).split('.');
   let x1 = x[0];
   const x2 = x.length > 1 ? decimalSep + x[1] : '';
@@ -31,7 +31,7 @@ const addSeparators = function (nStr, thousandsSep, decimalSep) {
   return x1 + x2;
 };
 
-const numberFormat = function (optsIn) {
+const numberFormat = (optsIn) => {
   const defaults = {
     digitsAfterDecimal: 2,
     scaler: 1,
@@ -41,8 +41,8 @@ const numberFormat = function (optsIn) {
     suffix: '',
   };
   const opts = { ...defaults, ...optsIn };
-  return function (x) {
-    if (Number.isNaN(x) || !Number.isFinite(x)) {
+  return (x) => {
+  if (Number.isNaN(x) || !Number.isFinite(x)) {
       return '';
     }
     const result = addSeparators(
@@ -51,7 +51,7 @@ const numberFormat = function (optsIn) {
       opts.decimalSep,
     );
     return `${opts.prefix}${result}${opts.suffix}`;
-  };
+};
 };
 
 const rx = /(\d+)|(\D+)/g;
@@ -129,7 +129,7 @@ const naturalSort = (as, bs) => {
   return a.length - b.length;
 };
 
-const sortAs = function (order) {
+const sortAs = (order) => {
   const mapping = {};
 
   // sort lowercased keys similarly
@@ -140,8 +140,8 @@ const sortAs = function (order) {
       lMapping[element.toLowerCase()] = i;
     }
   });
-  return function (a, b) {
-    if (a in mapping && b in mapping) {
+  return (a, b) => {
+  if (a in mapping && b in mapping) {
       return mapping[a] - mapping[b];
     }
     if (a in mapping) {
@@ -160,10 +160,10 @@ const sortAs = function (order) {
       return 1;
     }
     return naturalSort(a, b);
-  };
+};
 };
 
-const getSort = function (sorters, attr) {
+const getSort = (sorters, attr) => {
   if (sorters) {
     if (typeof sorters === 'function') {
       const sort = sorters(attr);
@@ -206,8 +206,8 @@ const baseAggregatorTemplates = {
   },
 
   uniques(fn, formatter = usFmtInt) {
-    return function ([attr]) {
-      return function () {
+    return ([attr]) => {
+  return function () {
         return {
           uniq: [],
           push(record) {
@@ -222,12 +222,12 @@ const baseAggregatorTemplates = {
           numInputs: typeof attr !== 'undefined' ? 0 : 1,
         };
       };
-    };
+};
   },
 
   sum(formatter = usFmt) {
-    return function ([attr]) {
-      return function () {
+    return ([attr]) => {
+  return function () {
         return {
           sum: 0,
           push(record) {
@@ -244,12 +244,12 @@ const baseAggregatorTemplates = {
           numInputs: typeof attr !== 'undefined' ? 0 : 1,
         };
       };
-    };
+};
   },
 
   extremes(mode, formatter = usFmt) {
-    return function ([attr]) {
-      return function (data) {
+    return ([attr]) => {
+  return function (data) {
         return {
           val: null,
           sorter: getSort(
@@ -297,12 +297,12 @@ const baseAggregatorTemplates = {
           numInputs: typeof attr !== 'undefined' ? 0 : 1,
         };
       };
-    };
+};
   },
 
   quantile(q, formatter = usFmt) {
-    return function ([attr]) {
-      return function () {
+    return ([attr]) => {
+  return function () {
         return {
           vals: [],
           strMap: {},
@@ -342,12 +342,12 @@ const baseAggregatorTemplates = {
           numInputs: typeof attr !== 'undefined' ? 0 : 1,
         };
       };
-    };
+};
   },
 
   runningStat(mode = 'mean', ddof = 1, formatter = usFmt) {
-    return function ([attr]) {
-      return function () {
+    return ([attr]) => {
+  return function () {
         return {
           n: 0.0,
           m: 0.0,
@@ -395,12 +395,12 @@ const baseAggregatorTemplates = {
           numInputs: typeof attr !== 'undefined' ? 0 : 1,
         };
       };
-    };
+};
   },
 
   sumOverSum(formatter = usFmt) {
-    return function ([num, denom]) {
-      return function () {
+    return ([num, denom]) => {
+  return function () {
         return {
           sumNum: 0,
           sumDenom: 0,
@@ -420,7 +420,7 @@ const baseAggregatorTemplates = {
             typeof num !== 'undefined' && typeof denom !== 'undefined' ? 0 : 2,
         };
       };
-    };
+};
   },
 
   fractionOf(wrapped, type = 'total', formatter = usFmtPct) {
@@ -564,13 +564,13 @@ const derivers = {
     dayNames = dayNamesEn,
   ) {
     const utc = utcOutput ? 'UTC' : '';
-    return function (record) {
-      const date = new Date(Date.parse(record[col]));
+    return (record) => {
+  const date = new Date(Date.parse(record[col]));
       if (Number.isNaN(date)) {
         return '';
       }
-      return formatString.replace(/%(.)/g, function (m, p) {
-        switch (p) {
+      return formatString.replace(/%(.)/g, (m, p) => {
+  switch (p) {
           case 'y':
             return date[`get${utc}FullYear`]();
           case 'm':
@@ -592,8 +592,8 @@ const derivers = {
           default:
             return `%${p}`;
         }
-      });
-    };
+});
+};
   },
 };
 
@@ -668,8 +668,8 @@ class PivotData {
 
   arrSort(attrs, partialOnTop, reverse = false) {
     const sortersArr = attrs.map(a => getSort(this.props.sorters, a));
-    return function (a, b) {
-      const limit = Math.min(a.length, b.length);
+    return (a, b) => {
+  const limit = Math.min(a.length, b.length);
       for (let i = 0; i < limit; i += 1) {
         const sorter = sortersArr[i];
         const comparison = reverse ? sorter(b[i], a[i]) : sorter(a[i], b[i]);
@@ -678,7 +678,7 @@ class PivotData {
         }
       }
       return partialOnTop ? a.length - b.length : b.length - a.length;
-    };
+};
   }
 
   sortKeys() {
@@ -834,7 +834,7 @@ class PivotData {
 }
 
 // can handle arrays or jQuery selections of tables
-PivotData.forEachRecord = function (input, processRecord) {
+PivotData.forEachRecord = (input, processRecord) => {
   if (Array.isArray(input)) {
     // array of objects
     return input.map(record => processRecord(record));

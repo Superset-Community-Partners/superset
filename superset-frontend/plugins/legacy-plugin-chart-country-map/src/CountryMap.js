@@ -21,9 +21,9 @@ import d3 from 'd3';
 import PropTypes from 'prop-types';
 import { extent as d3Extent } from 'd3-array';
 import {
-  getNumberFormatter,
-  getSequentialSchemeRegistry,
-  CategoricalColorNamespace,
+    getNumberFormatter,
+    getSequentialSchemeRegistry,
+    CategoricalColorNamespace,
 } from '@superset-ui/core';
 import countries, { countryOptions } from './countries';
 
@@ -101,8 +101,8 @@ function CountryMap(element, props) {
 
   let centered;
 
-  const clicked = function clicked(d) {
-    const hasCenter = d && centered !== d;
+  const clicked = (d) => {
+  const hasCenter = d && centered !== d;
     let x;
     let y;
     let k;
@@ -144,14 +144,12 @@ function CountryMap(element, props) {
       .transition()
       .duration(750)
       .style('font-size', hasCenter ? 16 : 24);
-  };
+};
 
   backgroundRect.on('click', clicked);
 
-  const selectAndDisplayNameOfRegion = function selectAndDisplayNameOfRegion(
-    feature,
-  ) {
-    let name = '';
+  const selectAndDisplayNameOfRegion = (feature) => {
+  let name = '';
     if (feature && feature.properties) {
       if (feature.properties.ID_2) {
         name = feature.properties.NAME_2;
@@ -160,13 +158,13 @@ function CountryMap(element, props) {
       }
     }
     bigText.text(name);
-  };
+};
 
-  const updateMetrics = function updateMetrics(region) {
-    if (region.length > 0) {
+  const updateMetrics = (region) => {
+  if (region.length > 0) {
       resultText.text(format(region[0].metric));
     }
-  };
+};
 
   const mouseenter = function mouseenter(d) {
     // Darken color

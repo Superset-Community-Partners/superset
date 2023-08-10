@@ -23,12 +23,12 @@
 import { RefObject } from 'react';
 import { createSelector } from 'reselect';
 import {
-  AppSection,
-  Behavior,
-  convertKeysToCamelCase,
-  Datasource,
-  FilterState,
-  JsonObject,
+    AppSection,
+    Behavior,
+    convertKeysToCamelCase,
+    Datasource,
+    FilterState,
+    JsonObject,
 } from '../..';
 import { HandlerFunction, PlainObject, SetDataMaskHook } from '../types/Base';
 import { QueryData, DataRecordFilters } from '..';
@@ -177,7 +177,7 @@ export default class ChartProps<FormData extends RawFormData = RawFormData> {
 }
 
 // eslint-disable-next-line func-name-matching
-ChartProps.createSelector = function create(): ChartPropsSelector {
+ChartProps.createSelector = () => {
   return createSelector(
     (input: ChartPropsConfig) => input.annotationData,
     input => input.datasource,

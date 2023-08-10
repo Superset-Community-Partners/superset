@@ -21,16 +21,16 @@ import { useTheme } from '@superset-ui/core';
 import { Popover } from 'antd';
 import ColumnTypeLabel from '../../../components/ColumnTypeLabel/ColumnTypeLabel';
 import ColumnConfigPopover, {
-  ColumnConfigPopoverProps,
+    ColumnConfigPopoverProps,
 } from './ColumnConfigPopover';
 
 export type ColumnConfigItemProps = ColumnConfigPopoverProps;
 
-export default React.memo(function ColumnConfigItem({
+export default React.memo(({
   column,
   onChange,
   configFormLayout,
-}: ColumnConfigItemProps) {
+}: ColumnConfigItemProps) => {
   const { colors, gridUnit } = useTheme();
   const caretWidth = gridUnit * 6;
   return (

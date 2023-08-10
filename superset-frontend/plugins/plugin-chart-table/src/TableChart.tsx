@@ -16,40 +16,40 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, {
-  CSSProperties,
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useState,
+import {
+    CSSProperties,
+    useCallback,
+    useLayoutEffect,
+    useMemo,
+    useState,
 } from 'react';
 import {
-  ColumnInstance,
-  ColumnWithLooseAccessor,
-  DefaultSortTypes,
+    ColumnInstance,
+    ColumnWithLooseAccessor,
+    DefaultSortTypes,
 } from 'react-table';
 import { extent as d3Extent, max as d3Max } from 'd3-array';
 import { FaSort } from '@react-icons/all-files/fa/FaSort';
 import { FaSortDown as FaSortDesc } from '@react-icons/all-files/fa/FaSortDown';
 import { FaSortUp as FaSortAsc } from '@react-icons/all-files/fa/FaSortUp';
 import {
-  DataRecord,
-  DataRecordValue,
-  DTTM_ALIAS,
-  ensureIsArray,
-  GenericDataType,
-  getTimeFormatterForGranularity,
-  styled,
-  t,
-  tn,
+    DataRecord,
+    DataRecordValue,
+    DTTM_ALIAS,
+    ensureIsArray,
+    GenericDataType,
+    getTimeFormatterForGranularity,
+    styled,
+    t,
+    tn,
 } from '@superset-ui/core';
 
 import { DataColumnMeta, TableChartTransformedProps } from './types';
 import DataTable, {
-  DataTableProps,
-  SearchInputProps,
-  SelectPageSizeRendererProps,
-  SizeOption,
+    DataTableProps,
+    SearchInputProps,
+    SelectPageSizeRendererProps,
+    SizeOption,
 } from './DataTable';
 
 import Styles from './Styles';
@@ -277,8 +277,8 @@ export default function TableChart<D extends DataRecord = DataRecord>(
   }, [data.length, rowCount, serverPagination]);
 
   const getValueRange = useCallback(
-    function getValueRange(key: string, alignPositiveNegative: boolean) {
-      if (typeof data?.[0]?.[key] === 'number') {
+    (key: string, alignPositiveNegative: boolean) => {
+  if (typeof data?.[0]?.[key] === 'number') {
         const nums = data.map(row => row[key]) as number[];
         return (
           alignPositiveNegative
@@ -287,14 +287,14 @@ export default function TableChart<D extends DataRecord = DataRecord>(
         ) as ValueRange;
       }
       return null;
-    },
+},
     [data],
   );
 
   const isActiveFilterValue = useCallback(
-    function isActiveFilterValue(key: string, val: DataRecordValue) {
-      return !!filters && filters[key]?.includes(val);
-    },
+    (key: string, val: DataRecordValue) => {
+  return !!filters && filters[key]?.includes(val);
+},
     [filters],
   );
 
@@ -304,8 +304,8 @@ export default function TableChart<D extends DataRecord = DataRecord>(
   }
 
   const toggleFilter = useCallback(
-    function toggleFilter(key: string, val: DataRecordValue) {
-      let updatedFilters = { ...(filters || {}) };
+    (key: string, val: DataRecordValue) => {
+  let updatedFilters = { ...(filters || {}) };
       const target = getEmitTarget(key);
       if (filters && isActiveFilterValue(target, val)) {
         updatedFilters = {};
@@ -321,7 +321,7 @@ export default function TableChart<D extends DataRecord = DataRecord>(
         delete updatedFilters[target];
       }
       handleChange(updatedFilters);
-    },
+},
     [filters, handleChange, isActiveFilterValue],
   );
 

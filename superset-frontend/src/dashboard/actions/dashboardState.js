@@ -19,24 +19,24 @@
 /* eslint camelcase: 0 */
 import { ActionCreators as UndoActionCreators } from 'redux-undo';
 import {
-  ensureIsArray,
-  t,
-  SupersetClient,
-  getSharedLabelColor,
+    ensureIsArray,
+    t,
+    SupersetClient,
+    getSharedLabelColor,
 } from '@superset-ui/core';
 import {
-  addChart,
-  removeChart,
-  refreshChart,
+    addChart,
+    removeChart,
+    refreshChart,
 } from 'src/components/Chart/chartAction';
 import { chart as initChart } from 'src/components/Chart/chartReducer';
 import { applyDefaultFormData } from 'src/explore/store';
 import { getClientErrorObject } from 'src/utils/getClientErrorObject';
 import { SAVE_TYPE_OVERWRITE } from 'src/dashboard/util/constants';
 import {
-  addSuccessToast,
-  addWarningToast,
-  addDangerToast,
+    addSuccessToast,
+    addWarningToast,
+    addDangerToast,
 } from 'src/components/MessageToasts/actions';
 import serializeActiveFilterValues from 'src/dashboard/util/serializeActiveFilterValues';
 import serializeFilterScopes from 'src/dashboard/util/serializeFilterScopes';
@@ -45,15 +45,15 @@ import { safeStringify } from 'src/utils/safeStringify';
 import { FeatureFlag, isFeatureEnabled } from 'src/featureFlags';
 import { UPDATE_COMPONENTS_PARENTS_LIST } from './dashboardLayout';
 import {
-  setChartConfiguration,
-  dashboardInfoChanged,
-  SET_CHART_CONFIG_COMPLETE,
+    setChartConfiguration,
+    dashboardInfoChanged,
+    SET_CHART_CONFIG_COMPLETE,
 } from './dashboardInfo';
 import { fetchDatasourceMetadata } from './datasources';
 import {
-  addFilter,
-  removeFilter,
-  updateDirectPathToFilter,
+    addFilter,
+    removeFilter,
+    updateDirectPathToFilter,
 } from './dashboardFilters';
 import { SET_FILTER_CONFIG_COMPLETE } from './nativeFilters';
 
@@ -85,8 +85,8 @@ export function toggleFaveStar(isStarred) {
 
 export const FETCH_FAVE_STAR = 'FETCH_FAVE_STAR';
 export function fetchFaveStar(id) {
-  return function fetchFaveStarThunk(dispatch) {
-    return SupersetClient.get({
+  return (dispatch) => {
+  return SupersetClient.get({
       endpoint: `${FAVESTAR_BASE_URL}/${id}/count/`,
     })
       .then(({ json }) => {
@@ -101,13 +101,13 @@ export function fetchFaveStar(id) {
           ),
         ),
       );
-  };
+};
 }
 
 export const SAVE_FAVE_STAR = 'SAVE_FAVE_STAR';
 export function saveFaveStar(id, isStarred) {
-  return function saveFaveStarThunk(dispatch) {
-    const urlSuffix = isStarred ? 'unselect' : 'select';
+  return (dispatch) => {
+  const urlSuffix = isStarred ? 'unselect' : 'select';
     return SupersetClient.get({
       endpoint: `${FAVESTAR_BASE_URL}/${id}/${urlSuffix}/`,
     })
@@ -119,7 +119,7 @@ export function saveFaveStar(id, isStarred) {
           addDangerToast(t('There was an issue favoriting this dashboard.')),
         ),
       );
-  };
+};
 }
 
 export const TOGGLE_PUBLISHED = 'TOGGLE_PUBLISHED';
@@ -128,8 +128,8 @@ export function togglePublished(isPublished) {
 }
 
 export function savePublished(id, isPublished) {
-  return function savePublishedThunk(dispatch) {
-    return SupersetClient.put({
+  return (dispatch) => {
+  return SupersetClient.put({
       endpoint: `/api/v1/dashboard/${id}`,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -153,7 +153,7 @@ export function savePublished(id, isPublished) {
           ),
         );
       });
-  };
+};
 }
 
 export const TOGGLE_EXPAND_SLICE = 'TOGGLE_EXPAND_SLICE';

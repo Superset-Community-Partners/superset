@@ -25,10 +25,10 @@ import { isFeatureEnabled, FeatureFlag } from 'src/featureFlags';
 
 import { now } from 'src/utils/dates';
 import {
-  addDangerToast as addDangerToastAction,
-  addInfoToast as addInfoToastAction,
-  addSuccessToast as addSuccessToastAction,
-  addWarningToast as addWarningToastAction,
+    addDangerToast as addDangerToastAction,
+    addInfoToast as addInfoToastAction,
+    addSuccessToast as addSuccessToastAction,
+    addWarningToast as addWarningToastAction,
 } from 'src/components/MessageToasts/actions';
 import { getClientErrorObject } from 'src/utils/getClientErrorObject';
 import COMMON_ERR_MESSAGES from 'src/utils/errorMessages';
@@ -214,8 +214,8 @@ export function startQuery(query) {
 }
 
 export function querySuccess(query, results) {
-  return function (dispatch) {
-    const sync =
+  return (dispatch) => {
+  const sync =
       !query.isDataPreview &&
       isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
         ? SupersetClient.put({
@@ -236,12 +236,12 @@ export function querySuccess(query, results) {
           ),
         ),
       );
-  };
+};
 }
 
 export function queryFailed(query, msg, link, errors) {
-  return function (dispatch) {
-    const sync =
+  return (dispatch) => {
+  const sync =
       !query.isDataPreview &&
       isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
         ? SupersetClient.put({
@@ -266,7 +266,7 @@ export function queryFailed(query, msg, link, errors) {
         // state to the backend
         .then(() => dispatch({ type: QUERY_FAILED, query, msg, link, errors }))
     );
-  };
+};
 }
 
 export function stopQuery(query) {
@@ -286,8 +286,8 @@ export function requestQueryResults(query) {
 }
 
 export function fetchQueryResults(query, displayLimit) {
-  return function (dispatch) {
-    dispatch(requestQueryResults(query));
+  return (dispatch) => {
+  dispatch(requestQueryResults(query));
 
     return SupersetClient.get({
       endpoint: `/superset/results/${query.resultsKey}/?rows=${displayLimit}`,
@@ -309,12 +309,12 @@ export function fetchQueryResults(query, displayLimit) {
           );
         }),
       );
-  };
+};
 }
 
 export function runQuery(query) {
-  return function (dispatch) {
-    dispatch(startQuery(query));
+  return (dispatch) => {
+  dispatch(startQuery(query));
     const postPayload = {
       client_id: query.id,
       database_id: query.dbId,
@@ -354,19 +354,19 @@ export function runQuery(query) {
           dispatch(queryFailed(query, message, error.link, error.errors));
         }),
       );
-  };
+};
 }
 
 export function reRunQuery(query) {
   // run Query with a new id
-  return function (dispatch) {
-    dispatch(runQuery({ ...query, id: shortid.generate() }));
-  };
+  return (dispatch) => {
+  dispatch(runQuery({ ...query, id: shortid.generate() }));
+};
 }
 
 export function validateQuery(query) {
-  return function (dispatch) {
-    dispatch(startQueryValidation(query));
+  return (dispatch) => {
+  dispatch(startQueryValidation(query));
 
     const postPayload = {
       schema: query.schema,
@@ -389,12 +389,12 @@ export function validateQuery(query) {
           dispatch(queryValidationFailed(query, message, error));
         }),
       );
-  };
+};
 }
 
 export function postStopQuery(query) {
-  return function (dispatch) {
-    return SupersetClient.post({
+  return (dispatch) => {
+  return SupersetClient.post({
       endpoint: '/superset/stop_query/',
       postPayload: { client_id: query.id },
       stringify: false,
@@ -404,7 +404,7 @@ export function postStopQuery(query) {
       .catch(() =>
         dispatch(addDangerToast(t('Failed at stopping query. %s', query.id))),
       );
-  };
+};
 }
 
 export function setDatabases(databases) {
@@ -459,8 +459,8 @@ export function migrateQueryEditorFromLocalStorage(
   tables,
   queries,
 ) {
-  return function (dispatch) {
-    return SupersetClient.post({
+  return (dispatch) => {
+  return SupersetClient.post({
       endpoint: '/tabstateview/',
       postPayload: { queryEditor },
     })
@@ -498,12 +498,12 @@ export function migrateQueryEditorFromLocalStorage(
           ),
         ),
       );
-  };
+};
 }
 
 export function addQueryEditor(queryEditor) {
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.post({
           endpoint: '/tabstateview/',
           postPayload: { queryEditor },
@@ -530,12 +530,12 @@ export function addQueryEditor(queryEditor) {
           ),
         ),
       );
-  };
+};
 }
 
 export function cloneQueryToNewTab(query, autorun) {
-  return function (dispatch, getState) {
-    const state = getState();
+  return (dispatch, getState) => {
+  const state = getState();
     const { queryEditors, tabHistory } = state.sqlLab;
     const sourceQueryEditor = queryEditors.find(
       qe => qe.id === tabHistory[tabHistory.length - 1],
@@ -551,12 +551,12 @@ export function cloneQueryToNewTab(query, autorun) {
       templateParams: sourceQueryEditor.templateParams,
     };
     return dispatch(addQueryEditor(queryEditor));
-  };
+};
 }
 
 export function setActiveQueryEditor(queryEditor) {
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.post({
           endpoint: encodeURI(`/tabstateview/${queryEditor.id}/activate`),
         })
@@ -577,7 +577,7 @@ export function setActiveQueryEditor(queryEditor) {
         }
         return dispatch({ type: REMOVE_QUERY_EDITOR, queryEditor });
       });
-  };
+};
 }
 
 export function loadQueryEditor(queryEditor) {
@@ -617,8 +617,8 @@ export function setTables(tableSchemas) {
 }
 
 export function switchQueryEditor(queryEditor, displayLimit) {
-  return function (dispatch) {
-    if (
+  return (dispatch) => {
+  if (
       isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE) &&
       !queryEditor.loaded
     ) {
@@ -664,7 +664,7 @@ export function switchQueryEditor(queryEditor, displayLimit) {
     } else {
       dispatch(setActiveQueryEditor(queryEditor));
     }
-  };
+};
 }
 
 export function setActiveSouthPaneTab(tabId) {
@@ -673,8 +673,8 @@ export function setActiveSouthPaneTab(tabId) {
 
 export function toggleLeftBar(queryEditor) {
   const hideLeftBar = !queryEditor.hideLeftBar;
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.put({
           endpoint: encodeURI(`/tabstateview/${queryEditor.id}`),
           postPayload: { hide_left_bar: hideLeftBar },
@@ -698,12 +698,12 @@ export function toggleLeftBar(queryEditor) {
           ),
         ),
       );
-  };
+};
 }
 
 export function removeQueryEditor(queryEditor) {
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.delete({
           endpoint: encodeURI(`/tabstateview/${queryEditor.id}`),
         })
@@ -720,12 +720,12 @@ export function removeQueryEditor(queryEditor) {
           ),
         ),
       );
-  };
+};
 }
 
 export function removeQuery(query) {
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.delete({
           endpoint: encodeURI(
             `/tabstateview/${query.sqlEditorId}/query/${query.id}`,
@@ -744,12 +744,12 @@ export function removeQuery(query) {
           ),
         ),
       );
-  };
+};
 }
 
 export function queryEditorSetDb(queryEditor, dbId) {
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.put({
           endpoint: encodeURI(`/tabstateview/${queryEditor.id}`),
           postPayload: { database_id: dbId },
@@ -767,12 +767,12 @@ export function queryEditorSetDb(queryEditor, dbId) {
           ),
         ),
       );
-  };
+};
 }
 
 export function queryEditorSetSchema(queryEditor, schema) {
-  return function (dispatch) {
-    const sync =
+  return (dispatch) => {
+  const sync =
       isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE) &&
       typeof queryEditor === 'object'
         ? SupersetClient.put({
@@ -798,7 +798,7 @@ export function queryEditorSetSchema(queryEditor, schema) {
           ),
         ),
       );
-  };
+};
 }
 
 export function queryEditorSetSchemaOptions(queryEditor, options) {
@@ -810,8 +810,8 @@ export function queryEditorSetTableOptions(queryEditor, options) {
 }
 
 export function queryEditorSetAutorun(queryEditor, autorun) {
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.put({
           endpoint: encodeURI(`/tabstateview/${queryEditor.id}`),
           postPayload: { autorun },
@@ -831,12 +831,12 @@ export function queryEditorSetAutorun(queryEditor, autorun) {
           ),
         ),
       );
-  };
+};
 }
 
 export function queryEditorSetTitle(queryEditor, title) {
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.put({
           endpoint: encodeURI(`/tabstateview/${queryEditor.id}`),
           postPayload: { label: title },
@@ -856,7 +856,7 @@ export function queryEditorSetTitle(queryEditor, title) {
           ),
         ),
       );
-  };
+};
 }
 
 export function saveQuery(query) {
@@ -921,9 +921,8 @@ export function queryEditorSetSql(queryEditor, sql) {
 }
 
 export function queryEditorSetAndSaveSql(queryEditor, sql) {
-  return function (dispatch) {
-    // saved query and set tab state use this action
-    dispatch(queryEditorSetSql(queryEditor, sql));
+  return (dispatch) => {
+  dispatch(queryEditorSetSql(queryEditor, sql));
     if (isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)) {
       return SupersetClient.put({
         endpoint: encodeURI(`/tabstateview/${queryEditor.id}`),
@@ -941,12 +940,12 @@ export function queryEditorSetAndSaveSql(queryEditor, sql) {
       );
     }
     return Promise.resolve();
-  };
+};
 }
 
 export function queryEditorSetQueryLimit(queryEditor, queryLimit) {
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.put({
           endpoint: encodeURI(`/tabstateview/${queryEditor.id}`),
           postPayload: { query_limit: queryLimit },
@@ -970,12 +969,12 @@ export function queryEditorSetQueryLimit(queryEditor, queryLimit) {
           ),
         ),
       );
-  };
+};
 }
 
 export function queryEditorSetTemplateParams(queryEditor, templateParams) {
-  return function (dispatch) {
-    dispatch({
+  return (dispatch) => {
+  dispatch({
       type: QUERY_EDITOR_SET_TEMPLATE_PARAMS,
       queryEditor,
       templateParams,
@@ -997,7 +996,7 @@ export function queryEditorSetTemplateParams(queryEditor, templateParams) {
         ),
       ),
     );
-  };
+};
 }
 
 export function queryEditorSetSelectedText(queryEditor, sql) {
@@ -1067,8 +1066,8 @@ function getTableExtendedMetadata(table, query, dispatch) {
 }
 
 export function addTable(query, database, tableName, schemaName) {
-  return function (dispatch) {
-    const table = {
+  return (dispatch) => {
+  const table = {
       dbId: query.dbId,
       queryEditorId: query.id,
       schema: schemaName,
@@ -1139,7 +1138,7 @@ export function addTable(query, database, tableName, schemaName) {
           ),
         );
     });
-  };
+};
 }
 
 export function changeDataPreviewId(oldQueryId, newQuery) {
@@ -1147,8 +1146,8 @@ export function changeDataPreviewId(oldQueryId, newQuery) {
 }
 
 export function reFetchQueryResults(query) {
-  return function (dispatch) {
-    const newQuery = {
+  return (dispatch) => {
+  const newQuery = {
       id: shortid.generate(),
       dbId: query.dbId,
       sql: query.sql,
@@ -1162,12 +1161,12 @@ export function reFetchQueryResults(query) {
     };
     dispatch(runQuery(newQuery));
     dispatch(changeDataPreviewId(query.id, newQuery));
-  };
+};
 }
 
 export function expandTable(table) {
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.post({
           endpoint: encodeURI(`/tableschemaview/${table.id}/expanded`),
           postPayload: { expanded: true },
@@ -1186,12 +1185,12 @@ export function expandTable(table) {
           ),
         ),
       );
-  };
+};
 }
 
 export function collapseTable(table) {
-  return function (dispatch) {
-    const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
+  return (dispatch) => {
+  const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.post({
           endpoint: encodeURI(`/tableschemaview/${table.id}/expanded`),
           postPayload: { expanded: false },
@@ -1210,12 +1209,12 @@ export function collapseTable(table) {
           ),
         ),
       );
-  };
+};
 }
 
 export function removeTables(tables) {
-  return function (dispatch) {
-    const tablesToRemove = tables?.filter(Boolean) ?? [];
+  return (dispatch) => {
+  const tablesToRemove = tables?.filter(Boolean) ?? [];
     const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? Promise.all(
           tablesToRemove.map(table =>
@@ -1238,7 +1237,7 @@ export function removeTables(tables) {
           ),
         ),
       );
-  };
+};
 }
 
 export function refreshQueries(alteredQueries) {
@@ -1259,8 +1258,8 @@ export function persistEditorHeight(queryEditor, northPercent, southPercent) {
 }
 
 export function popStoredQuery(urlId) {
-  return function (dispatch) {
-    return SupersetClient.get({ endpoint: `/kv/${urlId}` })
+  return (dispatch) => {
+  return SupersetClient.get({ endpoint: `/kv/${urlId}` })
       .then(({ json }) =>
         dispatch(
           addQueryEditor({
@@ -1273,11 +1272,11 @@ export function popStoredQuery(urlId) {
         ),
       )
       .catch(() => dispatch(addDangerToast(ERR_MSG_CANT_LOAD_QUERY)));
-  };
+};
 }
 export function popSavedQuery(saveQueryId) {
-  return function (dispatch) {
-    return SupersetClient.get({
+  return (dispatch) => {
+  return SupersetClient.get({
       endpoint: `/savedqueryviewapi/api/get/${saveQueryId}`,
     })
       .then(({ json }) => {
@@ -1289,11 +1288,11 @@ export function popSavedQuery(saveQueryId) {
         return dispatch(addQueryEditor(queryEditorProps));
       })
       .catch(() => dispatch(addDangerToast(ERR_MSG_CANT_LOAD_QUERY)));
-  };
+};
 }
 export function popQuery(queryId) {
-  return function (dispatch) {
-    return SupersetClient.get({
+  return (dispatch) => {
+  return SupersetClient.get({
       endpoint: `/api/v1/query/${queryId}`,
     })
       .then(({ json }) => {
@@ -1308,11 +1307,11 @@ export function popQuery(queryId) {
         return dispatch(addQueryEditor(queryEditorProps));
       })
       .catch(() => dispatch(addDangerToast(ERR_MSG_CANT_LOAD_QUERY)));
-  };
+};
 }
 export function popDatasourceQuery(datasourceKey, sql) {
-  return function (dispatch) {
-    return SupersetClient.get({
+  return (dispatch) => {
+  return SupersetClient.get({
       endpoint: `/superset/fetch_datasource_metadata?datasourceKey=${datasourceKey}`,
     })
       .then(({ json }) =>
@@ -1329,7 +1328,7 @@ export function popDatasourceQuery(datasourceKey, sql) {
       .catch(() =>
         dispatch(addDangerToast(t("The datasource couldn't be loaded"))),
       );
-  };
+};
 }
 export function createDatasourceStarted() {
   return { type: CREATE_DATASOURCE_STARTED };
@@ -1387,8 +1386,8 @@ export function createCtasDatasource(vizOptions) {
 }
 
 export function queryEditorSetFunctionNames(queryEditor, dbId) {
-  return function (dispatch) {
-    return SupersetClient.get({
+  return (dispatch) => {
+  return SupersetClient.get({
       endpoint: encodeURI(`/api/v1/database/${dbId}/function_names/`),
     })
       .then(({ json }) =>
@@ -1414,5 +1413,5 @@ export function queryEditorSetFunctionNames(queryEditor, dbId) {
           );
         }
       });
-  };
+};
 }

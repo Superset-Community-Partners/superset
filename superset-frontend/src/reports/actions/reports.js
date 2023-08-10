@@ -20,8 +20,8 @@
 import { t, SupersetClient } from '@superset-ui/core';
 import rison from 'rison';
 import {
-  addDangerToast,
-  addSuccessToast,
+    addDangerToast,
+    addSuccessToast,
 } from 'src/components/MessageToasts/actions';
 import { isEmpty } from 'lodash';
 
@@ -55,8 +55,8 @@ export function fetchUISpecificReport({
       },
     ],
   });
-  return function fetchUISpecificReportThunk(dispatch) {
-    return SupersetClient.get({
+  return (dispatch) => {
+  return SupersetClient.get({
       endpoint: `/api/v1/report/?q=${queryParams}`,
     })
       .then(({ json }) => {
@@ -71,7 +71,7 @@ export function fetchUISpecificReport({
           ),
         ),
       );
-  };
+};
 }
 
 const structureFetchAction = (dispatch, getState) => {
@@ -122,8 +122,8 @@ export const editReport = (id, report) => dispatch =>
   });
 
 export function toggleActive(report, isActive) {
-  return function toggleActiveThunk(dispatch) {
-    return SupersetClient.put({
+  return (dispatch) => {
+  return SupersetClient.put({
       endpoint: encodeURI(`/api/v1/report/${report.id}`),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -140,12 +140,12 @@ export function toggleActive(report, isActive) {
       .finally(() => {
         dispatch(structureFetchAction);
       });
-  };
+};
 }
 
 export function deleteActiveReport(report) {
-  return function deleteActiveReportThunk(dispatch) {
-    return SupersetClient.delete({
+  return (dispatch) => {
+  return SupersetClient.delete({
       endpoint: encodeURI(`/api/v1/report/${report.id}`),
     })
       .catch(() => {
@@ -155,5 +155,5 @@ export function deleteActiveReport(report) {
         dispatch(structureFetchAction);
         dispatch(addSuccessToast(t('Deleted: %s', report.name)));
       });
-  };
+};
 }

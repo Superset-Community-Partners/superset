@@ -16,26 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import Split from 'react-split';
 import {
-  css,
-  ensureIsArray,
-  styled,
-  SupersetClient,
-  t,
-  useTheme,
-  getChartMetadataRegistry,
-  DatasourceType,
+    css,
+    ensureIsArray,
+    styled,
+    SupersetClient,
+    t,
+    useTheme,
+    getChartMetadataRegistry,
+    DatasourceType,
 } from '@superset-ui/core';
 import { useResizeDetector } from 'react-resize-detector';
 import { chartPropShape } from 'src/dashboard/util/propShapes';
 import ChartContainer from 'src/components/Chart/ChartContainer';
 import {
-  getItem,
-  setItem,
-  LocalStorageKeys,
+    getItem,
+    setItem,
+    LocalStorageKeys,
 } from 'src/utils/localStorageHelpers';
 import Alert from 'src/components/Alert';
 import { SaveDatasetModal } from 'src/SqlLab/components/SaveDatasetModal';
@@ -165,8 +165,8 @@ const ExploreChartPanel = ({
     ensureIsArray(chart.queriesResponse).length > 0;
 
   const updateQueryContext = useCallback(
-    async function fetchChartData() {
-      if (slice && slice.query_context === null) {
+    () => {
+  if (slice && slice.query_context === null) {
         const queryContext = buildV1ChartDataPayload({
           formData: slice.form_data,
           force,
@@ -185,7 +185,7 @@ const ExploreChartPanel = ({
           }),
         });
       }
-    },
+},
     [slice],
   );
 

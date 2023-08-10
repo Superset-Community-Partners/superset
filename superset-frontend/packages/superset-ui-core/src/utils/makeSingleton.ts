@@ -27,11 +27,11 @@ export default function makeSingleton<T, Args extends unknown[]>(
 ): () => T {
   let singleton: T;
 
-  return function getInstance() {
-    if (!singleton) {
+  return () => {
+  if (!singleton) {
       singleton = new BaseClass(...args);
     }
 
     return singleton;
-  };
+};
 }

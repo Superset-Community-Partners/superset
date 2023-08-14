@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Select } from 'src/components';
 import { styled, t } from '@superset-ui/core';
@@ -26,8 +27,8 @@ import sqlKeywords from 'src/SqlLab/utils/sqlKeywords';
 import adhocMetricType from 'src/explore/components/controls/MetricControl/adhocMetricType';
 import columnType from 'src/explore/components/controls/FilterControl/columnType';
 import AdhocFilter, {
-  EXPRESSION_TYPES,
-  CLAUSES,
+    EXPRESSION_TYPES,
+    CLAUSES,
 } from 'src/explore/components/controls/FilterControl/AdhocFilter';
 
 const propTypes = {
@@ -51,50 +52,38 @@ const StyledSelect = styled(Select)`
   `}
 `;
 
-export default class AdhocFilterEditPopoverSqlTabContent extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onSqlExpressionChange = this.onSqlExpressionChange.bind(this);
-    this.onSqlExpressionClauseChange =
-      this.onSqlExpressionClauseChange.bind(this);
-    this.handleAceEditorRef = this.handleAceEditorRef.bind(this);
+export default export const AdhocFilterEditPopoverSqlTabContent = (props) => {
 
-    this.selectProps = {
-      ariaLabel: t('Select column'),
-    };
-  }
 
-  componentDidUpdate() {
+    
+
+    useEffect(() => {
     if (this.aceEditorRef) {
       this.aceEditorRef.editor.resize();
     }
-  }
-
-  onSqlExpressionClauseChange(clause) {
+  }, []);
+    const onSqlExpressionClauseChangeHandler = useCallback((clause) => {
     this.props.onChange(
       this.props.adhocFilter.duplicateWith({
         clause,
         expressionType: EXPRESSION_TYPES.SQL,
       }),
     );
-  }
-
-  onSqlExpressionChange(sqlExpression) {
+  }, []);
+    const onSqlExpressionChangeHandler = useCallback((sqlExpression) => {
     this.props.onChange(
       this.props.adhocFilter.duplicateWith({
         sqlExpression,
         expressionType: EXPRESSION_TYPES.SQL,
       }),
     );
-  }
-
-  handleAceEditorRef(ref) {
+  }, []);
+    const handleAceEditorRefHandler = useCallback((ref) => {
     if (ref) {
       this.aceEditorRef = ref;
     }
-  }
+  }, []);
 
-  render() {
     const { adhocFilter, height, options } = this.props;
 
     const clauseSelectProps = {
@@ -152,7 +141,9 @@ export default class AdhocFilterEditPopoverSqlTabContent extends React.Component
           />
         </div>
       </span>
-    );
-  }
-}
+    ); 
+};
+
+
+
 AdhocFilterEditPopoverSqlTabContent.propTypes = propTypes;

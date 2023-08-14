@@ -17,14 +17,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import {
-  Sparkline,
-  LineSeries,
-  PointSeries,
-  HorizontalReferenceLine,
-  VerticalReferenceLine,
-  WithTooltip,
+    Sparkline,
+    LineSeries,
+    PointSeries,
+    HorizontalReferenceLine,
+    VerticalReferenceLine,
+    WithTooltip,
 } from '@data-ui/sparkline';
 import { getTextDimension, formatNumber } from '@superset-ui/core';
 
@@ -88,8 +89,12 @@ function isValidBoundValue(value?: number | string) {
   );
 }
 
-class SparklineCell extends React.Component<Props, {}> {
-  renderHorizontalReferenceLine(value?: number, label?: string) {
+const SparklineCell = (props: Props) => {
+
+
+    
+
+    const renderHorizontalReferenceLineHandler = useCallback((value?: number, label?: string) => {
     return (
       <HorizontalReferenceLine
         reference={value}
@@ -100,9 +105,8 @@ class SparklineCell extends React.Component<Props, {}> {
         strokeWidth={1}
       />
     );
-  }
+  }, []);
 
-  render() {
     const {
       width = 300,
       height = 50,
@@ -112,7 +116,7 @@ class SparklineCell extends React.Component<Props, {}> {
       yAxisBounds = [undefined, undefined],
       showYAxis = false,
       renderTooltip = () => <div />,
-    } = this.props;
+    } = props;
 
     const yScale: Yscale = {};
     let hasMinBound = false;
@@ -174,8 +178,8 @@ class SparklineCell extends React.Component<Props, {}> {
             onMouseMove={onMouseMove}
             {...yScale}
           >
-            {showYAxis && this.renderHorizontalReferenceLine(min, minLabel)}
-            {showYAxis && this.renderHorizontalReferenceLine(max, maxLabel)}
+            {showYAxis && renderHorizontalReferenceLineHandler(min, minLabel)}
+            {showYAxis && renderHorizontalReferenceLineHandler(max, maxLabel)}
             <LineSeries showArea={false} stroke="#767676" />
             {tooltipData && (
               <VerticalReferenceLine
@@ -194,8 +198,10 @@ class SparklineCell extends React.Component<Props, {}> {
           </Sparkline>
         )}
       </WithTooltip>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 export default SparklineCell;

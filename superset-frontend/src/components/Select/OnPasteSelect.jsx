@@ -16,17 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Select } from 'src/components/Select';
 
-export default class OnPasteSelect extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onPaste = this.onPaste.bind(this);
-  }
+export default export const OnPasteSelect = (props) => {
 
-  onPaste(evt) {
+
+    
+
+    const onPasteHandler = useCallback((evt) => {
     if (!this.props.isMulti) {
       return;
     }
@@ -72,13 +72,14 @@ export default class OnPasteSelect extends React.Component {
         this.props.onChange(options);
       }
     }
-  }
+  }, []);
 
-  render() {
     const { selectWrap: SelectComponent, ...restProps } = this.props;
-    return <SelectComponent {...restProps} onPaste={this.onPaste} />;
-  }
-}
+    return <SelectComponent {...restProps} onPaste={this.onPaste} />; 
+};
+
+
+
 
 OnPasteSelect.propTypes = {
   separator: PropTypes.array,

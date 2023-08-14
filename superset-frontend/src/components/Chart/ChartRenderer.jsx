@@ -16,9 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 import { snakeCase, isEqual } from 'lodash';
 import PropTypes from 'prop-types';
-import React from 'react';
+import { useCallback } from 'react';
 import { SuperChart, logging, Behavior, t } from '@superset-ui/core';
 import { Logger, LOG_ACTIONS_RENDER_CHART } from 'src/logger/LogUtils';
 import { EmptyStateBig, EmptyStateSmall } from 'src/components/EmptyState';
@@ -70,81 +71,61 @@ const defaultProps = {
   triggerRender: false,
 };
 
-class ChartRenderer extends React.Component {
-  constructor(props) {
-    super(props);
-    this.hasQueryResponseChange = false;
+const ChartRenderer = (props) => {
 
-    this.handleAddFilter = this.handleAddFilter.bind(this);
-    this.handleRenderSuccess = this.handleRenderSuccess.bind(this);
-    this.handleRenderFailure = this.handleRenderFailure.bind(this);
-    this.handleSetControlValue = this.handleSetControlValue.bind(this);
 
-    this.hooks = {
-      onAddFilter: this.handleAddFilter,
-      onError: this.handleRenderFailure,
-      setControlValue: this.handleSetControlValue,
-      onFilterMenuOpen: this.props.onFilterMenuOpen,
-      onFilterMenuClose: this.props.onFilterMenuClose,
-      setDataMask: dataMask => {
-        this.props.actions?.updateDataMask(this.props.chartId, dataMask);
-      },
-    };
-  }
+    
 
-  shouldComponentUpdate(nextProps) {
+    const shouldComponentUpdateHandler = useCallback((nextProps) => {
     const resultsReady =
       nextProps.queriesResponse &&
       ['success', 'rendered'].indexOf(nextProps.chartStatus) > -1 &&
       !nextProps.queriesResponse?.[0]?.error;
 
     if (resultsReady) {
-      this.hasQueryResponseChange =
-        nextProps.queriesResponse !== this.props.queriesResponse;
+      hasQueryResponseChangeHandler =
+        nextProps.queriesResponse !== props.queriesResponse;
       return (
-        this.hasQueryResponseChange ||
-        !isEqual(nextProps.datasource, this.props.datasource) ||
-        nextProps.annotationData !== this.props.annotationData ||
-        nextProps.ownState !== this.props.ownState ||
-        nextProps.filterState !== this.props.filterState ||
-        nextProps.height !== this.props.height ||
-        nextProps.width !== this.props.width ||
+        hasQueryResponseChangeHandler ||
+        !isEqual(nextProps.datasource, props.datasource) ||
+        nextProps.annotationData !== props.annotationData ||
+        nextProps.ownState !== props.ownState ||
+        nextProps.filterState !== props.filterState ||
+        nextProps.height !== props.height ||
+        nextProps.width !== props.width ||
         nextProps.triggerRender ||
-        nextProps.labelColors !== this.props.labelColors ||
-        nextProps.sharedLabelColors !== this.props.sharedLabelColors ||
-        nextProps.formData.color_scheme !== this.props.formData.color_scheme ||
-        nextProps.formData.stack !== this.props.formData.stack ||
-        nextProps.cacheBusterProp !== this.props.cacheBusterProp
+        nextProps.labelColors !== props.labelColors ||
+        nextProps.sharedLabelColors !== props.sharedLabelColors ||
+        nextProps.formData.color_scheme !== props.formData.color_scheme ||
+        nextProps.formData.stack !== props.formData.stack ||
+        nextProps.cacheBusterProp !== props.cacheBusterProp
       );
     }
     return false;
-  }
-
-  handleAddFilter(col, vals, merge = true, refresh = true) {
-    this.props.addFilter(col, vals, merge, refresh);
-  }
-
-  handleRenderSuccess() {
-    const { actions, chartStatus, chartId, vizType } = this.props;
+  }, []);
+    const handleAddFilterHandler = useCallback((col, vals, merge = true, refresh = true) => {
+    props.addFilter(col, vals, merge, refresh);
+  }, []);
+    const handleRenderSuccessHandler = useCallback(() => {
+    const { actions, chartStatus, chartId, vizType } = props;
     if (['loading', 'rendered'].indexOf(chartStatus) < 0) {
       actions.chartRenderingSucceeded(chartId);
     }
 
     // only log chart render time which is triggered by query results change
     // currently we don't log chart re-render time, like window resize etc
-    if (this.hasQueryResponseChange) {
+    if (hasQueryResponseChangeHandler) {
       actions.logEvent(LOG_ACTIONS_RENDER_CHART, {
         slice_id: chartId,
         viz_type: vizType,
-        start_offset: this.renderStartTime,
+        start_offset: renderStartTimeHandler,
         ts: new Date().getTime(),
-        duration: Logger.getTimestamp() - this.renderStartTime,
+        duration: Logger.getTimestamp() - renderStartTimeHandler,
       });
     }
-  }
-
-  handleRenderFailure(error, info) {
-    const { actions, chartId } = this.props;
+  }, []);
+    const handleRenderFailureHandler = useCallback((error, info) => {
+    const { actions, chartId } = props;
     logging.warn(error);
     actions.chartRenderingFailed(
       error.toString(),
@@ -153,34 +134,32 @@ class ChartRenderer extends React.Component {
     );
 
     // only trigger render log when query is changed
-    if (this.hasQueryResponseChange) {
+    if (hasQueryResponseChangeHandler) {
       actions.logEvent(LOG_ACTIONS_RENDER_CHART, {
         slice_id: chartId,
         has_err: true,
         error_details: error.toString(),
-        start_offset: this.renderStartTime,
+        start_offset: renderStartTimeHandler,
         ts: new Date().getTime(),
-        duration: Logger.getTimestamp() - this.renderStartTime,
+        duration: Logger.getTimestamp() - renderStartTimeHandler,
       });
     }
-  }
-
-  handleSetControlValue(...args) {
-    const { setControlValue } = this.props;
+  }, []);
+    const handleSetControlValueHandler = useCallback((...args) => {
+    const { setControlValue } = props;
     if (setControlValue) {
       setControlValue(...args);
     }
-  }
+  }, []);
 
-  render() {
-    const { chartAlert, chartStatus, chartId } = this.props;
+    const { chartAlert, chartStatus, chartId } = props;
 
     // Skip chart rendering
     if (chartStatus === 'loading' || !!chartAlert || chartStatus === null) {
       return null;
     }
 
-    this.renderStartTime = Logger.getTimestamp();
+    renderStartTimeHandler = Logger.getTimestamp();
 
     const {
       width,
@@ -195,11 +174,11 @@ class ChartRenderer extends React.Component {
       latestQueryFormData,
       queriesResponse,
       postTransformProps,
-    } = this.props;
+    } = props;
 
     const currentFormData =
       chartIsStale && latestQueryFormData ? latestQueryFormData : formData;
-    const vizType = currentFormData.viz_type || this.props.vizType;
+    const vizType = currentFormData.viz_type || props.vizType;
 
     // It's bad practice to use unprefixed `vizType` as classnames for chart
     // container. It may cause css conflicts as in the case of legacy table chart.
@@ -226,7 +205,7 @@ class ChartRenderer extends React.Component {
     let noResultsComponent;
     const noResultTitle = t('No results were returned for this query');
     const noResultDescription =
-      this.props.source === 'explore'
+      props.source === 'explore'
         ? t(
             'Make sure that the controls are configured properly and the datasource contains data for the selected time range',
           )
@@ -261,17 +240,19 @@ class ChartRenderer extends React.Component {
         formData={currentFormData}
         ownState={ownState}
         filterState={filterState}
-        hooks={this.hooks}
+        hooks={hooksHandler}
         behaviors={behaviors}
         queriesData={queriesResponse}
-        onRenderSuccess={this.handleRenderSuccess}
-        onRenderFailure={this.handleRenderFailure}
+        onRenderSuccess={handleRenderSuccessHandler}
+        onRenderFailure={handleRenderFailureHandler}
         noResults={noResultsComponent}
         postTransformProps={postTransformProps}
       />
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 ChartRenderer.propTypes = propTypes;
 ChartRenderer.defaultProps = defaultProps;

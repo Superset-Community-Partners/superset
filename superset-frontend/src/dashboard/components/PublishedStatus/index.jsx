@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { t } from '@superset-ui/core';
 import { Tooltip } from 'src/components/Tooltip';
@@ -44,17 +45,18 @@ const publishedTooltip = t(
   'This dashboard is published. Click to make it a draft.',
 );
 
-export default class PublishedStatus extends React.Component {
-  componentDidMount() {
+export default export const PublishedStatus = (props) => {
+
+
+    
+
+    useEffect(() => {
     this.togglePublished = this.togglePublished.bind(this);
-  }
-
-  togglePublished() {
+  }, []);
+    const togglePublishedHandler = useCallback(() => {
     this.props.savePublished(this.props.dashboardId, !this.props.isPublished);
-  }
+  }, []);
 
-  render() {
-    // Show everybody the draft badge
     if (!this.props.isPublished) {
       // if they can edit the dash, make the badge a button
       if (this.props.canEdit && this.props.canSave) {
@@ -105,8 +107,10 @@ export default class PublishedStatus extends React.Component {
     }
 
     // Don't show anything if one doesn't own the dashboard and it is published
-    return null;
-  }
-}
+    return null; 
+};
+
+
+
 
 PublishedStatus.propTypes = propTypes;

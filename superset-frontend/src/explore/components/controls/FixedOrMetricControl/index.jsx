@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { css } from '@emotion/react';
 import { t } from '@superset-ui/core';
@@ -48,26 +49,17 @@ const defaultProps = {
   default: { type: controlTypes.fixed, value: 5 },
 };
 
-export default class FixedOrMetricControl extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onChange = this.onChange.bind(this);
-    this.setType = this.setType.bind(this);
-    this.setFixedValue = this.setFixedValue.bind(this);
-    this.setMetric = this.setMetric.bind(this);
-    const type =
+export default export const FixedOrMetricControl = (props) => {
+const type =
       (props.value ? props.value.type : props.default.type) ||
       controlTypes.fixed;
     const value =
       (props.value ? props.value.value : props.default.value) || '100';
-    this.state = {
-      type,
-      fixedValue: type === controlTypes.fixed ? value : '',
-      metricValue: type === controlTypes.metric ? value : null,
-    };
-  }
 
-  onChange() {
+    const [fixedValue, setFixedValue] = useState(type === controlTypes.fixed ? value : '');
+    const [metricValue, setMetricValue] = useState(type === controlTypes.metric ? value : null);
+
+    const onChangeHandler = useCallback(() => {
     this.props.onChange({
       type: this.state.type,
       value:
@@ -75,21 +67,17 @@ export default class FixedOrMetricControl extends React.Component {
           ? this.state.fixedValue
           : this.state.metricValue,
     });
-  }
-
-  setType(type) {
+  }, []);
+    const setTypeHandler = useCallback((type) => {
     this.setState({ type }, this.onChange);
-  }
-
-  setFixedValue(fixedValue) {
+  }, []);
+    const setFixedValueHandler = useCallback((fixedValue) => {
     this.setState({ fixedValue }, this.onChange);
-  }
-
-  setMetric(metricValue) {
+  }, []);
+    const setMetricHandler = useCallback((metricValue) => {
     this.setState({ metricValue }, this.onChange);
-  }
+  }, []);
 
-  render() {
     const value = this.props.value || this.props.default;
     const type = value.type || controlTypes.fixed;
     const columns = this.props.datasource
@@ -185,9 +173,11 @@ export default class FixedOrMetricControl extends React.Component {
           </Collapse.Panel>
         </Collapse>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 FixedOrMetricControl.propTypes = propTypes;
 FixedOrMetricControl.defaultProps = defaultProps;

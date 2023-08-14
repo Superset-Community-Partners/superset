@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Row, Col } from 'src/components';
 import { t } from '@superset-ui/core';
@@ -47,35 +48,24 @@ const defaultProps = {
   choices: [],
 };
 
-export default class SpatialControl extends React.Component {
-  constructor(props) {
-    super(props);
-    const v = props.value || {};
+export default export const SpatialControl = (props) => {
+const v = props.value || {};
     let defaultCol;
-    if (props.choices.length > 0) {
-      defaultCol = props.choices[0][0];
-    }
-    this.state = {
-      type: v.type || spatialTypes.latlong,
-      delimiter: v.delimiter || ',',
-      latCol: v.latCol || defaultCol,
-      lonCol: v.lonCol || defaultCol,
-      lonlatCol: v.lonlatCol || defaultCol,
-      reverseCheckbox: v.reverseCheckbox || false,
-      geohashCol: v.geohashCol || defaultCol,
-      value: null,
-      errors: [],
-    };
-    this.toggleCheckbox = this.toggleCheckbox.bind(this);
-    this.onChange = this.onChange.bind(this);
-    this.renderReverseCheckbox = this.renderReverseCheckbox.bind(this);
-  }
 
-  componentDidMount() {
+    const [type, setType] = useState(v.type || spatialTypes.latlong);
+    const [delimiter, setDelimiter] = useState(v.delimiter || ',');
+    const [latCol, setLatCol] = useState(v.latCol || defaultCol);
+    const [lonCol, setLonCol] = useState(v.lonCol || defaultCol);
+    const [lonlatCol, setLonlatCol] = useState(v.lonlatCol || defaultCol);
+    const [reverseCheckbox, setReverseCheckbox] = useState(v.reverseCheckbox || false);
+    const [geohashCol, setGeohashCol] = useState(v.geohashCol || defaultCol);
+    const [value, setValue] = useState(null);
+    const [errors, setErrors] = useState([]);
+
+    useEffect(() => {
     this.onChange();
-  }
-
-  onChange() {
+  }, []);
+    const onChangeHandler = useCallback(() => {
     const { type } = this.state;
     const value = { type };
     const errors = [];
@@ -102,20 +92,17 @@ export default class SpatialControl extends React.Component {
     }
     this.setState({ value, errors });
     this.props.onChange(value, errors);
-  }
-
-  setType(type) {
+  }, []);
+    const setTypeHandler = useCallback((type) => {
     this.setState({ type }, this.onChange);
-  }
-
-  toggleCheckbox() {
+  }, []);
+    const toggleCheckboxHandler = useCallback(() => {
     this.setState(
       prevState => ({ reverseCheckbox: !prevState.reverseCheckbox }),
       this.onChange,
     );
-  }
-
-  renderLabelContent() {
+  }, []);
+    const renderLabelContentHandler = useCallback(() => {
     if (this.state.errors.length > 0) {
       return 'N/A';
     }
@@ -129,9 +116,8 @@ export default class SpatialControl extends React.Component {
       return `${this.state.geohashCol}`;
     }
     return null;
-  }
-
-  renderSelect(name, type) {
+  }, []);
+    const renderSelectHandler = useCallback((name, type) => {
     return (
       <SelectControl
         ariaLabel={name}
@@ -147,9 +133,8 @@ export default class SpatialControl extends React.Component {
         }}
       />
     );
-  }
-
-  renderReverseCheckbox() {
+  }, []);
+    const renderReverseCheckboxHandler = useCallback(() => {
     return (
       <span>
         {t('Reverse lat/long ')}
@@ -159,9 +144,8 @@ export default class SpatialControl extends React.Component {
         />
       </span>
     );
-  }
-
-  renderPopoverContent() {
+  }, []);
+    const renderPopoverContentHandler = useCallback(() => {
     return (
       <div style={{ width: '300px' }}>
         <PopoverSection
@@ -216,9 +200,8 @@ export default class SpatialControl extends React.Component {
         </PopoverSection>
       </div>
     );
-  }
+  }, []);
 
-  render() {
     return (
       <div>
         <ControlHeader {...this.props} />
@@ -230,9 +213,11 @@ export default class SpatialControl extends React.Component {
           <Label className="pointer">{this.renderLabelContent()}</Label>
         </Popover>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 SpatialControl.propTypes = propTypes;
 SpatialControl.defaultProps = defaultProps;

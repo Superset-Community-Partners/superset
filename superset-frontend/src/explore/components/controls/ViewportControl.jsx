@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import Popover from 'src/components/Popover';
 import { decimal2sexagesimal } from 'geolib';
@@ -55,20 +56,18 @@ const defaultProps = {
   value: DEFAULT_VIEWPORT,
 };
 
-export default class ViewportControl extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onChange = this.onChange.bind(this);
-  }
+export default export const ViewportControl = (props) => {
 
-  onChange(ctrl, value) {
+
+    
+
+    const onChangeHandler = useCallback((ctrl, value) => {
     this.props.onChange({
       ...this.props.value,
       [ctrl]: value,
     });
-  }
-
-  renderTextControl(ctrl) {
+  }, []);
+    const renderTextControlHandler = useCallback((ctrl) => {
     return (
       <div key={ctrl}>
         <FormLabel>{ctrl}</FormLabel>
@@ -79,26 +78,23 @@ export default class ViewportControl extends React.Component {
         />
       </div>
     );
-  }
-
-  renderPopover() {
+  }, []);
+    const renderPopoverHandler = useCallback(() => {
     return (
       <div id={`filter-popover-${this.props.name}`}>
         {PARAMS.map(ctrl => this.renderTextControl(ctrl))}
       </div>
     );
-  }
-
-  renderLabel() {
+  }, []);
+    const renderLabelHandler = useCallback(() => {
     if (this.props.value.longitude && this.props.value.latitude) {
       return `${decimal2sexagesimal(
         this.props.value.longitude,
       )} | ${decimal2sexagesimal(this.props.value.latitude)}`;
     }
     return 'N/A';
-  }
+  }, []);
 
-  render() {
     return (
       <div>
         <ControlHeader {...this.props} />
@@ -112,9 +108,11 @@ export default class ViewportControl extends React.Component {
           <Label className="pointer">{this.renderLabel()}</Label>
         </Popover>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 ViewportControl.propTypes = propTypes;
 ViewportControl.defaultProps = defaultProps;

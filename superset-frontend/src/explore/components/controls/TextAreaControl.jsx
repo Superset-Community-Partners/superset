@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { TextArea } from 'src/components/Input';
 import { t, withTheme } from '@superset-ui/core';
@@ -57,85 +58,87 @@ const defaultProps = {
   readOnly: false,
 };
 
-class TextAreaControl extends React.Component {
-  onControlChange(event) {
+const TextAreaControl = (props) => {
+
+
+    
+
+    const onControlChangeHandler = useCallback((event) => {
     const { value } = event.target;
-    this.props.onChange(value);
-  }
-
-  onAreaEditorChange(value) {
-    this.props.onChange(value);
-  }
-
-  renderEditor(inModal = false) {
-    const minLines = inModal ? 40 : this.props.minLines || 12;
-    if (this.props.language) {
+    props.onChange(value);
+  }, []);
+    const onAreaEditorChangeHandler = useCallback((value) => {
+    props.onChange(value);
+  }, []);
+    const renderEditorHandler = useCallback((inModal = false) => {
+    const minLines = inModal ? 40 : props.minLines || 12;
+    if (props.language) {
       const style = {
-        border: `1px solid ${this.props.theme.colors.grayscale.light1}`,
+        border: `1px solid ${props.theme.colors.grayscale.light1}`,
       };
-      if (this.props.readOnly) {
+      if (props.readOnly) {
         style.backgroundColor = '#f2f2f2';
       }
       return (
         <TextAreaEditor
-          mode={this.props.language}
+          mode={props.language}
           style={style}
           minLines={minLines}
-          maxLines={inModal ? 1000 : this.props.maxLines}
+          maxLines={inModal ? 1000 : props.maxLines}
           width="100%"
           height={`${minLines}em`}
           editorProps={{ $blockScrolling: true }}
-          defaultValue={this.props.initialValue}
-          readOnly={this.props.readOnly}
-          key={this.props.name}
-          {...this.props}
-          onChange={this.onAreaEditorChange.bind(this)}
+          defaultValue={props.initialValue}
+          readOnly={props.readOnly}
+          key={props.name}
+          {...props}
+          onChange={onAreaEditorChangeHandler.bind(this)}
         />
       );
     }
     return (
       <TextArea
         placeholder={t('textarea')}
-        onChange={this.onControlChange.bind(this)}
-        defaultValue={this.props.initialValue}
-        disabled={this.props.readOnly}
-        style={{ height: this.props.height }}
+        onChange={onControlChangeHandler.bind(this)}
+        defaultValue={props.initialValue}
+        disabled={props.readOnly}
+        style={{ height: props.height }}
       />
     );
-  }
-
-  renderModalBody() {
+  }, []);
+    const renderModalBodyHandler = useCallback(() => {
     return (
       <div>
-        <div>{this.props.aboveEditorSection}</div>
-        {this.renderEditor(true)}
+        <div>{props.aboveEditorSection}</div>
+        {renderEditorHandler(true)}
       </div>
     );
-  }
+  }, []);
 
-  render() {
-    const controlHeader = <ControlHeader {...this.props} />;
+    const controlHeader = <ControlHeader {...props} />;
     return (
       <div>
         {controlHeader}
-        {this.renderEditor()}
-        {this.props.offerEditInModal && (
+        {renderEditorHandler()}
+        {props.offerEditInModal && (
           <ModalTrigger
             modalTitle={controlHeader}
             triggerNode={
               <Button buttonSize="small" className="m-t-5">
-                {t('Edit')} <strong>{this.props.language}</strong>{' '}
+                {t('Edit')} <strong>{props.language}</strong>{' '}
                 {t('in modal')}
               </Button>
             }
-            modalBody={this.renderModalBody(true)}
+            modalBody={renderModalBodyHandler(true)}
             responsive
           />
         )}
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 TextAreaControl.propTypes = propTypes;
 TextAreaControl.defaultProps = defaultProps;

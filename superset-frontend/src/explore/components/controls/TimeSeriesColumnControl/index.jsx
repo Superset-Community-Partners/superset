@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Input } from 'src/components/Input';
 import Button from 'src/components/Button';
@@ -96,20 +97,12 @@ const ButtonBar = styled.div`
   justify-content: center;
 `;
 
-export default class TimeSeriesColumnControl extends React.Component {
-  constructor(props) {
-    super(props);
+export default export const TimeSeriesColumnControl = (props) => {
 
-    this.onSave = this.onSave.bind(this);
-    this.onClose = this.onClose.bind(this);
-    this.resetState = this.resetState.bind(this);
-    this.initialState = this.initialState.bind(this);
-    this.onPopoverVisibleChange = this.onPopoverVisibleChange.bind(this);
 
-    this.state = this.initialState();
-  }
+    
 
-  initialState() {
+    const initialStateHandler = useCallback(() => {
     return {
       label: this.props.label,
       tooltip: this.props.tooltip,
@@ -126,55 +119,44 @@ export default class TimeSeriesColumnControl extends React.Component {
       dateFormat: this.props.dateFormat,
       popoverVisible: false,
     };
-  }
-
-  resetState() {
+  }, []);
+    const resetStateHandler = useCallback(() => {
     const initialState = this.initialState();
     this.setState({ ...initialState });
-  }
-
-  onSave() {
+  }, []);
+    const onSaveHandler = useCallback(() => {
     this.props.onChange(this.state);
     this.setState({ popoverVisible: false });
-  }
-
-  onClose() {
+  }, []);
+    const onCloseHandler = useCallback(() => {
     this.resetState();
-  }
-
-  onSelectChange(attr, opt) {
+  }, []);
+    const onSelectChangeHandler = useCallback((attr, opt) => {
     this.setState({ [attr]: opt });
-  }
-
-  onTextInputChange(attr, event) {
+  }, []);
+    const onTextInputChangeHandler = useCallback((attr, event) => {
     this.setState({ [attr]: event.target.value });
-  }
-
-  onCheckboxChange(attr, value) {
+  }, []);
+    const onCheckboxChangeHandler = useCallback((attr, value) => {
     this.setState({ [attr]: value });
-  }
-
-  onBoundsChange(bounds) {
+  }, []);
+    const onBoundsChangeHandler = useCallback((bounds) => {
     this.setState({ bounds });
-  }
-
-  onPopoverVisibleChange(popoverVisible) {
+  }, []);
+    const onPopoverVisibleChangeHandler = useCallback((popoverVisible) => {
     if (popoverVisible) {
       this.setState({ popoverVisible });
     } else {
       this.resetState();
     }
-  }
-
-  onYAxisBoundsChange(yAxisBounds) {
+  }, []);
+    const onYAxisBoundsChangeHandler = useCallback((yAxisBounds) => {
     this.setState({ yAxisBounds });
-  }
-
-  textSummary() {
+  }, []);
+    const textSummaryHandler = useCallback(() => {
     return `${this.props.label}`;
-  }
-
-  formRow(label, tooltip, ttLabel, control) {
+  }, []);
+    const formRowHandler = useCallback((label, tooltip, ttLabel, control) => {
     return (
       <StyledRow>
         <StyledCol xs={24} md={11}>
@@ -186,9 +168,8 @@ export default class TimeSeriesColumnControl extends React.Component {
         </Col>
       </StyledRow>
     );
-  }
-
-  renderPopover() {
+  }, []);
+    const renderPopoverHandler = useCallback(() => {
     return (
       <div id="ts-col-popo" style={{ width: 320 }}>
         {this.formRow(
@@ -347,9 +328,8 @@ export default class TimeSeriesColumnControl extends React.Component {
         </ButtonBar>
       </div>
     );
-  }
+  }, []);
 
-  render() {
     return (
       <span>
         {this.textSummary()}{' '}
@@ -367,9 +347,11 @@ export default class TimeSeriesColumnControl extends React.Component {
           />
         </ControlPopover>
       </span>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 TimeSeriesColumnControl.propTypes = propTypes;
 TimeSeriesColumnControl.defaultProps = defaultProps;

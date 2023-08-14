@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import React, { useState, useRef, useCallback } from 'react';
 import { legacyValidateNumber, legacyValidateInteger } from '@superset-ui/core';
 import debounce from 'lodash/debounce';
 import { FAST_DEBOUNCE } from 'src/constants';
@@ -45,20 +46,13 @@ export interface TextControlState {
 const safeStringify = (value?: InputValueType | null) =>
   value == null ? '' : String(value);
 
-export default class TextControl<
-  T extends InputValueType = InputValueType,
-> extends React.Component<TextControlProps<T>, TextControlState> {
-  initialValue?: TextControlProps['value'];
+export default export const TextControl = (props: TextControlProps<T>) => {
 
-  constructor(props: TextControlProps<T>) {
-    super(props);
-    this.initialValue = props.value;
-    this.state = {
-      value: safeStringify(this.initialValue),
-    };
-  }
 
-  onChange = (inputValue: string) => {
+    const [value, setValue] = useState(safeStringify(this.initialValue));
+
+    const initialValue = useRef<TextControlProps['value']>();
+    const onChangeHandler = useCallback((inputValue: string) => {
     let parsedValue: InputValueType = inputValue;
     // Validation & casting
     const errors = [];
@@ -81,20 +75,17 @@ export default class TextControl<
       }
     }
     this.props.onChange?.(parsedValue as T, errors);
-  };
-
-  debouncedOnChange = debounce((inputValue: string) => {
+  }, []);
+    const debouncedOnChange = useRef(debounce((inputValue: string) => {
     this.onChange(inputValue);
-  }, FAST_DEBOUNCE);
-
-  onChangeWrapper = (event: React.ChangeEvent<HTMLInputElement>) => {
+  }, FAST_DEBOUNCE));
+    const onChangeWrapperHandler = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
     this.setState({ value }, () => {
       this.debouncedOnChange(value);
     });
-  };
+  }, []);
 
-  render() {
     let { value } = this.state;
     if (this.initialValue !== this.props.value) {
       this.initialValue = this.props.value;
@@ -114,6 +105,8 @@ export default class TextControl<
           aria-label={this.props.label}
         />
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+

@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { SketchPicker } from 'react-color';
 import { getCategoricalSchemeRegistry, styled } from '@superset-ui/core';
@@ -65,17 +66,15 @@ const styles = {
       'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==") left center',
   },
 };
-export default class ColorPickerControl extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onChange = this.onChange.bind(this);
-  }
+export default export const ColorPickerControl = (props) => {
 
-  onChange(col) {
+
+    
+
+    const onChangeHandler = useCallback((col) => {
     this.props.onChange(col.rgb);
-  }
-
-  renderPopover() {
+  }, []);
+    const renderPopover = useMemo(() => {
     const presetColors = getCategoricalSchemeRegistry()
       .get()
       .colors.filter((s, i) => i < 7);
@@ -88,9 +87,8 @@ export default class ColorPickerControl extends React.Component {
         />
       </div>
     );
-  }
+  }, []);
 
-  render() {
     const c = this.props.value || { r: 0, g: 0, b: 0, a: 0 };
     const colStyle = {
       ...styles.color,
@@ -110,9 +108,11 @@ export default class ColorPickerControl extends React.Component {
           </StyledSwatch>
         </Popover>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 ColorPickerControl.propTypes = propTypes;
 ColorPickerControl.defaultProps = defaultProps;

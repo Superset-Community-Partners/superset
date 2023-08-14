@@ -17,7 +17,8 @@
  * under the License.
  */
 
-import React, { ReactNode } from 'react';
+
+import { useState, useCallback } from 'react';
 
 export type Props = {
   children: ReactNode;
@@ -28,18 +29,15 @@ type State = {
   open: boolean;
 };
 
-export default class Expandable extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { open: false };
-    this.handleToggle = this.handleToggle.bind(this);
-  }
+export default export const Expandable = (props: Props) => {
 
-  handleToggle() {
+
+    const [open, setOpen] = useState(false);
+
+    const handleToggleHandler = useCallback(() => {
     this.setState(({ open }) => ({ open: !open }));
-  }
+  }, []);
 
-  render() {
     const { open } = this.state;
     const { children, expandableWhat } = this.props;
 
@@ -56,6 +54,8 @@ export default class Expandable extends React.Component<Props, State> {
         <br />
         {open ? children : null}
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+

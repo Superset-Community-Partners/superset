@@ -17,12 +17,13 @@
  * under the License.
  */
 
-import React, { ReactNode } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  SupersetClient,
-  Method,
-  makeApi,
-  SupersetApiError,
+    SupersetClient,
+    Method,
+    makeApi,
+    SupersetApiError,
 } from '@superset-ui/core';
 import ErrorMessage from './ErrorMessage';
 
@@ -52,14 +53,12 @@ export const renderError = (error: Error) => (
   </div>
 );
 
-export default class VerifyCORS extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { didVerify: false };
-    this.handleVerify = this.handleVerify.bind(this);
-  }
+export default export const VerifyCORS = (props: Props) => {
 
-  componentDidUpdate(prevProps: Props) {
+
+    const [didVerify, setDidVerify] = useState(false);
+
+    useEffect(() => {
     const { endpoint, host, postPayload, method } = this.props;
     if (
       (this.state.didVerify || this.state.error) &&
@@ -71,9 +70,8 @@ export default class VerifyCORS extends React.Component<Props, State> {
       // eslint-disable-next-line react/no-did-update-set-state
       this.setState({ didVerify: false, error: undefined });
     }
-  }
-
-  handleVerify() {
+  }, []);
+    const handleVerifyHandler = useCallback(() => {
     const { endpoint, host, postPayload, method } = this.props;
     SupersetClient.reset();
     SupersetClient.configure({
@@ -96,9 +94,8 @@ export default class VerifyCORS extends React.Component<Props, State> {
         this.setState({ didVerify: true, error: undefined, payload: result }),
       )
       .catch(error => this.setState({ error }));
-  }
+  }, []);
 
-  render() {
     const { didVerify, error, payload } = this.state;
     const { children } = this.props;
 
@@ -133,6 +130,8 @@ export default class VerifyCORS extends React.Component<Props, State> {
           </div>
         )}
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+

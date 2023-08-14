@@ -17,16 +17,17 @@
  * under the License.
  */
 /* eslint-env browser */
-import React from 'react';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { List } from 'react-virtualized';
 import { createFilter } from 'react-search-input';
 import {
-  t,
-  styled,
-  isFeatureEnabled,
-  FeatureFlag,
-  css,
+    t,
+    styled,
+    isFeatureEnabled,
+    FeatureFlag,
+    css,
 } from '@superset-ui/core';
 import { Input } from 'src/components/Input';
 import { Select } from 'src/components';
@@ -34,12 +35,12 @@ import Loading from 'src/components/Loading';
 import Button from 'src/components/Button';
 import Icons from 'src/components/Icons';
 import {
-  CHART_TYPE,
-  NEW_COMPONENT_SOURCE_TYPE,
+    CHART_TYPE,
+    NEW_COMPONENT_SOURCE_TYPE,
 } from 'src/dashboard/util/componentTypes';
 import {
-  NEW_CHART_ID,
-  NEW_COMPONENTS_SOURCE_ID,
+    NEW_CHART_ID,
+    NEW_COMPONENTS_SOURCE_ID,
 } from 'src/dashboard/util/constants';
 import { slicePropShape } from 'src/dashboard/util/propShapes';
 import { FILTER_BOX_MIGRATION_STATES } from 'src/explore/constants';
@@ -119,123 +120,92 @@ const NewChartButton = styled(Button)`
   `}
 `;
 
-class SliceAdder extends React.Component {
-  static sortByComparator(attr) {
-    const desc = attr === 'changed_on' ? -1 : 1;
+const SliceAdder = (props) => {
 
-    return (a, b) => {
-      if (a[attr] < b[attr]) {
-        return -1 * desc;
-      }
-      if (a[attr] > b[attr]) {
-        return 1 * desc;
-      }
-      return 0;
-    };
-  }
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      filteredSlices: [],
-      searchTerm: '',
-      sortBy: DEFAULT_SORT_KEY,
-      selectedSliceIdsSet: new Set(props.selectedSliceIds),
-    };
-    this.rowRenderer = this.rowRenderer.bind(this);
-    this.searchUpdated = this.searchUpdated.bind(this);
-    this.handleKeyPress = this.handleKeyPress.bind(this);
-    this.handleSelect = this.handleSelect.bind(this);
-  }
+    const [filteredSlices, setFilteredSlices] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState(DEFAULT_SORT_KEY);
+    const [selectedSliceIdsSet, setSelectedSliceIdsSet] = useState(new Set(props.selectedSliceIds));
 
-  componentDidMount() {
-    const { userId, filterboxMigrationState } = this.props;
-    this.slicesRequest = this.props.fetchAllSlices(
+    useEffect(() => {
+    const { userId, filterboxMigrationState } = props;
+    slicesRequestHandler = props.fetchAllSlices(
       userId,
       isFeatureEnabled(FeatureFlag.ENABLE_FILTER_BOX_MIGRATION) &&
         filterboxMigrationState !== FILTER_BOX_MIGRATION_STATES.SNOOZED,
     );
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps) {
+  }, []);
+    const UNSAFE_componentWillReceivePropsHandler = useCallback((nextProps) => {
     const nextState = {};
-    if (nextProps.lastUpdated !== this.props.lastUpdated) {
+    if (nextProps.lastUpdated !== props.lastUpdated) {
       nextState.filteredSlices = Object.values(nextProps.slices)
-        .filter(createFilter(this.state.searchTerm, KEYS_TO_FILTERS))
-        .sort(SliceAdder.sortByComparator(this.state.sortBy));
+        .filter(createFilter(searchTerm, KEYS_TO_FILTERS))
+        .sort(SliceAdder.sortByComparator(sortBy));
     }
 
-    if (nextProps.selectedSliceIds !== this.props.selectedSliceIds) {
+    if (nextProps.selectedSliceIds !== props.selectedSliceIds) {
       nextState.selectedSliceIdsSet = new Set(nextProps.selectedSliceIds);
     }
 
     if (Object.keys(nextState).length) {
-      this.setState(nextState);
+      setStateHandler(nextState);
     }
-  }
-
-  componentWillUnmount() {
-    if (this.slicesRequest && this.slicesRequest.abort) {
-      this.slicesRequest.abort();
+  }, [searchTerm, sortBy]);
+    useEffect(() => {
+    return () => {
+    if (slicesRequestHandler && slicesRequestHandler.abort) {
+      slicesRequestHandler.abort();
     }
-  }
-
-  getFilteredSortedSlices(searchTerm, sortBy) {
-    return Object.values(this.props.slices)
+  };
+}, []);
+    const getFilteredSortedSlicesHandler = useCallback((searchTerm, sortBy) => {
+    return Object.values(props.slices)
       .filter(createFilter(searchTerm, KEYS_TO_FILTERS))
       .sort(SliceAdder.sortByComparator(sortBy));
-  }
-
-  handleKeyPress(ev) {
+  }, [searchTerm, sortBy]);
+    const handleKeyPressHandler = useCallback((ev) => {
     if (ev.key === 'Enter') {
       ev.preventDefault();
 
-      this.searchUpdated(ev.target.value);
+      searchUpdatedHandler(ev.target.value);
     }
-  }
+  }, []);
+    const handleChange = useRef(_.debounce(value => {
+    searchUpdatedHandler(value);
 
-  handleChange = _.debounce(value => {
-    this.searchUpdated(value);
-
-    const { userId, filterboxMigrationState } = this.props;
-    this.slicesRequest = this.props.fetchFilteredSlices(
+    const { userId, filterboxMigrationState } = props;
+    slicesRequestHandler = props.fetchFilteredSlices(
       userId,
       isFeatureEnabled(FeatureFlag.ENABLE_FILTER_BOX_MIGRATION) &&
         filterboxMigrationState !== FILTER_BOX_MIGRATION_STATES.SNOOZED,
       value,
     );
-  }, 300);
-
-  searchUpdated(searchTerm) {
-    this.setState(prevState => ({
-      searchTerm,
-      filteredSlices: this.getFilteredSortedSlices(
+  }, 300));
+    const searchUpdatedHandler = useCallback((searchTerm) => {
+    setSearchTerm(searchTerm);
+    setFilteredSlices(getFilteredSortedSlicesHandler(
         searchTerm,
         prevState.sortBy,
-      ),
-    }));
-  }
-
-  handleSelect(sortBy) {
-    this.setState(prevState => ({
-      sortBy,
-      filteredSlices: this.getFilteredSortedSlices(
+      ));
+  }, [searchTerm]);
+    const handleSelectHandler = useCallback((sortBy) => {
+    setSortBy(sortBy);
+    setFilteredSlices(getFilteredSortedSlicesHandler(
         prevState.searchTerm,
         sortBy,
-      ),
-    }));
+      ));
 
-    const { userId, filterboxMigrationState } = this.props;
-    this.slicesRequest = this.props.fetchSortedSlices(
+    const { userId, filterboxMigrationState } = props;
+    slicesRequestHandler = props.fetchSortedSlices(
       userId,
       isFeatureEnabled(FeatureFlag.ENABLE_FILTER_BOX_MIGRATION) &&
         filterboxMigrationState !== FILTER_BOX_MIGRATION_STATES.SNOOZED,
       sortBy,
     );
-  }
-
-  rowRenderer({ key, index, style }) {
-    const { filteredSlices, selectedSliceIdsSet } = this.state;
+  }, [sortBy]);
+    const rowRendererHandler = useCallback(({ key, index, style }) => {
+    
     const cellData = filteredSlices[index];
     const isSelected = selectedSliceIdsSet.has(cellData.slice_id);
     const type = CHART_TYPE;
@@ -256,7 +226,7 @@ class SliceAdder extends React.Component {
         index={index}
         depth={0}
         disableDragDrop={isSelected}
-        editMode={this.props.editMode}
+        editMode={props.editMode}
         // we must use a custom drag preview within the List because
         // it does not seem to work within a fixed-position container
         useEmptyDragPreview
@@ -279,11 +249,10 @@ class SliceAdder extends React.Component {
         )}
       </DragDroppable>
     );
-  }
+  }, [filteredSlices, selectedSliceIdsSet]);
 
-  render() {
     const slicesListHeight =
-      this.props.height -
+      props.height -
       SIDEPANE_HEADER_HEIGHT -
       SLICE_ADDER_CONTROL_HEIGHT -
       MARGIN_BOTTOM;
@@ -295,7 +264,7 @@ class SliceAdder extends React.Component {
             buttonSize="xsmall"
             onClick={() =>
               window.open(
-                `/chart/add?dashboard_id=${this.props.dashboardId}`,
+                `/chart/add?dashboard_id=${props.dashboardId}`,
                 '_blank',
                 'noopener noreferrer',
               )
@@ -309,14 +278,14 @@ class SliceAdder extends React.Component {
           <Input
             placeholder={t('Filter your charts')}
             className="search-input"
-            onChange={ev => this.handleChange(ev.target.value)}
-            onKeyPress={this.handleKeyPress}
+            onChange={ev => handleChange.current(ev.target.value)}
+            onKeyPress={handleKeyPressHandler}
             data-test="dashboard-charts-filter-search-input"
           />
           <StyledSelect
             id="slice-adder-sortby"
-            value={this.state.sortBy}
-            onChange={this.handleSelect}
+            value={sortBy}
+            onChange={handleSelectHandler}
             options={Object.entries(KEYS_TO_SORT).map(([key, label]) => ({
               label: t('Sort by %s', label),
               value: key,
@@ -324,28 +293,42 @@ class SliceAdder extends React.Component {
             placeholder={t('Sort by')}
           />
         </Controls>
-        {this.props.isLoading && <Loading />}
-        {!this.props.isLoading && this.state.filteredSlices.length > 0 && (
+        {props.isLoading && <Loading />}
+        {!props.isLoading && filteredSlices.length > 0 && (
           <List
             width={376}
             height={slicesListHeight}
-            rowCount={this.state.filteredSlices.length}
+            rowCount={filteredSlices.length}
             rowHeight={DEFAULT_CELL_HEIGHT}
-            rowRenderer={this.rowRenderer}
-            searchTerm={this.state.searchTerm}
-            sortBy={this.state.sortBy}
-            selectedSliceIds={this.props.selectedSliceIds}
+            rowRenderer={rowRendererHandler}
+            searchTerm={searchTerm}
+            sortBy={sortBy}
+            selectedSliceIds={props.selectedSliceIds}
           />
         )}
-        {this.props.errorMessage && (
-          <div className="error-message">{this.props.errorMessage}</div>
+        {props.errorMessage && (
+          <div className="error-message">{props.errorMessage}</div>
         )}
         {/* Drag preview is just a single fixed-position element */}
-        <AddSliceDragPreview slices={this.state.filteredSlices} />
+        <AddSliceDragPreview slices={filteredSlices} />
       </div>
-    );
-  }
-}
+    ); 
+};
+
+SliceAdder.sortByComparator = (attr) => {
+    const desc = attr === 'changed_on' ? -1 : 1;
+
+    return (a, b) => {
+      if (a[attr] < b[attr]) {
+        return -1 * desc;
+      }
+      if (a[attr] > b[attr]) {
+        return 1 * desc;
+      }
+      return 0;
+    };
+  };
+
 
 SliceAdder.propTypes = propTypes;
 SliceAdder.defaultProps = defaultProps;

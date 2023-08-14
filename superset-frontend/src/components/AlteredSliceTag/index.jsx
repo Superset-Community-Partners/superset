@@ -16,16 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { isEqual, isEmpty } from 'lodash';
-import { styled, t } from '@superset-ui/core';
+import { styled } from '@superset-ui/core';
 import { sanitizeFormData } from 'src/explore/exploreUtils/formData';
 import getControlsForVizType from 'src/utils/getControlsForVizType';
 import { safeStringify } from 'src/utils/safeStringify';
-import { Tooltip } from 'src/components/Tooltip';
-import ModalTrigger from '../ModalTrigger';
-import TableView from '../TableView';
 
 const propTypes = {
   origFormData: PropTypes.object.isRequired,
@@ -62,17 +60,14 @@ function alterForComparison(value) {
   return value;
 }
 
-export default class AlteredSliceTag extends React.Component {
-  constructor(props) {
-    super(props);
-    const diffs = this.getDiffs(props);
+export default export const AlteredSliceTag = (props) => {
+const diffs = this.getDiffs(props);
     const controlsMap = getControlsForVizType(this.props.origFormData.viz_type);
     const rows = this.getRowsFromDiffs(diffs, controlsMap);
 
-    this.state = { rows, hasDiffs: !isEmpty(diffs), controlsMap };
-  }
+    const [hasDiffs, setHasDiffs] = useState(!isEmpty(diffs));
 
-  UNSAFE_componentWillReceiveProps(newProps) {
+    const UNSAFE_componentWillReceivePropsHandler = useCallback((newProps) => {
     // Update differences if need be
     if (isEqual(this.props, newProps)) {
       return;
@@ -82,17 +77,15 @@ export default class AlteredSliceTag extends React.Component {
       rows: this.getRowsFromDiffs(diffs, prevState.controlsMap),
       hasDiffs: !isEmpty(diffs),
     }));
-  }
-
-  getRowsFromDiffs(diffs, controlsMap) {
+  }, []);
+    const getRowsFromDiffsHandler = useCallback((diffs, controlsMap) => {
     return Object.entries(diffs).map(([key, diff]) => ({
       control: (controlsMap[key] && controlsMap[key].label) || key,
       before: this.formatValue(diff.before, key, controlsMap),
       after: this.formatValue(diff.after, key, controlsMap),
     }));
-  }
-
-  getDiffs(props) {
+  }, []);
+    const getDiffsHandler = useCallback((props) => {
     // Returns all properties that differ in the
     // current form data and the saved form data
     const ofd = sanitizeFormData(props.origFormData);
@@ -112,13 +105,11 @@ export default class AlteredSliceTag extends React.Component {
       }
     });
     return diffs;
-  }
-
-  isEqualish(val1, val2) {
+  }, []);
+    const isEqualishHandler = useCallback((val1, val2) => {
     return isEqual(alterForComparison(val1), alterForComparison(val2));
-  }
-
-  formatValue(value, key, controlsMap) {
+  }, []);
+    const formatValueHandler = useCallback((value, key, controlsMap) => {
     // Format display value based on the control type
     // or the value type
     if (value === undefined) {
@@ -165,9 +156,8 @@ export default class AlteredSliceTag extends React.Component {
       return value;
     }
     return safeStringify(value);
-  }
-
-  renderModalBody() {
+  }, []);
+    const renderModalBodyHandler = useCallback(() => {
     const columns = [
       {
         accessor: 'control',
@@ -194,18 +184,15 @@ export default class AlteredSliceTag extends React.Component {
         columnsForWrapText={columnsForWrapText}
       />
     );
-  }
-
-  renderTriggerNode() {
+  }, []);
+    const renderTriggerNodeHandler = useCallback(() => {
     return (
       <Tooltip id="difference-tooltip" title={t('Click to see difference')}>
         <StyledLabel className="label">{t('Altered')}</StyledLabel>
       </Tooltip>
     );
-  }
+  }, []);
 
-  render() {
-    // Return nothing if there are no differences
     if (!this.state.hasDiffs) {
       return null;
     }
@@ -219,8 +206,10 @@ export default class AlteredSliceTag extends React.Component {
         modalBody={this.renderModalBody()}
         responsive
       />
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 AlteredSliceTag.propTypes = propTypes;

@@ -16,14 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
-  t,
-  logging,
-  SupersetClient,
-  withTheme,
-  ensureIsArray,
+    t,
+    logging,
+    SupersetClient,
+    withTheme,
+    ensureIsArray,
 } from '@superset-ui/core';
 
 import ControlHeader from 'src/explore/components/ControlHeader';
@@ -31,22 +32,20 @@ import adhocMetricType from 'src/explore/components/controls/MetricControl/adhoc
 import savedMetricType from 'src/explore/components/controls/MetricControl/savedMetricType';
 import AdhocMetric from 'src/explore/components/controls/MetricControl/AdhocMetric';
 import {
-  Operators,
-  OPERATOR_ENUM_TO_OPERATOR_TYPE,
+    Operators,
+    OPERATOR_ENUM_TO_OPERATOR_TYPE,
 } from 'src/explore/constants';
-import FilterDefinitionOption from 'src/explore/components/controls/MetricControl/FilterDefinitionOption';
 import {
-  AddControlLabel,
-  AddIconButton,
-  HeaderContainer,
-  LabelsContainer,
+    AddControlLabel,
+    AddIconButton,
+    HeaderContainer,
+    LabelsContainer,
 } from 'src/explore/components/controls/OptionControls';
 import Icons from 'src/components/Icons';
 import AdhocFilterPopoverTrigger from 'src/explore/components/controls/FilterControl/AdhocFilterPopoverTrigger';
-import AdhocFilterOption from 'src/explore/components/controls/FilterControl/AdhocFilterOption';
 import AdhocFilter, {
-  CLAUSES,
-  EXPRESSION_TYPES,
+    CLAUSES,
+    EXPRESSION_TYPES,
 } from 'src/explore/components/controls/FilterControl/AdhocFilter';
 import adhocFilterType from 'src/explore/components/controls/FilterControl/adhocFilterType';
 import columnType from 'src/explore/components/controls/FilterControl/columnType';
@@ -85,48 +84,17 @@ function isDictionaryForAdhocFilter(value) {
   return value && !(value instanceof AdhocFilter) && value.expressionType;
 }
 
-class AdhocFilterControl extends React.Component {
-  constructor(props) {
-    super(props);
-    this.optionsForSelect = this.optionsForSelect.bind(this);
-    this.onRemoveFilter = this.onRemoveFilter.bind(this);
-    this.onNewFilter = this.onNewFilter.bind(this);
-    this.onFilterEdit = this.onFilterEdit.bind(this);
-    this.moveLabel = this.moveLabel.bind(this);
-    this.onChange = this.onChange.bind(this);
-    this.mapOption = this.mapOption.bind(this);
-    this.getMetricExpression = this.getMetricExpression.bind(this);
-
-    const filters = (this.props.value || []).map(filter =>
+const AdhocFilterControl = (props) => {
+const filters = (props.value || []).map(filter =>
       isDictionaryForAdhocFilter(filter) ? new AdhocFilter(filter) : filter,
     );
 
-    this.optionRenderer = option => <FilterDefinitionOption option={option} />;
-    this.valueRenderer = (adhocFilter, index) => (
-      <AdhocFilterOption
-        key={index}
-        index={index}
-        adhocFilter={adhocFilter}
-        onFilterEdit={this.onFilterEdit}
-        options={this.state.options}
-        sections={this.props.sections}
-        operators={this.props.operators}
-        datasource={this.props.datasource}
-        onRemoveFilter={() => this.onRemoveFilter(index)}
-        onMoveLabel={this.moveLabel}
-        onDropLabel={() => this.props.onChange(this.state.values)}
-        partitionColumn={this.state.partitionColumn}
-      />
-    );
-    this.state = {
-      values: filters,
-      options: this.optionsForSelect(this.props),
-      partitionColumn: null,
-    };
-  }
+    const [values, setValues] = useState(filters);
+    const [options, setOptions] = useState(optionsForSelectHandler(props));
+    const [partitionColumn, setPartitionColumn] = useState(null);
 
-  componentDidMount() {
-    const { datasource } = this.props;
+    useEffect(() => {
+    const { datasource } = props;
     if (datasource && datasource.type === 'table') {
       const dbId = datasource.database?.id;
       const {
@@ -149,7 +117,7 @@ class AdhocFilterControl extends React.Component {
                 partitions.cols &&
                 Object.keys(partitions.cols).length === 1
               ) {
-                this.setState({ partitionColumn: partitions.cols[0] });
+                setPartitionColumn(partitions.cols[0]);
               }
             }
           })
@@ -158,82 +126,61 @@ class AdhocFilterControl extends React.Component {
           });
       }
     }
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    if (this.props.columns !== nextProps.columns) {
-      this.setState({ options: this.optionsForSelect(nextProps) });
+  }, []);
+    const UNSAFE_componentWillReceivePropsHandler = useCallback((nextProps) => {
+    if (props.columns !== nextProps.columns) {
+      setOptions(optionsForSelectHandler(nextProps));
     }
-    if (this.props.value !== nextProps.value) {
-      this.setState({
-        values: (nextProps.value || []).map(filter =>
+    if (props.value !== nextProps.value) {
+      setValues((nextProps.value || []).map(filter =>
           isDictionaryForAdhocFilter(filter) ? new AdhocFilter(filter) : filter,
-        ),
-      });
+        ));
     }
-  }
-
-  onRemoveFilter(index) {
-    const valuesCopy = [...this.state.values];
+  }, []);
+    const onRemoveFilterHandler = useCallback((index) => {
+    const valuesCopy = [...values];
     valuesCopy.splice(index, 1);
-    this.setState(prevState => ({
-      ...prevState,
-      values: valuesCopy,
-    }));
-    this.props.onChange(valuesCopy);
-  }
-
-  onNewFilter(newFilter) {
-    const mappedOption = this.mapOption(newFilter);
+    setValues(valuesCopy);
+    props.onChange(valuesCopy);
+  }, [values]);
+    const onNewFilterHandler = useCallback((newFilter) => {
+    const mappedOption = mapOptionHandler(newFilter);
     if (mappedOption) {
-      this.setState(
-        prevState => ({
-          ...prevState,
-          values: [...prevState.values, mappedOption],
-        }),
-        () => {
-          this.props.onChange(this.state.values);
-        },
-      );
+      setValues([...prevState.values, mappedOption]);
     }
-  }
-
-  onFilterEdit(changedFilter) {
-    this.props.onChange(
-      this.state.values.map(value => {
+  }, []);
+    const onFilterEditHandler = useCallback((changedFilter) => {
+    props.onChange(
+      values.map(value => {
         if (value.filterOptionName === changedFilter.filterOptionName) {
           return changedFilter;
         }
         return value;
       }),
     );
-  }
-
-  onChange(opts) {
+  }, [values]);
+    const onChangeHandler = useCallback((opts) => {
     const options = (opts || [])
-      .map(option => this.mapOption(option))
+      .map(option => mapOptionHandler(option))
       .filter(option => option);
-    this.props.onChange(options);
-  }
-
-  getMetricExpression(savedMetricName) {
-    return this.props.savedMetrics.find(
+    props.onChange(options);
+  }, [options]);
+    const getMetricExpressionHandler = useCallback((savedMetricName) => {
+    return props.savedMetrics.find(
       savedMetric => savedMetric.metric_name === savedMetricName,
     ).expression;
-  }
-
-  moveLabel(dragIndex, hoverIndex) {
-    const { values } = this.state;
+  }, []);
+    const moveLabelHandler = useCallback((dragIndex, hoverIndex) => {
+    
 
     const newValues = [...values];
     [newValues[hoverIndex], newValues[dragIndex]] = [
       newValues[dragIndex],
       newValues[hoverIndex],
     ];
-    this.setState({ values: newValues });
-  }
-
-  mapOption(option) {
+    setValues(newValues);
+  }, [values]);
+    const mapOptionHandler = useCallback((option) => {
     // already a AdhocFilter, skip
     if (option instanceof AdhocFilter) {
       return option;
@@ -242,7 +189,7 @@ class AdhocFilterControl extends React.Component {
     if (option.saved_metric_name) {
       return new AdhocFilter({
         expressionType: EXPRESSION_TYPES.SQL,
-        subject: this.getMetricExpression(option.saved_metric_name),
+        subject: getMetricExpressionHandler(option.saved_metric_name),
         operator:
           OPERATOR_ENUM_TO_OPERATOR_TYPE[Operators.GREATER_THAN].operation,
         comparator: 0,
@@ -272,9 +219,8 @@ class AdhocFilterControl extends React.Component {
       });
     }
     return null;
-  }
-
-  optionsForSelect(props) {
+  }, []);
+    const optionsForSelectHandler = useCallback((props) => {
     const options = [
       ...props.columns,
       ...ensureIsArray(props.selectedMetrics).map(
@@ -311,31 +257,29 @@ class AdhocFilterControl extends React.Component {
           b.saved_metric_name || b.column_name || b.label,
         ),
       );
-  }
-
-  addNewFilterPopoverTrigger(trigger) {
+  }, [options]);
+    const addNewFilterPopoverTriggerHandler = useCallback((trigger) => {
     return (
       <AdhocFilterPopoverTrigger
-        operators={this.props.operators}
-        sections={this.props.sections}
+        operators={props.operators}
+        sections={props.sections}
         adhocFilter={new AdhocFilter({})}
-        datasource={this.props.datasource}
-        options={this.state.options}
-        onFilterEdit={this.onNewFilter}
-        partitionColumn={this.state.partitionColumn}
+        datasource={props.datasource}
+        options={options}
+        onFilterEdit={onNewFilterHandler}
+        partitionColumn={partitionColumn}
       >
         {trigger}
       </AdhocFilterPopoverTrigger>
     );
-  }
+  }, [options, partitionColumn]);
 
-  render() {
-    const { theme } = this.props;
+    const { theme } = props;
     return (
       <div className="metrics-select" data-test="adhoc-filter-control">
         <HeaderContainer>
-          <ControlHeader {...this.props} />
-          {this.addNewFilterPopoverTrigger(
+          <ControlHeader {...props} />
+          {addNewFilterPopoverTriggerHandler(
             <AddIconButton data-test="add-filter-button">
               <Icons.PlusLarge
                 iconSize="s"
@@ -345,11 +289,11 @@ class AdhocFilterControl extends React.Component {
           )}
         </HeaderContainer>
         <LabelsContainer>
-          {this.state.values.length > 0
-            ? this.state.values.map((value, index) =>
-                this.valueRenderer(value, index),
+          {values.length > 0
+            ? values.map((value, index) =>
+                valueRendererHandler(value, index),
               )
-            : this.addNewFilterPopoverTrigger(
+            : addNewFilterPopoverTriggerHandler(
                 <AddControlLabel>
                   <Icons.PlusSmall iconColor={theme.colors.grayscale.light1} />
                   {t('Add filter')}
@@ -357,9 +301,11 @@ class AdhocFilterControl extends React.Component {
               )}
         </LabelsContainer>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 AdhocFilterControl.propTypes = propTypes;
 AdhocFilterControl.defaultProps = defaultProps;

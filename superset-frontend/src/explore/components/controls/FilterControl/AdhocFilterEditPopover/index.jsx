@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import Button from 'src/components/Button';
 import { styled, t } from '@superset-ui/core';
@@ -25,14 +26,14 @@ import ErrorBoundary from 'src/components/ErrorBoundary';
 import Tabs from 'src/components/Tabs';
 import adhocMetricType from 'src/explore/components/controls/MetricControl/adhocMetricType';
 import AdhocFilter, {
-  EXPRESSION_TYPES,
+    EXPRESSION_TYPES,
 } from 'src/explore/components/controls/FilterControl/AdhocFilter';
 import AdhocFilterEditPopoverSimpleTabContent from 'src/explore/components/controls/FilterControl/AdhocFilterEditPopoverSimpleTabContent';
 import AdhocFilterEditPopoverSqlTabContent from 'src/explore/components/controls/FilterControl/AdhocFilterEditPopoverSqlTabContent';
 import columnType from 'src/explore/components/controls/FilterControl/columnType';
 import {
-  POPOVER_INITIAL_HEIGHT,
-  POPOVER_INITIAL_WIDTH,
+    POPOVER_INITIAL_HEIGHT,
+    POPOVER_INITIAL_WIDTH,
 } from 'src/explore/constants';
 
 const propTypes = {
@@ -89,60 +90,42 @@ const FilterActionsContainer = styled.div`
   margin-top: ${({ theme }) => theme.gridUnit * 2}px;
 `;
 
-export default class AdhocFilterEditPopover extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onSave = this.onSave.bind(this);
-    this.onDragDown = this.onDragDown.bind(this);
-    this.onMouseMove = this.onMouseMove.bind(this);
-    this.onMouseUp = this.onMouseUp.bind(this);
-    this.onAdhocFilterChange = this.onAdhocFilterChange.bind(this);
-    this.setSimpleTabIsValid = this.setSimpleTabIsValid.bind(this);
-    this.adjustHeight = this.adjustHeight.bind(this);
-    this.onTabChange = this.onTabChange.bind(this);
+export default export const AdhocFilterEditPopover = (props) => {
 
-    this.state = {
-      adhocFilter: this.props.adhocFilter,
-      width: POPOVER_INITIAL_WIDTH,
-      height: POPOVER_INITIAL_HEIGHT,
-      activeKey: this.props?.adhocFilter?.expressionType || 'SIMPLE',
-      isSimpleTabValid: true,
-    };
 
-    this.popoverContentRef = React.createRef();
-  }
+    const [adhocFilter, setAdhocFilter] = useState(this.props.adhocFilter);
+    const [width, setWidth] = useState(POPOVER_INITIAL_WIDTH);
+    const [height, setHeight] = useState(POPOVER_INITIAL_HEIGHT);
+    const [activeKey, setActiveKey] = useState(this.props?.adhocFilter?.expressionType || 'SIMPLE');
+    const [isSimpleTabValid, setIsSimpleTabValid] = useState(true);
 
-  componentDidMount() {
+    useEffect(() => {
     document.addEventListener('mouseup', this.onMouseUp);
-  }
-
-  componentWillUnmount() {
+  }, []);
+    useEffect(() => {
+    return () => {
     document.removeEventListener('mouseup', this.onMouseUp);
     document.removeEventListener('mousemove', this.onMouseMove);
-  }
-
-  onAdhocFilterChange(adhocFilter) {
+  };
+}, []);
+    const onAdhocFilterChangeHandler = useCallback((adhocFilter) => {
     this.setState({ adhocFilter });
-  }
-
-  setSimpleTabIsValid(isValid) {
+  }, []);
+    const setSimpleTabIsValidHandler = useCallback((isValid) => {
     this.setState({ isSimpleTabValid: isValid });
-  }
-
-  onSave() {
+  }, []);
+    const onSaveHandler = useCallback(() => {
     this.props.onChange(this.state.adhocFilter);
     this.props.onClose();
-  }
-
-  onDragDown(e) {
+  }, []);
+    const onDragDownHandler = useCallback((e) => {
     this.dragStartX = e.clientX;
     this.dragStartY = e.clientY;
     this.dragStartWidth = this.state.width;
     this.dragStartHeight = this.state.height;
     document.addEventListener('mousemove', this.onMouseMove);
-  }
-
-  onMouseMove(e) {
+  }, []);
+    const onMouseMoveHandler = useCallback((e) => {
     this.props.onResize();
     this.setState({
       width: Math.max(
@@ -154,23 +137,19 @@ export default class AdhocFilterEditPopover extends React.Component {
         POPOVER_INITIAL_HEIGHT,
       ),
     });
-  }
-
-  onMouseUp() {
+  }, []);
+    const onMouseUpHandler = useCallback(() => {
     document.removeEventListener('mousemove', this.onMouseMove);
-  }
-
-  onTabChange(activeKey) {
+  }, []);
+    const onTabChangeHandler = useCallback((activeKey) => {
     this.setState({
       activeKey,
     });
-  }
-
-  adjustHeight(heightDifference) {
+  }, []);
+    const adjustHeightHandler = useCallback((heightDifference) => {
     this.setState(state => ({ height: state.height + heightDifference }));
-  }
+  }, []);
 
-  render() {
     const {
       adhocFilter: propsAdhocFilter,
       options,
@@ -265,8 +244,10 @@ export default class AdhocFilterEditPopover extends React.Component {
           />
         </FilterActionsContainer>
       </FilterPopoverContentContainer>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 AdhocFilterEditPopover.propTypes = propTypes;

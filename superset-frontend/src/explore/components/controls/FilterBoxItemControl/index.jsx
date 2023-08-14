@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { t } from '@superset-ui/core';
 import { InfoTooltipWithTrigger } from '@superset-ui/chart-controls';
@@ -68,10 +69,8 @@ const defaultProps = {
 
 const STYLE_WIDTH = { width: 350 };
 
-export default class FilterBoxItemControl extends React.Component {
-  constructor(props) {
-    super(props);
-    const {
+export default export const FilterBoxItemControl = (props) => {
+const {
       column,
       metric,
       asc,
@@ -81,25 +80,13 @@ export default class FilterBoxItemControl extends React.Component {
       label,
       defaultValue,
     } = props;
-    this.state = {
-      column,
-      metric,
-      label,
-      asc,
-      clearable,
-      multiple,
-      searchAllOptions,
-      defaultValue,
-    };
-    this.onChange = this.onChange.bind(this);
-    this.onControlChange = this.onControlChange.bind(this);
-  }
 
-  onChange() {
+    
+
+    const onChangeHandler = useCallback(() => {
     this.props.onChange(this.state);
-  }
-
-  onControlChange(attr, value) {
+  }, []);
+    const onControlChangeHandler = useCallback((attr, value) => {
     let typedValue = value;
     const { column: selectedColumnName, multiple } = this.state;
     if (value && !multiple && attr === FILTER_CONFIG_ATTRIBUTES.DEFAULT_VALUE) {
@@ -122,15 +109,12 @@ export default class FilterBoxItemControl extends React.Component {
       }
     }
     this.setState({ [attr]: typedValue }, this.onChange);
-  }
-
-  setType() {}
-
-  textSummary() {
+  }, []);
+    const setTypeHandler = useCallback(() => {}, []);
+    const textSummaryHandler = useCallback(() => {
     return this.state.column || 'N/A';
-  }
-
-  renderForm() {
+  }, []);
+    const renderFormHandler = useCallback(() => {
     return (
       <div>
         <FormRow
@@ -261,17 +245,15 @@ export default class FilterBoxItemControl extends React.Component {
         />
       </div>
     );
-  }
-
-  renderPopover() {
+  }, []);
+    const renderPopoverHandler = useCallback(() => {
     return (
       <div id="ts-col-popo" style={STYLE_WIDTH}>
         {this.renderForm()}
       </div>
     );
-  }
+  }, []);
 
-  render() {
     return (
       <span data-test="FilterBoxItemControl">
         {this.textSummary()}{' '}
@@ -287,9 +269,11 @@ export default class FilterBoxItemControl extends React.Component {
           />
         </ControlPopover>
       </span>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 FilterBoxItemControl.propTypes = propTypes;
 FilterBoxItemControl.defaultProps = defaultProps;

@@ -17,14 +17,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import {
-  Sparkline,
-  LineSeries,
-  PointSeries,
-  HorizontalReferenceLine,
-  VerticalReferenceLine,
-  WithTooltip,
+    Sparkline,
+    LineSeries,
+    PointSeries,
+    HorizontalReferenceLine,
+    VerticalReferenceLine,
+    WithTooltip
 } from '@data-ui/sparkline';
 import { getTextDimension, formatNumber } from '@superset-ui/core';
 
@@ -57,13 +58,13 @@ const MARGIN = {
   top: 8,
   right: 8,
   bottom: 8,
-  left: 8,
+  left: 8
 };
 const tooltipProps = {
   style: {
-    opacity: 0.8,
+    opacity: 0.8
   },
-  offsetTop: 0,
+  offsetTop: 0
 };
 
 function getSparklineTextWidth(text: string) {
@@ -73,8 +74,8 @@ function getSparklineTextWidth(text: string) {
       style: {
         fontSize: '12px',
         fontWeight: 200,
-        letterSpacing: 0.4,
-      },
+        letterSpacing: 0.4
+      }
     }).width + 5
   );
 }
@@ -88,8 +89,12 @@ function isValidBoundValue(value?: number | string) {
   );
 }
 
-class SparklineCell extends React.Component<Props, {}> {
-  renderHorizontalReferenceLine(value?: number, label?: string) {
+const SparklineCell = (props: Props) => {
+
+
+    
+
+    const renderHorizontalReferenceLineHandler = useCallback((value?: number, label?: string) => {
     return (
       <HorizontalReferenceLine
         reference={value}
@@ -100,9 +105,8 @@ class SparklineCell extends React.Component<Props, {}> {
         strokeWidth={1}
       />
     );
-  }
+  }, []);
 
-  render() {
     const {
       width = 300,
       height = 50,
@@ -111,8 +115,8 @@ class SparklineCell extends React.Component<Props, {}> {
       numberFormat = undefined,
       yAxisBounds = [undefined, undefined],
       showYAxis = false,
-      renderTooltip = () => <div />,
-    } = this.props;
+      renderTooltip = () => <div />
+    } = props;
 
     const yScale: Yscale = {};
     let hasMinBound = false;
@@ -148,13 +152,13 @@ class SparklineCell extends React.Component<Props, {}> {
       maxLabel = formatNumber(numberFormat, max);
       labelLength = Math.max(
         getSparklineTextWidth(minLabel),
-        getSparklineTextWidth(maxLabel),
+        getSparklineTextWidth(maxLabel)
       );
     }
 
     const margin = {
       ...MARGIN,
-      right: MARGIN.right + labelLength,
+      right: MARGIN.right + labelLength
     };
 
     return (
@@ -174,8 +178,8 @@ class SparklineCell extends React.Component<Props, {}> {
             onMouseMove={onMouseMove}
             {...yScale}
           >
-            {showYAxis && this.renderHorizontalReferenceLine(min, minLabel)}
-            {showYAxis && this.renderHorizontalReferenceLine(max, maxLabel)}
+            {showYAxis && renderHorizontalReferenceLineHandler(min, minLabel)}
+            {showYAxis && renderHorizontalReferenceLineHandler(max, maxLabel)}
             <LineSeries showArea={false} stroke="#767676" />
             {tooltipData && (
               <VerticalReferenceLine
@@ -194,8 +198,10 @@ class SparklineCell extends React.Component<Props, {}> {
           </Sparkline>
         )}
       </WithTooltip>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 export default SparklineCell;

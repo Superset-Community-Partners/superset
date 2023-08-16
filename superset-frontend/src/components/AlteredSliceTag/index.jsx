@@ -16,20 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { isEqual, isEmpty } from 'lodash';
-import { styled, t } from '@superset-ui/core';
+import { styled } from '@superset-ui/core';
 import { sanitizeFormData } from 'src/explore/exploreUtils/formData';
 import getControlsForVizType from 'src/utils/getControlsForVizType';
 import { safeStringify } from 'src/utils/safeStringify';
-import { Tooltip } from 'src/components/Tooltip';
-import ModalTrigger from '../ModalTrigger';
-import TableView from '../TableView';
 
 const propTypes = {
   origFormData: PropTypes.object.isRequired,
-  currentFormData: PropTypes.object.isRequired,
+  currentFormData: PropTypes.object.isRequired
 };
 
 const StyledLabel = styled.span`
@@ -62,37 +60,30 @@ function alterForComparison(value) {
   return value;
 }
 
-export default class AlteredSliceTag extends React.Component {
-  constructor(props) {
-    super(props);
-    const diffs = this.getDiffs(props);
-    const controlsMap = getControlsForVizType(this.props.origFormData.viz_type);
-    const rows = this.getRowsFromDiffs(diffs, controlsMap);
+export default const AlteredSliceTag = (props) => {
+const diffs = getDiffsHandler(props);
+    const controlsMap = getControlsForVizType(props.origFormData.viz_type);
+    const rows = getRowsFromDiffsHandler(diffs, controlsMap);
 
-    this.state = { rows, hasDiffs: !isEmpty(diffs), controlsMap };
-  }
+    const [hasDiffs, setHasDiffs] = useState(!isEmpty(diffs));
 
-  UNSAFE_componentWillReceiveProps(newProps) {
+    const UNSAFE_componentWillReceivePropsHandler = useCallback((newProps) => {
     // Update differences if need be
-    if (isEqual(this.props, newProps)) {
+    if (isEqual(props, newProps)) {
       return;
     }
-    const diffs = this.getDiffs(newProps);
-    this.setState(prevState => ({
-      rows: this.getRowsFromDiffs(diffs, prevState.controlsMap),
-      hasDiffs: !isEmpty(diffs),
-    }));
-  }
-
-  getRowsFromDiffs(diffs, controlsMap) {
+    const diffs = getDiffsHandler(newProps);
+    setRows(getRowsFromDiffsHandler(diffs, prevState.controlsMap));
+    setHasDiffs(!isEmpty(diffs));
+  }, []);
+    const getRowsFromDiffsHandler = useCallback((diffs, controlsMap) => {
     return Object.entries(diffs).map(([key, diff]) => ({
       control: (controlsMap[key] && controlsMap[key].label) || key,
-      before: this.formatValue(diff.before, key, controlsMap),
-      after: this.formatValue(diff.after, key, controlsMap),
+      before: formatValueHandler(diff.before, key, controlsMap),
+      after: formatValueHandler(diff.after, key, controlsMap)
     }));
-  }
-
-  getDiffs(props) {
+  }, []);
+    const getDiffsHandler = useCallback((props) => {
     // Returns all properties that differ in the
     // current form data and the saved form data
     const ofd = sanitizeFormData(props.origFormData);
@@ -107,18 +98,16 @@ export default class AlteredSliceTag extends React.Component {
       if (['filters', 'having', 'having_filters', 'where'].includes(fdKey)) {
         return;
       }
-      if (!this.isEqualish(ofd[fdKey], cfd[fdKey])) {
+      if (!isEqualishHandler(ofd[fdKey], cfd[fdKey])) {
         diffs[fdKey] = { before: ofd[fdKey], after: cfd[fdKey] };
       }
     });
     return diffs;
-  }
-
-  isEqualish(val1, val2) {
+  }, []);
+    const isEqualishHandler = useCallback((val1, val2) => {
     return isEqual(alterForComparison(val1), alterForComparison(val2));
-  }
-
-  formatValue(value, key, controlsMap) {
+  }, []);
+    const formatValueHandler = useCallback((value, key, controlsMap) => {
     // Format display value based on the control type
     // or the value type
     if (value === undefined) {
@@ -165,22 +154,21 @@ export default class AlteredSliceTag extends React.Component {
       return value;
     }
     return safeStringify(value);
-  }
-
-  renderModalBody() {
+  }, []);
+    const renderModalBodyHandler = useCallback(() => {
     const columns = [
       {
         accessor: 'control',
-        Header: 'Control',
+        Header: 'Control'
       },
       {
         accessor: 'before',
-        Header: 'Before',
+        Header: 'Before'
       },
       {
         accessor: 'after',
-        Header: 'After',
-      },
+        Header: 'After'
+      }
     ];
     // set the wrap text in the specific columns.
     const columnsForWrapText = ['Control', 'Before', 'After'];
@@ -188,25 +176,22 @@ export default class AlteredSliceTag extends React.Component {
     return (
       <TableView
         columns={columns}
-        data={this.state.rows}
+        data={rows}
         pageSize={50}
         className="table-condensed"
         columnsForWrapText={columnsForWrapText}
       />
     );
-  }
-
-  renderTriggerNode() {
+  }, []);
+    const renderTriggerNodeHandler = useCallback(() => {
     return (
       <Tooltip id="difference-tooltip" title={t('Click to see difference')}>
         <StyledLabel className="label">{t('Altered')}</StyledLabel>
       </Tooltip>
     );
-  }
+  }, []);
 
-  render() {
-    // Return nothing if there are no differences
-    if (!this.state.hasDiffs) {
+    if (!hasDiffs) {
       return null;
     }
     // Render the label-warning 'Altered' tag which the user may
@@ -214,13 +199,15 @@ export default class AlteredSliceTag extends React.Component {
     // differences in the slice
     return (
       <ModalTrigger
-        triggerNode={this.renderTriggerNode()}
+        triggerNode={renderTriggerNodeHandler()}
         modalTitle={t('Chart changes')}
-        modalBody={this.renderModalBody()}
+        modalBody={renderModalBodyHandler()}
         responsive
       />
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 AlteredSliceTag.propTypes = propTypes;

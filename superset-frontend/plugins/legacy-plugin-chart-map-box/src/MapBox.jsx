@@ -18,7 +18,8 @@
  */
 /* eslint-disable react/jsx-sort-default-props, react/sort-prop-types */
 /* eslint-disable react/forbid-prop-types, react/require-default-props */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import MapGL from 'react-map-gl';
 import ViewportMercator from 'viewport-mercator-project';
@@ -43,7 +44,7 @@ const propTypes = {
   pointRadiusUnit: PropTypes.string,
   renderWhileDragging: PropTypes.bool,
   rgb: PropTypes.array,
-  bounds: PropTypes.array,
+  bounds: PropTypes.array
 };
 
 const defaultProps = {
@@ -52,40 +53,29 @@ const defaultProps = {
   globalOpacity: 1,
   onViewportChange: NOOP,
   pointRadius: DEFAULT_POINT_RADIUS,
-  pointRadiusUnit: 'Pixels',
+  pointRadiusUnit: 'Pixels'
 };
 
-class MapBox extends React.Component {
-  constructor(props) {
-    super(props);
-
-    const { width, height, bounds } = this.props;
-    // Get a viewport that fits the given bounds, which all marks to be clustered.
-    // Derive lat, lon and zoom from this viewport. This is only done on initial
-    // render as the bounds don't update as we pan/zoom in the current design.
+const MapBox = (props) => {
+const { width, height, bounds } = props;
     const mercator = new ViewportMercator({
       width,
-      height,
+      height
     }).fitBounds(bounds);
     const { latitude, longitude, zoom } = mercator;
 
-    this.state = {
-      viewport: {
+    const [viewport, setViewport] = useState({
         longitude,
         latitude,
-        zoom,
-      },
-    };
-    this.handleViewportChange = this.handleViewportChange.bind(this);
-  }
+        zoom
+      });
 
-  handleViewportChange(viewport) {
-    this.setState({ viewport });
-    const { onViewportChange } = this.props;
+    const handleViewportChangeHandler = useCallback((viewport) => {
+    setViewport(viewport);
+    const { onViewportChange } = props;
     onViewportChange(viewport);
-  }
+  }, [viewport]);
 
-  render() {
     const {
       width,
       height,
@@ -99,9 +89,9 @@ class MapBox extends React.Component {
       renderWhileDragging,
       rgb,
       hasCustomMetric,
-      bounds,
-    } = this.props;
-    const { viewport } = this.state;
+      bounds
+    } = props;
+    
     const isDragging =
       viewport.isDragging === undefined ? false : viewport.isDragging;
 
@@ -115,7 +105,7 @@ class MapBox extends React.Component {
       bounds[0][0] - offsetHorizontal,
       bounds[0][1] - offsetVertical,
       bounds[1][0] + offsetHorizontal,
-      bounds[1][1] + offsetVertical,
+      bounds[1][1] + offsetVertical
     ];
     const clusters = clusterer.getClusters(bbox, Math.round(viewport.zoom));
 
@@ -126,7 +116,7 @@ class MapBox extends React.Component {
         width={width}
         height={height}
         mapboxApiAccessToken={mapboxApiKey}
-        onViewportChange={this.handleViewportChange}
+        onViewportChange={handleViewportChangeHandler}
         preserveDrawingBuffer
       >
         <ScatterPlotGlowOverlay
@@ -147,9 +137,11 @@ class MapBox extends React.Component {
           }}
         />
       </MapGL>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 MapBox.propTypes = propTypes;
 MapBox.defaultProps = defaultProps;

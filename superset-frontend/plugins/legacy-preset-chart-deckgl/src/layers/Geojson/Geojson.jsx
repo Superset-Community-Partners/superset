@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { GeoJsonLayer } from 'deck.gl';
 import geojsonExtent from '@mapbox/geojson-extent';
@@ -35,7 +36,7 @@ const propertyMap = {
   'fill-color': 'fillColor',
   strokeColor: 'strokeColor',
   'stroke-color': 'strokeColor',
-  'stroke-width': 'strokeWidth',
+  'stroke-width': 'strokeWidth'
 };
 
 const alterProps = (props, propOverrides) => {
@@ -56,7 +57,7 @@ const alterProps = (props, propOverrides) => {
 
   return {
     ...newProps,
-    ...propOverrides,
+    ...propOverrides
   };
 };
 let features;
@@ -69,7 +70,7 @@ const recurseGeoJson = (node, propOverrides, extraProps) => {
   if (node && node.geometry) {
     const newNode = {
       ...node,
-      properties: alterProps(node.properties, propOverrides),
+      properties: alterProps(node.properties, propOverrides)
     };
     if (!newNode.extraProps) {
       newNode.extraProps = extraProps;
@@ -131,7 +132,7 @@ export function getLayer(formData, payload, onAddFilter, setTooltip) {
     getFillColor,
     getLineWidth: fd.line_width || 1,
     getLineColor,
-    ...commonLayerProps(fd, setTooltip, setTooltipContent),
+    ...commonLayerProps(fd, setTooltip, setTooltipContent)
   });
 }
 
@@ -140,27 +141,29 @@ const propTypes = {
   payload: PropTypes.object.isRequired,
   setControlValue: PropTypes.func.isRequired,
   viewport: PropTypes.object.isRequired,
-  onAddFilter: PropTypes.func,
+  onAddFilter: PropTypes.func
 };
 const defaultProps = {
-  onAddFilter() {},
+  onAddFilter() {}
 };
 
-class DeckGLGeoJson extends React.Component {
-  containerRef = React.createRef();
+const DeckGLGeoJson = (props) => {
 
-  setTooltip = tooltip => {
-    const { current } = this.containerRef;
+
+    
+
+    const containerRef = useRef();
+    const setTooltipHandler = useCallback(tooltip => {
+    const { current } = containerRef.current;
     if (current) {
       current.setTooltip(tooltip);
     }
-  };
+  }, []);
 
-  render() {
     const { formData, payload, setControlValue, onAddFilter, height, width } =
-      this.props;
+      props;
 
-    let { viewport } = this.props;
+    let { viewport } = props;
     if (formData.autozoom) {
       const points =
         payload?.data?.features?.reduce?.((acc, feature) => {
@@ -176,16 +179,16 @@ class DeckGLGeoJson extends React.Component {
         viewport = fitViewport(viewport, {
           width,
           height,
-          points,
+          points
         });
       }
     }
 
-    const layer = getLayer(formData, payload, onAddFilter, this.setTooltip);
+    const layer = getLayer(formData, payload, onAddFilter, setTooltipHandler);
 
     return (
       <DeckGLContainerStyledWrapper
-        ref={this.containerRef}
+        ref={containerRef.current}
         mapboxApiAccessToken={payload.data.mapboxApiKey}
         viewport={viewport}
         layers={[layer]}
@@ -194,9 +197,11 @@ class DeckGLGeoJson extends React.Component {
         height={height}
         width={width}
       />
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 DeckGLGeoJson.propTypes = propTypes;
 DeckGLGeoJson.defaultProps = defaultProps;

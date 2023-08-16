@@ -17,7 +17,8 @@
  * under the License.
  */
 /* eslint-disable react/sort-prop-types, react/jsx-sort-default-props */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { ParentSize } from '@vx/responsive';
 
@@ -28,14 +29,14 @@ const propTypes = {
   renderChart: PropTypes.func.isRequired,
   renderLegend: PropTypes.func.isRequired,
   position: PropTypes.oneOf(['top', 'left', 'bottom', 'right']),
-  legendJustifyContent: PropTypes.oneOf(['center', 'flex-start', 'flex-end']),
+  legendJustifyContent: PropTypes.oneOf(['center', 'flex-start', 'flex-end'])
 };
 const defaultProps = {
   className: '',
   width: 'auto',
   height: 'auto',
   position: 'top',
-  legendJustifyContent: undefined,
+  legendJustifyContent: undefined
 };
 
 const LEGEND_STYLE_BASE = {
@@ -44,19 +45,23 @@ const LEGEND_STYLE_BASE = {
   flexShrink: 0,
   order: -1,
   paddingTop: '5px',
-  fontSize: '0.9em',
+  fontSize: '0.9em'
 };
 
 const CHART_STYLE_BASE = {
   flexGrow: 1,
   flexShrink: 1,
   flexBasis: 'auto',
-  position: 'relative',
+  position: 'relative'
 };
 
-class WithLegend extends React.Component {
-  getContainerDirection() {
-    const { position } = this.props;
+const WithLegend = (props) => {
+
+
+    
+
+    const getContainerDirectionHandler = useCallback(() => {
+    const { position } = props;
     switch (position) {
       case 'left':
         return 'row';
@@ -68,10 +73,9 @@ class WithLegend extends React.Component {
       case 'top':
         return 'column';
     }
-  }
-
-  getLegendJustifyContent() {
-    const { legendJustifyContent, position } = this.props;
+  }, []);
+    const getLegendJustifyContentHandler = useCallback(() => {
+    const { legendJustifyContent, position } = props;
     if (legendJustifyContent) {
       return legendJustifyContent;
     }
@@ -86,17 +90,16 @@ class WithLegend extends React.Component {
       case 'top':
         return 'flex-end';
     }
-  }
+  }, []);
 
-  render() {
     const { className, width, height, position, renderChart, renderLegend } =
-      this.props;
+      props;
 
     const isHorizontal = position === 'left' || position === 'right';
 
     const style = {
       display: 'flex',
-      flexDirection: this.getContainerDirection(),
+      flexDirection: getContainerDirectionHandler()
     };
     if (width) {
       style.width = width;
@@ -116,12 +119,12 @@ class WithLegend extends React.Component {
     const legendStyle = {
       ...LEGEND_STYLE_BASE,
       flexDirection: legendDirection,
-      justifyContent: this.getLegendJustifyContent(),
+      justifyContent: getLegendJustifyContentHandler()
     };
     const legendContainerStyle = {
       flexWrap: 'wrap',
       display: 'flex',
-      flexDirection: legendDirection,
+      flexDirection: legendDirection
     };
     return (
       <div className={`with-legend ${className}`} style={style}>
@@ -129,7 +132,7 @@ class WithLegend extends React.Component {
           {renderLegend({
             // Pass flexDirection for @vx/legend to arrange legend items
             direction: legendDirection,
-            style: legendContainerStyle,
+            style: legendContainerStyle
           })}
         </div>
         <div className="main-container" style={chartStyle}>
@@ -143,9 +146,11 @@ class WithLegend extends React.Component {
           </ParentSize>
         </div>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 WithLegend.propTypes = propTypes;
 WithLegend.defaultProps = defaultProps;

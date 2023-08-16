@@ -17,7 +17,8 @@
  * under the License.
  */
 /* eslint camelcase: 0 */
-import React from 'react';
+
+import React, { useState, useCallback, useEffect } from 'react';
 import { Input } from 'src/components/Input';
 import { Form, FormItem } from 'src/components/Form';
 import Alert from 'src/components/Alert';
@@ -65,76 +66,61 @@ export const StyledModal = styled(Modal)`
   }
 `;
 
-class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
-  constructor(props: SaveModalProps) {
-    super(props);
-    this.state = {
-      saveToDashboardId: null,
-      newSliceName: props.sliceName,
-      alert: null,
-      action: this.canOverwriteSlice() ? 'overwrite' : 'saveas',
-    };
-    this.onDashboardSelectChange = this.onDashboardSelectChange.bind(this);
-    this.onSliceNameChange = this.onSliceNameChange.bind(this);
-    this.changeAction = this.changeAction.bind(this);
-    this.saveOrOverwrite = this.saveOrOverwrite.bind(this);
-    this.isNewDashboard = this.isNewDashboard.bind(this);
-  }
+const SaveModal = (props: SaveModalProps) => {
 
-  isNewDashboard(): boolean {
-    return !!(!this.state.saveToDashboardId && this.state.newDashboardName);
-  }
 
-  canOverwriteSlice(): boolean {
+    const [saveToDashboardId, setSaveToDashboardId] = useState(null);
+    const [newSliceName, setNewSliceName] = useState(props.sliceName);
+    const [alert, setAlert] = useState(null);
+    const [action, setAction] = useState(canOverwriteSliceHandler() ? 'overwrite' : 'saveas');
+
+    const isNewDashboardHandler = useCallback(() => {
+    return !!(!saveToDashboardId && newDashboardName);
+  }, [saveToDashboardId]);
+    const canOverwriteSliceHandler = useCallback(() => {
     return (
-      this.props.slice?.owners?.includes(this.props.userId) &&
-      !this.props.slice?.is_managed_externally
+      props.slice?.owners?.includes(props.userId) &&
+      !props.slice?.is_managed_externally
     );
-  }
-
-  componentDidMount() {
-    this.props.actions.fetchDashboards(this.props.userId).then(() => {
-      const dashboardIds = this.props.dashboards.map(
-        dashboard => dashboard.value,
+  }, []);
+    useEffect(() => {
+    props.actions.fetchDashboards(props.userId).then(() => {
+      const dashboardIds = props.dashboards.map(
+        dashboard => dashboard.value
       );
       const lastDashboard = sessionStorage.getItem(SK_DASHBOARD_ID);
       let recentDashboard = lastDashboard && parseInt(lastDashboard, 10);
 
-      if (this.props.dashboardId) {
-        recentDashboard = this.props.dashboardId;
+      if (props.dashboardId) {
+        recentDashboard = props.dashboardId;
       }
 
       if (
         recentDashboard !== null &&
         dashboardIds.indexOf(recentDashboard) !== -1
       ) {
-        this.setState({
-          saveToDashboardId: recentDashboard,
-        });
+        setSaveToDashboardId(recentDashboard);
       }
     });
-  }
-
-  onSliceNameChange(event: React.ChangeEvent<HTMLInputElement>) {
-    this.setState({ newSliceName: event.target.value });
-  }
-
-  onDashboardSelectChange(selected: SelectValue) {
+  }, []);
+    const onSliceNameChangeHandler = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setNewSliceName(event.target.value);
+  }, []);
+    const onDashboardSelectChangeHandler = useCallback((selected: SelectValue) => {
     const newDashboardName = selected ? String(selected) : undefined;
     const saveToDashboardId =
       selected && typeof selected === 'number' ? selected : null;
-    this.setState({ saveToDashboardId, newDashboardName });
-  }
-
-  changeAction(action: ActionType) {
-    this.setState({ action });
-  }
-
-  saveOrOverwrite(gotodash: boolean) {
-    this.setState({ alert: null });
-    this.props.actions.removeSaveModalAlert();
+    setSaveToDashboardId(saveToDashboardId);
+    setNewDashboardName(newDashboardName);
+  }, [saveToDashboardId]);
+    const changeActionHandler = useCallback((action: ActionType) => {
+    setAction(action);
+  }, [action]);
+    const saveOrOverwriteHandler = useCallback((gotodash: boolean) => {
+    setAlert(null);
+    props.actions.removeSaveModalAlert();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { url_params, ...formData } = this.props.form_data || {};
+    const { url_params, ...formData } = props.form_data || {};
 
     let promise = Promise.resolve();
 
@@ -146,55 +132,55 @@ class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
     };
 
     let dashboard: DashboardGetResponse | null = null;
-    if (this.state.newDashboardName || this.state.saveToDashboardId) {
-      let saveToDashboardId = this.state.saveToDashboardId || null;
-      if (!this.state.saveToDashboardId) {
+    if (newDashboardName || saveToDashboardId) {
+      let saveToDashboardId = saveToDashboardId || null;
+      if (!saveToDashboardId) {
         promise = promise
           .then(() =>
-            this.props.actions.createDashboard(this.state.newDashboardName),
+            props.actions.createDashboard(newDashboardName)
           )
           .then((response: { id: number }) => {
-            saveToDashboardId = response.id;
+            setSaveToDashboardId(response.id);
           });
       }
 
       promise = promise
-        .then(() => this.props.actions.getDashboard(saveToDashboardId))
+        .then(() => props.actions.getDashboard(saveToDashboardId))
         .then((response: { result: DashboardGetResponse }) => {
           dashboard = response.result;
-          const dashboards = new Set<number>(this.props.sliceDashboards);
+          const dashboards = new Set<number>(props.sliceDashboards);
           dashboards.add(dashboard.id);
           formData.dashboards = Array.from(dashboards);
         });
     }
 
     //  Update or create slice
-    if (this.state.action === 'overwrite') {
+    if (action === 'overwrite') {
       promise = promise.then(() =>
-        this.props.actions.updateSlice(
-          this.props.slice,
-          this.state.newSliceName,
+        props.actions.updateSlice(
+          props.slice,
+          newSliceName,
           formData,
           dashboard
             ? {
                 title: dashboard.dashboard_title,
-                new: !this.state.saveToDashboardId,
+                new: !saveToDashboardId
               }
-            : null,
-        ),
+            : null
+        )
       );
     } else {
       promise = promise.then(() =>
-        this.props.actions.createSlice(
-          this.state.newSliceName,
+        props.actions.createSlice(
+          newSliceName,
           formData,
           dashboard
             ? {
                 title: dashboard.dashboard_title,
-                new: !this.state.saveToDashboardId,
+                new: !saveToDashboardId
               }
-            : null,
-        ),
+            : null
+        )
       );
     }
 
@@ -208,43 +194,41 @@ class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
 
       // Go to new dashboard url
       if (gotodash && dashboard) {
-        this.props.history.push(dashboard.url);
+        props.history.push(dashboard.url);
         return;
       }
 
       const searchParams = new URLSearchParams(window.location.search);
-      searchParams.set('save_action', this.state.action);
+      searchParams.set('save_action', action);
       searchParams.delete('form_data_key');
-      if (this.state.action === 'saveas') {
+      if (action === 'saveas') {
         searchParams.set('slice_id', value.id.toString());
       }
-      this.props.history.replace(`/explore/?${searchParams.toString()}`);
+      props.history.replace(`/explore/?${searchParams.toString()}`);
     }) as (value: any) => void);
 
-    this.props.onHide();
-  }
-
-  removeAlert() {
-    if (this.props.alert) {
-      this.props.actions.removeSaveModalAlert();
+    props.onHide();
+  }, [saveToDashboardId, action, newSliceName]);
+    const removeAlertHandler = useCallback(() => {
+    if (props.alert) {
+      props.actions.removeSaveModalAlert();
     }
-    this.setState({ alert: null });
-  }
+    setAlert(null);
+  }, []);
 
-  render() {
     const dashboardSelectValue =
-      this.state.saveToDashboardId || this.state.newDashboardName;
+      saveToDashboardId || newDashboardName;
     return (
       <StyledModal
         show
-        onHide={this.props.onHide}
+        onHide={props.onHide}
         title={t('Save chart')}
         footer={
           <div data-test="save-modal-footer">
             <Button
               id="btn_cancel"
               buttonSize="small"
-              onClick={this.props.onHide}
+              onClick={props.onHide}
             >
               {t('Cancel')}
             </Button>
@@ -252,12 +236,12 @@ class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
               id="btn_modal_save_goto_dash"
               buttonSize="small"
               disabled={
-                !this.state.newSliceName ||
-                (!this.state.saveToDashboardId && !this.state.newDashboardName)
+                !newSliceName ||
+                (!saveToDashboardId && !newDashboardName)
               }
-              onClick={() => this.saveOrOverwrite(true)}
+              onClick={() => saveOrOverwriteHandler(true)}
             >
-              {this.isNewDashboard()
+              {isNewDashboardHandler()
                 ? t('Save & go to new dashboard')
                 : t('Save & go to dashboard')}
             </Button>
@@ -265,13 +249,13 @@ class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
               id="btn_modal_save"
               buttonSize="small"
               buttonStyle="primary"
-              onClick={() => this.saveOrOverwrite(false)}
-              disabled={!this.state.newSliceName}
+              onClick={() => saveOrOverwriteHandler(false)}
+              disabled={!newSliceName}
               data-test="btn-modal-save"
             >
-              {!this.canOverwriteSlice() && this.props.slice
+              {!canOverwriteSliceHandler() && props.slice
                 ? t('Save as new chart')
-                : this.isNewDashboard()
+                : isNewDashboardHandler()
                 ? t('Save to new dashboard')
                 : t('Save')}
             </Button>
@@ -279,18 +263,18 @@ class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
         }
       >
         <Form data-test="save-modal-body" layout="vertical">
-          {(this.state.alert || this.props.alert) && (
+          {(alert || props.alert) && (
             <Alert
               type="warning"
               message={
                 <>
-                  {this.state.alert ? this.state.alert : this.props.alert}
+                  {alert ? alert : props.alert}
                   <i
                     role="button"
                     aria-label="Remove alert"
                     tabIndex={0}
                     className="fa fa-close pull-right"
-                    onClick={this.removeAlert.bind(this)}
+                    onClick={removeAlertHandler.bind(this)}
                     style={{ cursor: 'pointer' }}
                   />
                 </>
@@ -300,9 +284,9 @@ class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
           <FormItem data-test="radio-group">
             <Radio
               id="overwrite-radio"
-              disabled={!this.canOverwriteSlice()}
-              checked={this.state.action === 'overwrite'}
-              onChange={() => this.changeAction('overwrite')}
+              disabled={!canOverwriteSliceHandler()}
+              checked={action === 'overwrite'}
+              onChange={() => changeActionHandler('overwrite')}
               data-test="save-overwrite-radio"
             >
               {t('Save (Overwrite)')}
@@ -310,8 +294,8 @@ class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
             <Radio
               id="saveas-radio"
               data-test="saveas-radio"
-              checked={this.state.action === 'saveas'}
-              onChange={() => this.changeAction('saveas')}
+              checked={action === 'saveas'}
+              onChange={() => changeActionHandler('saveas')}
             >
               {t('Save as...')}
             </Radio>
@@ -322,8 +306,8 @@ class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
               name="new_slice_name"
               type="text"
               placeholder="Name"
-              value={this.state.newSliceName}
-              onChange={this.onSliceNameChange}
+              value={newSliceName}
+              onChange={onSliceNameChangeHandler}
               data-test="new-chart-name"
             />
           </FormItem>
@@ -335,8 +319,8 @@ class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
               allowClear
               allowNewOptions
               ariaLabel={t('Select a dashboard')}
-              options={this.props.dashboards}
-              onChange={this.onDashboardSelectChange}
+              options={props.dashboards}
+              onChange={onDashboardSelectChangeHandler}
               value={dashboardSelectValue || undefined}
               placeholder={
                 // Using markdown to allow for good i18n
@@ -349,9 +333,11 @@ class SaveModal extends React.Component<SaveModalProps, SaveModalState> {
           </FormItem>
         </Form>
       </StyledModal>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 interface StateProps {
   datasource: any;
@@ -364,14 +350,14 @@ interface StateProps {
 function mapStateToProps({
   explore,
   saveModal,
-  user,
+  user
 }: Record<string, any>): StateProps {
   return {
     datasource: explore.datasource,
     slice: explore.slice,
     userId: user?.userId,
     dashboards: saveModal.dashboards,
-    alert: saveModal.saveModalAlert,
+    alert: saveModal.saveModalAlert
   };
 }
 

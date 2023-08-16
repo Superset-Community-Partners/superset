@@ -20,7 +20,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+import { observer } from "mobx-react";
+import { useState, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { isEqual } from 'lodash';
 import { StaticMap } from 'react-map-gl';
@@ -41,73 +42,64 @@ const propTypes = {
   bottomMargin: PropTypes.number,
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
-  onViewportChange: PropTypes.func,
+  onViewportChange: PropTypes.func
 };
 const defaultProps = {
   mapStyle: 'light',
   setControlValue: () => {},
   children: null,
-  bottomMargin: 0,
+  bottomMargin: 0
 };
 
-export class DeckGLContainer extends React.Component {
-  constructor(props) {
-    super(props);
-    this.tick = this.tick.bind(this);
-    this.onViewStateChange = this.onViewStateChange.bind(this);
-    // This has to be placed after this.tick is bound to this
-    this.state = {
-      timer: setInterval(this.tick, TICK),
-      tooltip: null,
-      viewState: props.viewport,
-    };
-  }
+export const DeckGLContainerBase = (props) => {
 
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    if (!isEqual(nextProps.viewport, this.props.viewport)) {
-      this.setState({ viewState: nextProps.viewport });
+
+    const [timer, setTimer] = useState(setInterval(tickHandler, TICK));
+    const [tooltip, setTooltip] = useState(null);
+    const [viewState, setViewState] = useState(props.viewport);
+
+    const UNSAFE_componentWillReceivePropsHandler = useCallback((nextProps) => {
+    if (!isEqual(nextProps.viewport, props.viewport)) {
+      setViewState(nextProps.viewport);
     }
-  }
-
-  componentWillUnmount() {
-    clearInterval(this.state.timer);
-  }
-
-  onViewStateChange({ viewState }) {
-    this.setState({ viewState, lastUpdate: Date.now() });
-  }
-
-  tick() {
-    // Rate limiting updating viewport controls as it triggers lotsa renders
-    const { lastUpdate } = this.state;
-    if (lastUpdate && Date.now() - lastUpdate > TICK) {
-      const setCV = this.props.setControlValue;
-      if (setCV) {
-        setCV('viewport', this.state.viewState);
-      }
-      this.setState({ lastUpdate: null });
-    }
-  }
-
-  layers() {
-    // Support for layer factory
-    if (this.props.layers.some(l => typeof l === 'function')) {
-      return this.props.layers.map(l => (typeof l === 'function' ? l() : l));
-    }
-
-    return this.props.layers;
-  }
-
-  setTooltip = tooltip => {
-    this.setState({ tooltip });
+  }, []);
+    useEffect(() => {
+    return () => {
+    clearInterval(timer);
   };
+}, [timer]);
+    const onViewStateChangeHandler = useCallback(({ viewState }) => {
+    setViewState(viewState);
+    setLastUpdate(Date.now());
+  }, [viewState]);
+    const tickHandler = useCallback(() => {
+    // Rate limiting updating viewport controls as it triggers lotsa renders
+    
+    if (lastUpdate && Date.now() - lastUpdate > TICK) {
+      const setCV = props.setControlValue;
+      if (setCV) {
+        setCV('viewport', viewState);
+      }
+      setLastUpdate(null);
+    }
+  }, [viewState]);
+    const layersHandler = useCallback(() => {
+    // Support for layer factory
+    if (props.layers.some(l => typeof l === 'function')) {
+      return props.layers.map(l => (typeof l === 'function' ? l() : l));
+    }
 
-  render() {
-    const { children, bottomMargin, height, width } = this.props;
-    const { viewState, tooltip } = this.state;
+    return props.layers;
+  }, []);
+    const setTooltipHandler = useCallback(tooltip => {
+    setTooltip(tooltip);
+  }, [tooltip]);
+
+    const { children, bottomMargin, height, width } = props;
+    
     const adjustedHeight = height - bottomMargin;
 
-    const layers = this.layers();
+    const layers = layersHandler();
 
     return (
       <>
@@ -120,21 +112,25 @@ export class DeckGLContainer extends React.Component {
             layers={layers}
             viewState={viewState}
             glOptions={{ preserveDrawingBuffer: true }}
-            onViewStateChange={this.onViewStateChange}
+            onViewStateChange={onViewStateChangeHandler}
           >
             <StaticMap
               preserveDrawingBuffer
-              mapStyle={this.props.mapStyle}
-              mapboxApiAccessToken={this.props.mapboxApiAccessToken}
+              mapStyle={props.mapStyle}
+              mapboxApiAccessToken={props.mapboxApiAccessToken}
             />
           </DeckGL>
           {children}
         </div>
         <Tooltip tooltip={tooltip} />
       </>
-    );
-  }
-}
+    ); 
+};
+
+export const DeckGLContainer = observer(DeckGLContainerBase);
+
+
+
 
 DeckGLContainer.propTypes = propTypes;
 DeckGLContainer.defaultProps = defaultProps;

@@ -21,7 +21,8 @@
  */
 /* eslint no-underscore-dangle: ["error", { "allow": ["", "__timestamp"] }] */
 
-import React from 'react';
+
+import { useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 
 import { PolygonLayer } from 'deck.gl';
@@ -83,7 +84,7 @@ export function getLayer(
   setTooltip,
   selected,
   onSelect,
-  filters,
+  filters
 ) {
   const fd = formData;
   const fc = fd.fill_color_picker;
@@ -141,7 +142,7 @@ export function getLayer(
     getElevation: d => getElevation(d, colorScaler),
     elevationScale: fd.multiplier,
     fp64: true,
-    ...commonLayerProps(fd, setTooltip, tooltipContentGenerator, onSelect),
+    ...commonLayerProps(fd, setTooltip, tooltipContentGenerator, onSelect)
   });
 }
 
@@ -152,27 +153,130 @@ const propTypes = {
   viewport: PropTypes.object.isRequired,
   onAddFilter: PropTypes.func,
   width: PropTypes.number.isRequired,
-  height: PropTypes.number.isRequired,
+  height: PropTypes.number.isRequired
 };
 
 const defaultProps = {
-  onAddFilter() {},
+  onAddFilter() {}
 };
 
-class DeckGLPolygon extends React.Component {
-  containerRef = React.createRef();
+const DeckGLPolygon = (props) => {
 
-  constructor(props) {
-    super(props);
 
-    this.state = DeckGLPolygon.getDerivedStateFromProps(props);
+    
 
-    this.getLayers = this.getLayers.bind(this);
-    this.onSelect = this.onSelect.bind(this);
-    this.onValuesChange = this.onValuesChange.bind(this);
-  }
+    const containerRef = useRef();
+    const onSelectHandler = useCallback((polygon) => {
+    const { formData, onAddFilter } = props;
 
-  static getDerivedStateFromProps(props, state) {
+    const now = new Date();
+    const doubleClick = now - lastClick <= DOUBLE_CLICK_TRESHOLD;
+
+    // toggle selected polygons
+    const selected = [...selected];
+    if (doubleClick) {
+      selected.splice(0, selected.length, polygon);
+    } else if (formData.toggle_polygons) {
+      const i = selected.indexOf(polygon);
+      if (i === -1) {
+        selected.push(polygon);
+      } else {
+        selected.splice(i, 1);
+      }
+    } else {
+      selected.splice(0, 1, polygon);
+    }
+
+    setSelected(selected);
+    setLastClick(now);
+    if (formData.table_filter) {
+      onAddFilter(formData.line_column, selected, false, true);
+    }
+  }, []);
+    const onValuesChangeHandler = useCallback((values) => {
+    setValues(Array.isArray(values)
+        ? values
+        : [values, values + getStep(values)]);
+  }, []);
+    const getLayersHandler = useCallback((values) => {
+    if (props.payload.data.features === undefined) {
+      return [];
+    }
+
+    const filters = [];
+
+    // time filter
+    if (values[0] === values[1] || values[1] === endHandler) {
+      filters.push(
+        d => d.__timestamp >= values[0] && d.__timestamp <= values[1]
+      );
+    } else {
+      filters.push(
+        d => d.__timestamp >= values[0] && d.__timestamp < values[1]
+      );
+    }
+
+    const layer = getLayer(
+      props.formData,
+      props.payload,
+      props.onAddFilter,
+      setTooltipHandler,
+      selected,
+      onSelectHandler,
+      filters
+    );
+
+    return [layer];
+  }, []);
+    const setTooltipHandler = useCallback(tooltip => {
+    const { current } = containerRef.current;
+    if (current) {
+      current.setTooltip(tooltip);
+    }
+  }, []);
+
+    const { payload, formData, setControlValue } = props;
+    
+
+    const fd = formData;
+    const metricLabel = fd.metric ? fd.metric.label || fd.metric : null;
+    const accessor = d => d[metricLabel];
+
+    const buckets = getBuckets(formData, payload.data.features, accessor);
+
+    return (
+      <div style={{ position: 'relative' }}>
+        <AnimatableDeckGLContainer
+          ref={containerRef.current}
+          aggregation
+          getLayers={getLayersHandler}
+          start={start}
+          end={end}
+          getStep={getStep}
+          values={values}
+          disabled={disabled}
+          viewport={viewport}
+          width={props.width}
+          height={props.height}
+          mapboxApiAccessToken={payload.data.mapboxApiKey}
+          mapStyle={formData.mapbox_style}
+          setControlValue={setControlValue}
+          onValuesChange={onValuesChangeHandler}
+          onViewportChange={onViewportChangeHandler}
+        >
+          {formData.metric !== null && (
+            <Legend
+              categories={buckets}
+              position={formData.legend_position}
+              format={formData.legend_format}
+            />
+          )}
+        </AnimatableDeckGLContainer>
+      </div>
+    ); 
+};
+
+DeckGLPolygon.getDerivedStateFromProps = (props, state) => {
     const { width, height, formData, payload } = props;
 
     // the state is computed only from the payload; if it hasn't changed, do
@@ -194,7 +298,7 @@ class DeckGLPolygon extends React.Component {
 
     const { start, end, getStep, values, disabled } = getPlaySliderParams(
       timestamps,
-      granularity,
+      granularity
     );
 
     let { viewport } = props;
@@ -202,7 +306,7 @@ class DeckGLPolygon extends React.Component {
       viewport = fitViewport(viewport, {
         width,
         height,
-        points: features.flatMap(getPointsFromPolygon),
+        points: features.flatMap(getPointsFromPolygon)
       });
     }
 
@@ -215,125 +319,10 @@ class DeckGLPolygon extends React.Component {
       viewport,
       selected: [],
       lastClick: 0,
-      formData: payload.form_data,
+      formData: payload.form_data
     };
-  }
-
-  onSelect(polygon) {
-    const { formData, onAddFilter } = this.props;
-
-    const now = new Date();
-    const doubleClick = now - this.state.lastClick <= DOUBLE_CLICK_TRESHOLD;
-
-    // toggle selected polygons
-    const selected = [...this.state.selected];
-    if (doubleClick) {
-      selected.splice(0, selected.length, polygon);
-    } else if (formData.toggle_polygons) {
-      const i = selected.indexOf(polygon);
-      if (i === -1) {
-        selected.push(polygon);
-      } else {
-        selected.splice(i, 1);
-      }
-    } else {
-      selected.splice(0, 1, polygon);
-    }
-
-    this.setState({ selected, lastClick: now });
-    if (formData.table_filter) {
-      onAddFilter(formData.line_column, selected, false, true);
-    }
-  }
-
-  onValuesChange(values) {
-    this.setState({
-      values: Array.isArray(values)
-        ? values
-        : [values, values + this.state.getStep(values)],
-    });
-  }
-
-  getLayers(values) {
-    if (this.props.payload.data.features === undefined) {
-      return [];
-    }
-
-    const filters = [];
-
-    // time filter
-    if (values[0] === values[1] || values[1] === this.end) {
-      filters.push(
-        d => d.__timestamp >= values[0] && d.__timestamp <= values[1],
-      );
-    } else {
-      filters.push(
-        d => d.__timestamp >= values[0] && d.__timestamp < values[1],
-      );
-    }
-
-    const layer = getLayer(
-      this.props.formData,
-      this.props.payload,
-      this.props.onAddFilter,
-      this.setTooltip,
-      this.state.selected,
-      this.onSelect,
-      filters,
-    );
-
-    return [layer];
-  }
-
-  setTooltip = tooltip => {
-    const { current } = this.containerRef;
-    if (current) {
-      current.setTooltip(tooltip);
-    }
   };
 
-  render() {
-    const { payload, formData, setControlValue } = this.props;
-    const { start, end, getStep, values, disabled, viewport } = this.state;
-
-    const fd = formData;
-    const metricLabel = fd.metric ? fd.metric.label || fd.metric : null;
-    const accessor = d => d[metricLabel];
-
-    const buckets = getBuckets(formData, payload.data.features, accessor);
-
-    return (
-      <div style={{ position: 'relative' }}>
-        <AnimatableDeckGLContainer
-          ref={this.containerRef}
-          aggregation
-          getLayers={this.getLayers}
-          start={start}
-          end={end}
-          getStep={getStep}
-          values={values}
-          disabled={disabled}
-          viewport={viewport}
-          width={this.props.width}
-          height={this.props.height}
-          mapboxApiAccessToken={payload.data.mapboxApiKey}
-          mapStyle={formData.mapbox_style}
-          setControlValue={setControlValue}
-          onValuesChange={this.onValuesChange}
-          onViewportChange={this.onViewportChange}
-        >
-          {formData.metric !== null && (
-            <Legend
-              categories={buckets}
-              position={formData.legend_position}
-              format={formData.legend_format}
-            />
-          )}
-        </AnimatableDeckGLContainer>
-      </div>
-    );
-  }
-}
 
 DeckGLPolygon.propTypes = propTypes;
 DeckGLPolygon.defaultProps = defaultProps;

@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import Popover from 'src/components/Popover';
 import { decimal2sexagesimal } from 'geolib';
@@ -31,7 +32,7 @@ export const DEFAULT_VIEWPORT = {
   latitude: 31.222656842808707,
   zoom: 1,
   bearing: 0,
-  pitch: 0,
+  pitch: 0
 };
 
 const PARAMS = ['longitude', 'latitude', 'zoom', 'bearing', 'pitch'];
@@ -43,78 +44,75 @@ const propTypes = {
     latitude: PropTypes.number,
     zoom: PropTypes.number,
     bearing: PropTypes.number,
-    pitch: PropTypes.number,
+    pitch: PropTypes.number
   }),
   default: PropTypes.object,
-  name: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired
 };
 
 const defaultProps = {
   onChange: () => {},
   default: { type: 'fix', value: 5 },
-  value: DEFAULT_VIEWPORT,
+  value: DEFAULT_VIEWPORT
 };
 
-export default class ViewportControl extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onChange = this.onChange.bind(this);
-  }
+export default const ViewportControl = (props) => {
 
-  onChange(ctrl, value) {
-    this.props.onChange({
-      ...this.props.value,
-      [ctrl]: value,
+
+    
+
+    const onChangeHandler = useCallback((ctrl, value) => {
+    props.onChange({
+      ...props.value,
+      [ctrl]: value
     });
-  }
-
-  renderTextControl(ctrl) {
+  }, []);
+    const renderTextControlHandler = useCallback((ctrl) => {
     return (
       <div key={ctrl}>
         <FormLabel>{ctrl}</FormLabel>
         <TextControl
-          value={this.props.value[ctrl]}
-          onChange={this.onChange.bind(this, ctrl)}
+          value={props.value[ctrl]}
+          onChange={onChangeHandler.bind(this, ctrl)}
           isFloat
         />
       </div>
     );
-  }
-
-  renderPopover() {
+  }, []);
+    const renderPopoverHandler = useCallback(() => {
     return (
-      <div id={`filter-popover-${this.props.name}`}>
-        {PARAMS.map(ctrl => this.renderTextControl(ctrl))}
+      <div id={`filter-popover-${props.name}`}>
+        {PARAMS.map(ctrl => renderTextControlHandler(ctrl))}
       </div>
     );
-  }
-
-  renderLabel() {
-    if (this.props.value.longitude && this.props.value.latitude) {
+  }, []);
+    const renderLabelHandler = useCallback(() => {
+    if (props.value.longitude && props.value.latitude) {
       return `${decimal2sexagesimal(
-        this.props.value.longitude,
-      )} | ${decimal2sexagesimal(this.props.value.latitude)}`;
+        props.value.longitude
+      )} | ${decimal2sexagesimal(props.value.latitude)}`;
     }
     return 'N/A';
-  }
+  }, []);
 
-  render() {
     return (
       <div>
-        <ControlHeader {...this.props} />
+        <ControlHeader {...props} />
         <Popover
           container={document.body}
           trigger="click"
           placement="right"
-          content={this.renderPopover()}
+          content={renderPopoverHandler()}
           title="Viewport"
         >
-          <Label className="pointer">{this.renderLabel()}</Label>
+          <Label className="pointer">{renderLabelHandler()}</Label>
         </Popover>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 ViewportControl.propTypes = propTypes;
 ViewportControl.defaultProps = defaultProps;

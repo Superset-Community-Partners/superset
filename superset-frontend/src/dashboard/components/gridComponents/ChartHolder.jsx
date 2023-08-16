@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { useTheme } from '@superset-ui/core';
@@ -33,10 +34,10 @@ import getChartAndLabelComponentIdFromPath from 'src/dashboard/util/getChartAndL
 import { componentShape } from 'src/dashboard/util/propShapes';
 import { COLUMN_TYPE, ROW_TYPE } from 'src/dashboard/util/componentTypes';
 import {
-  GRID_BASE_UNIT,
-  GRID_GUTTER_SIZE,
-  GRID_MIN_COLUMN_COUNT,
-  GRID_MIN_ROW_UNITS,
+    GRID_BASE_UNIT,
+    GRID_GUTTER_SIZE,
+    GRID_MIN_COLUMN_COUNT,
+    GRID_MIN_ROW_UNITS
 } from 'src/dashboard/util/constants';
 
 const CHART_MARGIN = 32;
@@ -68,12 +69,12 @@ const propTypes = {
   updateComponents: PropTypes.func.isRequired,
   handleComponentDrop: PropTypes.func.isRequired,
   setFullSizeChartId: PropTypes.func.isRequired,
-  postAddSliceFromDashboard: PropTypes.func,
+  postAddSliceFromDashboard: PropTypes.func
 };
 
 const defaultProps = {
   directPathToChild: [],
-  directPathLastUpdated: 0,
+  directPathLastUpdated: 0
 };
 
 /**
@@ -87,7 +88,7 @@ function selectFocusedFilterScope(dashboardState, dashboardFilters) {
   const { chartId, column } = dashboardState.focusedFilterField;
   return {
     chartId,
-    scope: dashboardFilters[chartId].scopes[column],
+    scope: dashboardFilters[chartId].scopes[column]
   };
 }
 
@@ -112,7 +113,7 @@ const FilterFocusHighlight = React.forwardRef(
     const dashboardFilters = useSelector(state => state.dashboardFilters);
     const focusedFilterScope = selectFocusedFilterScope(
       dashboardState,
-      dashboardFilters,
+      dashboardFilters
     );
     const focusedNativeFilterId = nativeFilters.focusedFilterId;
     if (!(focusedFilterScope || focusedNativeFilterId)) {
@@ -129,13 +130,13 @@ const FilterFocusHighlight = React.forwardRef(
       borderColor: theme.colors.primary.light2,
       opacity: 1,
       boxShadow: `0px 0px ${theme.gridUnit * 2}px ${theme.colors.primary.base}`,
-      pointerEvents: 'auto',
+      pointerEvents: 'auto'
     };
 
     if (focusedNativeFilterId) {
       if (
         nativeFilters.filters[focusedNativeFilterId]?.chartsInScope?.includes(
-          chartId,
+          chartId
         )
       ) {
         return <div ref={ref} style={focusedChartStyles} {...otherProps} />;
@@ -143,7 +144,7 @@ const FilterFocusHighlight = React.forwardRef(
     } else if (
       chartId === focusedFilterScope.chartId ||
       getChartIdsInFilterBoxScope({
-        filterScope: focusedFilterScope.scope,
+        filterScope: focusedFilterScope.scope
       }).includes(chartId)
     ) {
       return <div ref={ref} style={focusedChartStyles} {...otherProps} />;
@@ -151,125 +152,74 @@ const FilterFocusHighlight = React.forwardRef(
 
     // inline styles are used here due to a performance issue when adding/changing a class, which causes a reflow
     return <div ref={ref} style={unfocusedChartStyles} {...otherProps} />;
-  },
+  }
 );
 
-class ChartHolder extends React.Component {
-  static renderInFocusCSS(columnName) {
-    return (
-      <style>
-        {`label[for=${columnName}] + .Select .Select__control {
-                    border-color: #00736a;
-                    transition: border-color 1s ease-in-out;
-           }`}
-      </style>
-    );
-  }
+const ChartHolder = (props) => {
 
-  static getDerivedStateFromProps(props, state) {
-    const { component, directPathToChild, directPathLastUpdated } = props;
-    const { label: columnName, chart: chartComponentId } =
-      getChartAndLabelComponentIdFromPath(directPathToChild);
 
-    if (
-      directPathLastUpdated !== state.directPathLastUpdated &&
-      component.id === chartComponentId
-    ) {
-      return {
-        outlinedComponentId: component.id,
-        outlinedColumnName: columnName,
-        directPathLastUpdated,
-      };
-    }
-    return null;
-  }
+    const [isFocused, setIsFocused] = useState(false);
+    const [outlinedComponentId, setOutlinedComponentId] = useState(null);
+    const [outlinedColumnName, setOutlinedColumnName] = useState(null);
+    const [directPathLastUpdated, setDirectPathLastUpdated] = useState(0);
+    const [extraControls, setExtraControls] = useState({});
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      isFocused: false,
-      outlinedComponentId: null,
-      outlinedColumnName: null,
-      directPathLastUpdated: 0,
-      extraControls: {},
-    };
-
-    this.handleChangeFocus = this.handleChangeFocus.bind(this);
-    this.handleDeleteComponent = this.handleDeleteComponent.bind(this);
-    this.handleUpdateSliceName = this.handleUpdateSliceName.bind(this);
-    this.handleToggleFullSize = this.handleToggleFullSize.bind(this);
-    this.handleExtraControl = this.handleExtraControl.bind(this);
-    this.handlePostTransformProps = this.handlePostTransformProps.bind(this);
-  }
-
-  componentDidMount() {
-    this.hideOutline({}, this.state);
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    this.hideOutline(prevState, this.state);
-  }
-
-  hideOutline(prevState, state) {
+    useEffect(() => {
+    hideOutlineHandler({}, stateHandler);
+  }, []);
+    useEffect(() => {
+    hideOutlineHandler(prevState, stateHandler);
+  }, []);
+    const hideOutlineHandler = useCallback((prevState, state) => {
     const { outlinedComponentId: timerKey } = state;
     const { outlinedComponentId: prevTimerKey } = prevState;
 
     // because of timeout, there might be multiple charts showing outline
     if (!!timerKey && !prevTimerKey) {
       setTimeout(() => {
-        this.setState(() => ({
-          outlinedComponentId: null,
-          outlinedColumnName: null,
-        }));
+        setOutlinedComponentId(null);
+    setOutlinedColumnName(null);
       }, 2000);
     }
-  }
-
-  handleChangeFocus(nextFocus) {
-    this.setState(() => ({ isFocused: nextFocus }));
-  }
-
-  handleDeleteComponent() {
-    const { deleteComponent, id, parentId } = this.props;
+  }, []);
+    const handleChangeFocusHandler = useCallback((nextFocus) => {
+    setIsFocused(nextFocus);
+  }, []);
+    const handleDeleteComponentHandler = useCallback(() => {
+    const { deleteComponent, id, parentId } = props;
     deleteComponent(id, parentId);
-  }
-
-  handleUpdateSliceName(nextName) {
-    const { component, updateComponents } = this.props;
+  }, []);
+    const handleUpdateSliceNameHandler = useCallback((nextName) => {
+    const { component, updateComponents } = props;
     updateComponents({
       [component.id]: {
         ...component,
         meta: {
           ...component.meta,
-          sliceNameOverride: nextName,
-        },
-      },
+          sliceNameOverride: nextName
+        }
+      }
     });
-  }
-
-  handleToggleFullSize() {
-    const { component, fullSizeChartId, setFullSizeChartId } = this.props;
+  }, []);
+    const handleToggleFullSizeHandler = useCallback(() => {
+    const { component, fullSizeChartId, setFullSizeChartId } = props;
     const { chartId } = component.meta;
     const isFullSize = fullSizeChartId === chartId;
     setFullSizeChartId(isFullSize ? null : chartId);
-  }
-
-  handleExtraControl(name, value) {
-    this.setState(prevState => ({
-      extraControls: {
+  }, []);
+    const handleExtraControlHandler = useCallback((name, value) => {
+    setExtraControls({
         ...prevState.extraControls,
-        [name]: value,
-      },
-    }));
-  }
-
-  handlePostTransformProps(props) {
-    this.props.postAddSliceFromDashboard();
+        [name]: value
+      });
+    set[name](value);
+  }, []);
+    const handlePostTransformPropsHandler = useCallback((props) => {
+    props.postAddSliceFromDashboard();
     return props;
-  }
+  }, []);
 
-  render() {
-    const { isFocused, extraControls } = this.state;
+    
     const {
       component,
       parentComponent,
@@ -285,15 +235,15 @@ class ChartHolder extends React.Component {
       isComponentVisible,
       dashboardId,
       fullSizeChartId,
-      getComponentById = () => undefined,
-    } = this.props;
+      getComponentById = () => undefined
+    } = props;
 
     const { chartId } = component.meta;
     const isFullSize = fullSizeChartId === chartId;
 
     // inherit the size of parent columns
     const columnParentWidth = getComponentById(
-      parentComponent.parents?.find(parent => parent.startsWith(COLUMN_TYPE)),
+      parentComponent.parents?.find(parent => parent.startsWith(COLUMN_TYPE))
     )?.meta?.width;
     let widthMultiple = component.meta.width || GRID_MIN_COLUMN_COUNT;
     if (parentComponent.type === COLUMN_TYPE) {
@@ -312,10 +262,10 @@ class ChartHolder extends React.Component {
       chartWidth = Math.floor(
         widthMultiple * columnWidth +
           (widthMultiple - 1) * GRID_GUTTER_SIZE -
-          CHART_MARGIN,
+          CHART_MARGIN
       );
       chartHeight = Math.floor(
-        component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
+        component.meta.height * GRID_BASE_UNIT - CHART_MARGIN
       );
     }
 
@@ -356,20 +306,20 @@ class ChartHolder extends React.Component {
                 'dashboard-component-chart-holder',
                 // The following class is added to support custom dashboard styling via the CSS editor
                 `dashboard-chart-id-${chartId}`,
-                this.state.outlinedComponentId ? 'fade-in' : 'fade-out',
-                isFullSize && 'full-size',
+                outlinedComponentId ? 'fade-in' : 'fade-out',
+                isFullSize && 'full-size'
               )}
             >
               {!editMode && (
                 <AnchorLink
                   id={component.id}
                   scrollIntoView={
-                    this.state.outlinedComponentId === component.id
+                    outlinedComponentId === component.id
                   }
                 />
               )}
-              {!!this.state.outlinedComponentId &&
-                ChartHolder.renderInFocusCSS(this.state.outlinedColumnName)}
+              {!!outlinedComponentId &&
+                ChartHolder.renderInFocusCSS(outlinedColumnName)}
               <Chart
                 componentId={component.id}
                 id={component.meta.chartId}
@@ -381,19 +331,19 @@ class ChartHolder extends React.Component {
                   component.meta.sliceName ||
                   ''
                 }
-                updateSliceName={this.handleUpdateSliceName}
+                updateSliceName={handleUpdateSliceNameHandler}
                 isComponentVisible={isComponentVisible}
-                handleToggleFullSize={this.handleToggleFullSize}
+                handleToggleFullSize={handleToggleFullSizeHandler}
                 isFullSize={isFullSize}
-                setControlValue={this.handleExtraControl}
+                setControlValue={handleExtraControlHandler}
                 extraControls={extraControls}
-                postTransformProps={this.handlePostTransformProps}
+                postTransformProps={handlePostTransformPropsHandler}
               />
               {editMode && (
                 <HoverMenu position="top">
                   <div data-test="dashboard-delete-component-button">
                     <DeleteComponentButton
-                      onDelete={this.handleDeleteComponent}
+                      onDelete={handleDeleteComponentHandler}
                     />
                   </div>
                 </HoverMenu>
@@ -404,9 +354,37 @@ class ChartHolder extends React.Component {
           </ResizableContainer>
         )}
       </DragDroppable>
+    ); 
+};
+
+ChartHolder.renderInFocusCSS = (columnName) => {
+    return (
+      <style>
+        {`label[for=${columnName}] + .Select .Select__control {
+                    border-color: #00736a;
+                    transition: border-color 1s ease-in-out;
+           }`}
+      </style>
     );
-  }
-}
+  };
+    ChartHolder.getDerivedStateFromProps = (props, state) => {
+    const { component, directPathToChild, directPathLastUpdated } = props;
+    const { label: columnName, chart: chartComponentId } =
+      getChartAndLabelComponentIdFromPath(directPathToChild);
+
+    if (
+      directPathLastUpdated !== state.directPathLastUpdated &&
+      component.id === chartComponentId
+    ) {
+      return {
+        outlinedComponentId: component.id,
+        outlinedColumnName: columnName,
+        directPathLastUpdated
+      };
+    }
+    return null;
+  };
+
 
 ChartHolder.propTypes = propTypes;
 ChartHolder.defaultProps = defaultProps;
@@ -414,7 +392,7 @@ ChartHolder.defaultProps = defaultProps;
 function mapStateToProps(state) {
   return {
     directPathToChild: state.dashboardState.directPathToChild,
-    directPathLastUpdated: state.dashboardState.directPathLastUpdated,
+    directPathLastUpdated: state.dashboardState.directPathLastUpdated
   };
 }
 export default connect(mapStateToProps)(ChartHolder);

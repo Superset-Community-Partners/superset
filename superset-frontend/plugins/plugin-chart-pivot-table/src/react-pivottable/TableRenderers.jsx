@@ -17,7 +17,8 @@
  * under the License.
  */
 
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { PivotData, flatKey } from './utilities';
 import { Styles } from './Styles';
@@ -34,7 +35,7 @@ function displayHeaderCell(
   ArrowIcon,
   onArrowClick,
   value,
-  namesMapping,
+  namesMapping
 ) {
   const name = namesMapping[value] || value;
   return needToggle ? (
@@ -54,30 +55,23 @@ function displayHeaderCell(
   );
 }
 
-export class TableRenderer extends React.Component {
-  constructor(props) {
-    super(props);
+export const TableRenderer = (props) => {
 
-    // We need state to record which entries are collapsed and which aren't.
-    // This is an object with flat-keys indicating if the corresponding rows
-    // should be collapsed.
-    this.state = { collapsedRows: {}, collapsedCols: {} };
 
-    this.clickHeaderHandler = this.clickHeaderHandler.bind(this);
-    this.clickHandler = this.clickHandler.bind(this);
-  }
+    const [collapsedRows, setCollapsedRows] = useState({});
+    const [collapsedCols, setCollapsedCols] = useState({});
 
-  getBasePivotSettings() {
+    const getBasePivotSettingsHandler = useCallback(() => {
     // One-time extraction of pivot settings that we'll use throughout the render.
 
-    const { props } = this;
+    
     const colAttrs = props.cols;
     const rowAttrs = props.rows;
 
     const tableOptions = {
       rowTotals: true,
       colTotals: true,
-      ...props.tableOptions,
+      ...props.tableOptions
     };
     const rowTotals = tableOptions.rowTotals || colAttrs.length === 0;
     const colTotals = tableOptions.colTotals || rowAttrs.length === 0;
@@ -86,28 +80,28 @@ export class TableRenderer extends React.Component {
     const subtotalOptions = {
       arrowCollapsed: '\u25B2',
       arrowExpanded: '\u25BC',
-      ...props.subtotalOptions,
+      ...props.subtotalOptions
     };
 
     const colSubtotalDisplay = {
       displayOnTop: false,
       enabled: rowTotals,
       hideOnExpand: false,
-      ...subtotalOptions.colSubtotalDisplay,
+      ...subtotalOptions.colSubtotalDisplay
     };
 
     const rowSubtotalDisplay = {
       displayOnTop: false,
       enabled: colTotals,
       hideOnExpand: false,
-      ...subtotalOptions.rowSubtotalDisplay,
+      ...subtotalOptions.rowSubtotalDisplay
     };
 
     const pivotData = new PivotData(props, {
       rowEnabled: rowSubtotalDisplay.enabled,
       colEnabled: colSubtotalDisplay.enabled,
       rowPartialOnTop: rowSubtotalDisplay.displayOnTop,
-      colPartialOnTop: colSubtotalDisplay.displayOnTop,
+      colPartialOnTop: colSubtotalDisplay.displayOnTop
     });
     const rowKeys = pivotData.getRowKeys();
     const colKeys = pivotData.getColKeys();
@@ -125,10 +119,10 @@ export class TableRenderer extends React.Component {
           cellCallbacks[flatRowKey] = {};
         }
         colKeys.forEach(colKey => {
-          cellCallbacks[flatRowKey][flatKey(colKey)] = this.clickHandler(
+          cellCallbacks[flatRowKey][flatKey(colKey)] = clickHandlerHandler(
             pivotData,
             rowKey,
-            colKey,
+            colKey
           );
         });
       });
@@ -136,24 +130,24 @@ export class TableRenderer extends React.Component {
       // Add in totals as well.
       if (rowTotals) {
         rowKeys.forEach(rowKey => {
-          rowTotalCallbacks[flatKey(rowKey)] = this.clickHandler(
+          rowTotalCallbacks[flatKey(rowKey)] = clickHandlerHandler(
             pivotData,
             rowKey,
-            [],
+            []
           );
         });
       }
       if (colTotals) {
         colKeys.forEach(colKey => {
-          colTotalCallbacks[flatKey(colKey)] = this.clickHandler(
+          colTotalCallbacks[flatKey(colKey)] = clickHandlerHandler(
             pivotData,
             [],
-            colKey,
+            colKey
           );
         });
       }
       if (rowTotals && colTotals) {
-        grandTotalCallback = this.clickHandler(pivotData, [], []);
+        grandTotalCallback = clickHandlerHandler(pivotData, [], []);
       }
     }
 
@@ -173,13 +167,12 @@ export class TableRenderer extends React.Component {
       rowTotalCallbacks,
       colTotalCallbacks,
       grandTotalCallback,
-      namesMapping,
+      namesMapping
     };
-  }
-
-  clickHandler(pivotData, rowValues, colValues) {
-    const colAttrs = this.props.cols;
-    const rowAttrs = this.props.rows;
+  }, []);
+    const clickHandlerHandler = useCallback((pivotData, rowValues, colValues) => {
+    const colAttrs = props.cols;
+    const rowAttrs = props.rows;
     const value = pivotData.getAggregator(rowValues, colValues).value();
     const filters = {};
     const colLimit = Math.min(colAttrs.length, colValues.length);
@@ -197,18 +190,17 @@ export class TableRenderer extends React.Component {
       }
     }
     return e =>
-      this.props.tableOptions.clickCallback(e, value, filters, pivotData);
-  }
-
-  clickHeaderHandler(
+      props.tableOptions.clickCallback(e, value, filters, pivotData);
+  }, []);
+    const clickHeaderHandlerHandler = useCallback((
     pivotData,
     values,
     attrs,
     attrIdx,
     callback,
     isSubtotal = false,
-    isGrandTotal = false,
-  ) {
+    isGrandTotal = false
+  ) => {
     const filters = {};
     for (let i = 0; i <= attrIdx; i += 1) {
       const attr = attrs[i];
@@ -221,11 +213,10 @@ export class TableRenderer extends React.Component {
         filters,
         pivotData,
         isSubtotal,
-        isGrandTotal,
+        isGrandTotal
       );
-  }
-
-  collapseAttr(rowOrCol, attrIdx, allKeys) {
+  }, []);
+    const collapseAttrHandler = useCallback((rowOrCol, attrIdx, allKeys) => {
     return e => {
       // Collapse an entire attribute.
       e.stopPropagation();
@@ -238,18 +229,13 @@ export class TableRenderer extends React.Component {
       });
 
       if (rowOrCol) {
-        this.setState(state => ({
-          collapsedRows: { ...state.collapsedRows, ...updates },
-        }));
+        setCollapsedRows({ ...state.collapsedRows, ...updates });
       } else {
-        this.setState(state => ({
-          collapsedCols: { ...state.collapsedCols, ...updates },
-        }));
+        setCollapsedCols({ ...state.collapsedCols, ...updates });
       }
     };
-  }
-
-  expandAttr(rowOrCol, attrIdx, allKeys) {
+  }, []);
+    const expandAttrHandler = useCallback((rowOrCol, attrIdx, allKeys) => {
     return e => {
       // Expand an entire attribute. This implicitly implies expanding all of the
       // parents as well. It's a bit inefficient but ah well...
@@ -262,42 +248,33 @@ export class TableRenderer extends React.Component {
       });
 
       if (rowOrCol) {
-        this.setState(state => ({
-          collapsedRows: { ...state.collapsedRows, ...updates },
-        }));
+        setCollapsedRows({ ...state.collapsedRows, ...updates });
       } else {
-        this.setState(state => ({
-          collapsedCols: { ...state.collapsedCols, ...updates },
-        }));
+        setCollapsedCols({ ...state.collapsedCols, ...updates });
       }
     };
-  }
-
-  toggleRowKey(flatRowKey) {
+  }, []);
+    const toggleRowKeyHandler = useCallback((flatRowKey) => {
     return e => {
       e.stopPropagation();
-      this.setState(state => ({
-        collapsedRows: {
+      setCollapsedRows({
           ...state.collapsedRows,
-          [flatRowKey]: !state.collapsedRows[flatRowKey],
-        },
-      }));
+          [flatRowKey]: !state.collapsedRows[flatRowKey]
+        });
+    set[flatRowKey](!state.collapsedRows[flatRowKey]);
     };
-  }
-
-  toggleColKey(flatColKey) {
+  }, []);
+    const toggleColKeyHandler = useCallback((flatColKey) => {
     return e => {
       e.stopPropagation();
-      this.setState(state => ({
-        collapsedCols: {
+      setCollapsedCols({
           ...state.collapsedCols,
-          [flatColKey]: !state.collapsedCols[flatColKey],
-        },
-      }));
+          [flatColKey]: !state.collapsedCols[flatColKey]
+        });
+    set[flatColKey](!state.collapsedCols[flatColKey]);
     };
-  }
-
-  calcAttrSpans(attrArr, numAttrs) {
+  }, []);
+    const calcAttrSpansHandler = useCallback((attrArr, numAttrs) => {
     // Given an array of attribute values (i.e. each element is another array with
     // the value at every level), compute the spans for every attribute value at
     // every level. The return value is a nested array of the same shape. It has
@@ -328,9 +305,8 @@ export class TableRenderer extends React.Component {
       lv = cv;
     }
     return spans;
-  }
-
-  renderColHeaderRow(attrName, attrIdx, pivotSettings) {
+  }, []);
+    const renderColHeaderRowHandler = useCallback((attrName, attrIdx, pivotSettings) => {
     // Render a single row in the column header at the top of the pivot table.
 
     const {
@@ -345,14 +321,14 @@ export class TableRenderer extends React.Component {
       colSubtotalDisplay,
       maxColVisible,
       pivotData,
-      namesMapping,
+      namesMapping
     } = pivotSettings;
     const {
       highlightHeaderCellsOnHover,
       omittedHighlightHeaderGroups = [],
       highlightedHeaderCells,
-      dateFormatters,
-    } = this.props.tableOptions;
+      dateFormatters
+    } = props.tableOptions;
 
     const spaceCell =
       attrIdx === 0 && rowAttrs.length !== 0 ? (
@@ -371,8 +347,8 @@ export class TableRenderer extends React.Component {
     if (needToggle) {
       arrowClickHandle =
         attrIdx + 1 < maxColVisible
-          ? this.collapseAttr(false, attrIdx, colKeys)
-          : this.expandAttr(false, attrIdx, colKeys);
+          ? collapseAttrHandler(false, attrIdx, colKeys)
+          : expandAttrHandler(false, attrIdx, colKeys);
       subArrow = attrIdx + 1 < maxColVisible ? arrowExpanded : arrowCollapsed;
     }
     const attrNameCell = (
@@ -382,7 +358,7 @@ export class TableRenderer extends React.Component {
           subArrow,
           arrowClickHandle,
           attrName,
-          namesMapping,
+          namesMapping
         )}
       </th>
     );
@@ -412,7 +388,7 @@ export class TableRenderer extends React.Component {
 
         const rowSpan = 1 + (attrIdx === colAttrs.length - 1 ? rowIncrSpan : 0);
         const flatColKey = flatKey(colKey.slice(0, attrIdx + 1));
-        const onArrowClick = needToggle ? this.toggleColKey(flatColKey) : null;
+        const onArrowClick = needToggle ? toggleColKeyHandler(flatColKey) : null;
 
         const headerCellFormattedValue =
           dateFormatters &&
@@ -426,24 +402,24 @@ export class TableRenderer extends React.Component {
             key={`colKey-${flatColKey}`}
             colSpan={colSpan}
             rowSpan={rowSpan}
-            onClick={this.clickHeaderHandler(
+            onClick={clickHeaderHandlerHandler(
               pivotData,
               colKey,
-              this.props.cols,
+              props.cols,
               attrIdx,
-              this.props.tableOptions.clickColumnHeaderCallback,
+              props.tableOptions.clickColumnHeaderCallback
             )}
           >
             {displayHeaderCell(
               needToggle,
-              this.state.collapsedCols[flatColKey]
+              collapsedCols[flatColKey]
                 ? arrowCollapsed
                 : arrowExpanded,
               onArrowClick,
               headerCellFormattedValue,
-              namesMapping,
+              namesMapping
             )}
-          </th>,
+          </th>
         );
       } else if (attrIdx === colKey.length) {
         const rowSpan = colAttrs.length - colKey.length + rowIncrSpan;
@@ -453,17 +429,17 @@ export class TableRenderer extends React.Component {
             key={`colKeyBuffer-${flatKey(colKey)}`}
             colSpan={colSpan}
             rowSpan={rowSpan}
-            onClick={this.clickHeaderHandler(
+            onClick={clickHeaderHandlerHandler(
               pivotData,
               colKey,
-              this.props.cols,
+              props.cols,
               attrIdx,
-              this.props.tableOptions.clickColumnHeaderCallback,
-              true,
+              props.tableOptions.clickColumnHeaderCallback,
+              true
             )}
           >
             Subtotal
-          </th>,
+          </th>
         );
       }
       // The next colSpan columns will have the same value anyway...
@@ -476,25 +452,24 @@ export class TableRenderer extends React.Component {
           key="total"
           className="pvtTotalLabel"
           rowSpan={colAttrs.length + Math.min(rowAttrs.length, 1)}
-          onClick={this.clickHeaderHandler(
+          onClick={clickHeaderHandlerHandler(
             pivotData,
             [],
-            this.props.cols,
+            props.cols,
             attrIdx,
-            this.props.tableOptions.clickColumnHeaderCallback,
+            props.tableOptions.clickColumnHeaderCallback,
             false,
-            true,
+            true
           )}
         >
-          {`Total (${this.props.aggregatorName})`}
+          {`Total (${props.aggregatorName})`}
         </th>
       ) : null;
 
     const cells = [spaceCell, attrNameCell, ...attrValueCells, totalCell];
     return <tr key={`colAttr-${attrIdx}`}>{cells}</tr>;
-  }
-
-  renderRowHeaderRow(pivotSettings) {
+  }, [collapsedCols]);
+    const renderRowHeaderRowHandler = useCallback((pivotSettings) => {
     // Render just the attribute names of the rows (the actual attribute values
     // will show up in the individual rows).
 
@@ -507,7 +482,7 @@ export class TableRenderer extends React.Component {
       rowSubtotalDisplay,
       maxRowVisible,
       pivotData,
-      namesMapping,
+      namesMapping
     } = pivotSettings;
     return (
       <tr key="rowHdr">
@@ -519,8 +494,8 @@ export class TableRenderer extends React.Component {
           if (needLabelToggle) {
             arrowClickHandle =
               i + 1 < maxRowVisible
-                ? this.collapseAttr(true, i, rowKeys)
-                : this.expandAttr(true, i, rowKeys);
+                ? collapseAttrHandler(true, i, rowKeys)
+                : expandAttrHandler(true, i, rowKeys);
             subArrow = i + 1 < maxRowVisible ? arrowExpanded : arrowCollapsed;
           }
           return (
@@ -530,7 +505,7 @@ export class TableRenderer extends React.Component {
                 subArrow,
                 arrowClickHandle,
                 r,
-                namesMapping,
+                namesMapping
               )}
             </th>
           );
@@ -538,25 +513,24 @@ export class TableRenderer extends React.Component {
         <th
           className="pvtTotalLabel"
           key="padding"
-          onClick={this.clickHeaderHandler(
+          onClick={clickHeaderHandlerHandler(
             pivotData,
             [],
-            this.props.rows,
+            props.rows,
             0,
-            this.props.tableOptions.clickRowHeaderCallback,
+            props.tableOptions.clickRowHeaderCallback,
             false,
-            true,
+            true
           )}
         >
           {colAttrs.length === 0
-            ? `Total (${this.props.aggregatorName})`
+            ? `Total (${props.aggregatorName})`
             : null}
         </th>
       </tr>
     );
-  }
-
-  renderTableRow(rowKey, rowIdx, pivotSettings) {
+  }, []);
+    const renderTableRowHandler = useCallback((rowKey, rowIdx, pivotSettings) => {
     // Render a single row in the pivot table.
 
     const {
@@ -571,7 +545,7 @@ export class TableRenderer extends React.Component {
       arrowCollapsed,
       cellCallbacks,
       rowTotalCallbacks,
-      namesMapping,
+      namesMapping
     } = pivotSettings;
 
     const {
@@ -579,8 +553,8 @@ export class TableRenderer extends React.Component {
       omittedHighlightHeaderGroups = [],
       highlightedHeaderCells,
       cellColorFormatters,
-      dateFormatters,
-    } = this.props.tableOptions;
+      dateFormatters
+    } = props.tableOptions;
     const flatRowKey = flatKey(rowKey);
 
     const colIncrSpan = colAttrs.length !== 0 ? 1 : 0;
@@ -606,7 +580,7 @@ export class TableRenderer extends React.Component {
         const needRowToggle =
           rowSubtotalDisplay.enabled && i !== rowAttrs.length - 1;
         const onArrowClick = needRowToggle
-          ? this.toggleRowKey(flatRowKey)
+          ? toggleRowKeyHandler(flatRowKey)
           : null;
 
         const headerCellFormattedValue =
@@ -619,22 +593,22 @@ export class TableRenderer extends React.Component {
             className={valueCellClassName}
             rowSpan={rowSpan}
             colSpan={colSpan}
-            onClick={this.clickHeaderHandler(
+            onClick={clickHeaderHandlerHandler(
               pivotData,
               rowKey,
-              this.props.rows,
+              props.rows,
               i,
-              this.props.tableOptions.clickRowHeaderCallback,
+              props.tableOptions.clickRowHeaderCallback
             )}
           >
             {displayHeaderCell(
               needRowToggle,
-              this.state.collapsedRows[flatRowKey]
+              collapsedRows[flatRowKey]
                 ? arrowCollapsed
                 : arrowExpanded,
               onArrowClick,
               headerCellFormattedValue,
-              namesMapping,
+              namesMapping
             )}
           </th>
         );
@@ -649,13 +623,13 @@ export class TableRenderer extends React.Component {
           key="rowKeyBuffer"
           colSpan={rowAttrs.length - rowKey.length + colIncrSpan}
           rowSpan={1}
-          onClick={this.clickHeaderHandler(
+          onClick={clickHeaderHandlerHandler(
             pivotData,
             rowKey,
-            this.props.rows,
+            props.rows,
             rowKey.length,
-            this.props.tableOptions.clickRowHeaderCallback,
-            true,
+            props.tableOptions.clickRowHeaderCallback,
+            true
           )}
         >
           Subtotal
@@ -727,13 +701,12 @@ export class TableRenderer extends React.Component {
       ...attrValueCells,
       attrValuePaddingCell,
       ...valueCells,
-      totalCell,
+      totalCell
     ];
 
     return <tr key={`keyRow-${flatRowKey}`}>{rowCells}</tr>;
-  }
-
-  renderTotalsRow(pivotSettings) {
+  }, [collapsedRows]);
+    const renderTotalsRowHandler = useCallback((pivotSettings) => {
     // Render the final totals rows that has the totals for all the columns.
 
     const {
@@ -743,7 +716,7 @@ export class TableRenderer extends React.Component {
       rowTotals,
       pivotData,
       colTotalCallbacks,
-      grandTotalCallback,
+      grandTotalCallback
     } = pivotSettings;
 
     const totalLabelCell = (
@@ -751,17 +724,17 @@ export class TableRenderer extends React.Component {
         key="label"
         className="pvtTotalLabel pvtRowTotalLabel"
         colSpan={rowAttrs.length + Math.min(colAttrs.length, 1)}
-        onClick={this.clickHeaderHandler(
+        onClick={clickHeaderHandlerHandler(
           pivotData,
           [],
-          this.props.rows,
+          props.rows,
           0,
-          this.props.tableOptions.clickRowHeaderCallback,
+          props.tableOptions.clickRowHeaderCallback,
           false,
-          true,
+          true
         )}
       >
-        {`Total (${this.props.aggregatorName})`}
+        {`Total (${props.aggregatorName})`}
       </th>
     );
 
@@ -806,9 +779,8 @@ export class TableRenderer extends React.Component {
         {totalCells}
       </tr>
     );
-  }
-
-  visibleKeys(keys, collapsed, numAttrs, subtotalDisplay) {
+  }, []);
+    const visibleKeysHandler = useCallback((keys, collapsed, numAttrs, subtotalDisplay) => {
     return keys.filter(
       key =>
         // Is the key hidden by one of its parents?
@@ -818,14 +790,13 @@ export class TableRenderer extends React.Component {
           // Children hidden. Must show total.
           flatKey(key) in collapsed ||
           // Don't hide totals.
-          !subtotalDisplay.hideOnExpand),
+          !subtotalDisplay.hideOnExpand)
     );
-  }
+  }, []);
 
-  render() {
-    if (this.cachedProps !== this.props) {
-      this.cachedProps = this.props;
-      this.cachedBasePivotSettings = this.getBasePivotSettings();
+    if (cachedPropsHandler !== props) {
+      cachedPropsHandler = props;
+      cachedBasePivotSettingsHandler = getBasePivotSettingsHandler();
     }
     const {
       colAttrs,
@@ -834,22 +805,22 @@ export class TableRenderer extends React.Component {
       colKeys,
       colTotals,
       rowSubtotalDisplay,
-      colSubtotalDisplay,
-    } = this.cachedBasePivotSettings;
+      colSubtotalDisplay
+    } = cachedBasePivotSettingsHandler;
 
     // Need to account for exclusions to compute the effective row
     // and column keys.
-    const visibleRowKeys = this.visibleKeys(
+    const visibleRowKeys = visibleKeysHandler(
       rowKeys,
-      this.state.collapsedRows,
+      collapsedRows,
       rowAttrs.length,
-      rowSubtotalDisplay,
+      rowSubtotalDisplay
     );
-    const visibleColKeys = this.visibleKeys(
+    const visibleColKeys = visibleKeysHandler(
       colKeys,
-      this.state.collapsedCols,
+      collapsedCols,
       colAttrs.length,
-      colSubtotalDisplay,
+      colSubtotalDisplay
     );
 
     const pivotSettings = {
@@ -857,9 +828,9 @@ export class TableRenderer extends React.Component {
       maxRowVisible: Math.max(...visibleRowKeys.map(k => k.length)),
       visibleColKeys,
       maxColVisible: Math.max(...visibleColKeys.map(k => k.length)),
-      rowAttrSpans: this.calcAttrSpans(visibleRowKeys, rowAttrs.length),
-      colAttrSpans: this.calcAttrSpans(visibleColKeys, colAttrs.length),
-      ...this.cachedBasePivotSettings,
+      rowAttrSpans: calcAttrSpansHandler(visibleRowKeys, rowAttrs.length),
+      colAttrSpans: calcAttrSpansHandler(visibleColKeys, colAttrs.length),
+      ...cachedBasePivotSettingsHandler
     };
 
     return (
@@ -867,24 +838,26 @@ export class TableRenderer extends React.Component {
         <table className="pvtTable" role="grid">
           <thead>
             {colAttrs.map((c, j) =>
-              this.renderColHeaderRow(c, j, pivotSettings),
+              renderColHeaderRowHandler(c, j, pivotSettings)
             )}
-            {rowAttrs.length !== 0 && this.renderRowHeaderRow(pivotSettings)}
+            {rowAttrs.length !== 0 && renderRowHeaderRowHandler(pivotSettings)}
           </thead>
           <tbody>
             {visibleRowKeys.map((r, i) =>
-              this.renderTableRow(r, i, pivotSettings),
+              renderTableRowHandler(r, i, pivotSettings)
             )}
-            {colTotals && this.renderTotalsRow(pivotSettings)}
+            {colTotals && renderTotalsRowHandler(pivotSettings)}
           </tbody>
         </table>
       </Styles>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 TableRenderer.propTypes = {
   ...PivotData.propTypes,
-  tableOptions: PropTypes.object,
+  tableOptions: PropTypes.object
 };
 TableRenderer.defaultProps = { ...PivotData.defaultProps, tableOptions: {} };

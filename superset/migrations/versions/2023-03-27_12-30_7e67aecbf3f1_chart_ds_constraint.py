@@ -34,6 +34,7 @@ from alembic import op
 from sqlalchemy.ext.declarative import declarative_base
 
 from superset import db
+from superset.utils.core import generic_find_check_constraint_exists
 
 Base = declarative_base()
 
@@ -84,6 +85,7 @@ def upgrade_slc(slc: Slice) -> None:
 def upgrade():
     bind = op.get_bind()
     session = db.Session(bind=bind)
+    insp = sa.engine.reflection.Inspector.from_engine(bind)
     with op.batch_alter_table("slices") as batch_op:
         for slc in session.query(Slice).filter(Slice.datasource_type != "table").all():
             if slc.datasource_type == "query":
@@ -100,13 +102,16 @@ def upgrade():
     session.commit()
 
     with op.batch_alter_table("slices") as batch_op:
-        batch_op.create_check_constraint(
-            "ck_chart_datasource", "datasource_type in ('table')"
-        )
+        if not generic_find_check_constraint_exists(
+            "slices", "ck_chart_datasource", insp
+        ):
+            batch_op.create_check_constraint(
+                "ck_chart_datasource", "datasource_type in ('table')"
+            )
 
     session.commit()
     session.close()
 
 
 def downgrade():
-    op.drop_constraint("ck_chart_datasource", "slices", type_="check")
+    op.execute("ALTER TABLE slices DROP CONSTRAINT IF EXISTS ck_chart_datasource")

@@ -67,7 +67,7 @@ from flask_babel import gettext as __
 from flask_babel.speaklater import LazyString
 from pandas.api.types import infer_dtype
 from pandas.core.dtypes.common import is_numeric_dtype
-from sqlalchemy import event, exc, inspect, select, Text
+from sqlalchemy import CheckConstraint, event, exc, inspect, select, Text
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.engine.reflection import Inspector
@@ -731,6 +731,22 @@ def generic_find_uq_constraint_name(
             return uq["name"]
 
     return None
+
+
+def generic_find_check_constraint_exists(
+    table_name: str, constraint_name: str, insp: Inspector
+) -> bool:
+    """
+    Check if a constraint exists in a table.
+    """
+
+    # Get the table object
+    check_constraints = insp.get_check_constraints(table_name)
+
+    # Check if the table has the specified constraint
+    return any(
+        constraint["name"] == constraint_name for constraint in check_constraints
+    )
 
 
 def get_datasource_full_name(

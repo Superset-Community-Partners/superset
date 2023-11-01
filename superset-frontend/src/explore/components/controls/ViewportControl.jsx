@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import { t } from '@superset-ui/core';
 import PropTypes from 'prop-types';
 import Popover from 'src/components/Popover';
@@ -56,66 +57,65 @@ const defaultProps = {
   value: DEFAULT_VIEWPORT,
 };
 
-export default class ViewportControl extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onChange = this.onChange.bind(this);
-  }
+const ViewportControl = (props) => {
 
-  onChange(ctrl, value) {
-    this.props.onChange({
-      ...this.props.value,
+
+    
+
+    const onChangeHandler = useCallback(ctrl, value => {
+    props.onChange({
+      ...props.value,
       [ctrl]: value,
     });
-  }
-
-  renderTextControl(ctrl) {
+  }, []);
+    const renderTextControlHandler = useCallback(ctrl => {
     return (
       <div key={ctrl}>
         <FormLabel>{ctrl}</FormLabel>
         <TextControl
-          value={this.props.value[ctrl]}
-          onChange={this.onChange.bind(this, ctrl)}
+          value={props.value[ctrl]}
+          onChange={onChangeHandler.bind(this, ctrl)}
           isFloat
         />
       </div>
     );
-  }
-
-  renderPopover() {
+  }, []);
+    const renderPopoverHandler = useCallback( => {
     return (
-      <div id={`filter-popover-${this.props.name}`}>
-        {PARAMS.map(ctrl => this.renderTextControl(ctrl))}
+      <div id={`filter-popover-${props.name}`}>
+        {PARAMS.map(ctrl => renderTextControlHandler(ctrl))}
       </div>
     );
-  }
-
-  renderLabel() {
-    if (this.props.value.longitude && this.props.value.latitude) {
+  }, []);
+    const renderLabelHandler = useCallback( => {
+    if (props.value.longitude && props.value.latitude) {
       return `${decimal2sexagesimal(
-        this.props.value.longitude,
-      )} | ${decimal2sexagesimal(this.props.value.latitude)}`;
+        props.value.longitude,
+      )} | ${decimal2sexagesimal(props.value.latitude)}`;
     }
     return 'N/A';
-  }
+  }, []);
 
-  render() {
     return (
       <div>
-        <ControlHeader {...this.props} />
+        <ControlHeader {...props} />
         <Popover
           container={document.body}
           trigger="click"
           placement="right"
-          content={this.renderPopover()}
+          content={renderPopoverHandler()}
           title={t('Viewport')}
         >
-          <Label className="pointer">{this.renderLabel()}</Label>
+          <Label className="pointer">{renderLabelHandler()}</Label>
         </Popover>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+export default ViewportControl;
+
+
+
 
 ViewportControl.propTypes = propTypes;
 ViewportControl.defaultProps = defaultProps;

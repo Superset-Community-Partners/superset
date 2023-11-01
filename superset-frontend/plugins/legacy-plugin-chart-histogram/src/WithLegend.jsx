@@ -17,7 +17,8 @@
  * under the License.
  */
 /* eslint-disable react/sort-prop-types, react/jsx-sort-default-props */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { ParentSize } from '@vx/responsive';
 
@@ -54,9 +55,13 @@ const CHART_STYLE_BASE = {
   position: 'relative',
 };
 
-class WithLegend extends React.Component {
-  getContainerDirection() {
-    const { position } = this.props;
+const WithLegend = (props) => {
+
+
+    
+
+    const getContainerDirectionHandler = useCallback( => {
+    const { position } = props;
     switch (position) {
       case 'left':
         return 'row';
@@ -68,10 +73,9 @@ class WithLegend extends React.Component {
       case 'top':
         return 'column';
     }
-  }
-
-  getLegendJustifyContent() {
-    const { legendJustifyContent, position } = this.props;
+  }, []);
+    const getLegendJustifyContentHandler = useCallback( => {
+    const { legendJustifyContent, position } = props;
     if (legendJustifyContent) {
       return legendJustifyContent;
     }
@@ -86,17 +90,16 @@ class WithLegend extends React.Component {
       case 'top':
         return 'flex-end';
     }
-  }
+  }, []);
 
-  render() {
     const { className, width, height, position, renderChart, renderLegend } =
-      this.props;
+      props;
 
     const isHorizontal = position === 'left' || position === 'right';
 
     const style = {
       display: 'flex',
-      flexDirection: this.getContainerDirection(),
+      flexDirection: getContainerDirectionHandler(),
     };
     if (width) {
       style.width = width;
@@ -116,7 +119,7 @@ class WithLegend extends React.Component {
     const legendStyle = {
       ...LEGEND_STYLE_BASE,
       flexDirection: legendDirection,
-      justifyContent: this.getLegendJustifyContent(),
+      justifyContent: getLegendJustifyContentHandler(),
     };
     const legendContainerStyle = {
       flexWrap: 'wrap',
@@ -143,9 +146,11 @@ class WithLegend extends React.Component {
           </ParentSize>
         </div>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 WithLegend.propTypes = propTypes;
 WithLegend.defaultProps = defaultProps;

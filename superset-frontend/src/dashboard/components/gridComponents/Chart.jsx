@@ -16,21 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 import cx from 'classnames';
-import React from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { styled, t, logging } from '@superset-ui/core';
-import { debounce, isEqual } from 'lodash';
+import { isEqual } from 'lodash';
 import { withRouter } from 'react-router-dom';
 
 import { exportChart, mountExploreUrl } from 'src/explore/exploreUtils';
 import ChartContainer from 'src/components/Chart/ChartContainer';
 import {
-  LOG_ACTIONS_CHANGE_DASHBOARD_FILTER,
-  LOG_ACTIONS_EXPLORE_DASHBOARD_CHART,
-  LOG_ACTIONS_EXPORT_CSV_DASHBOARD_CHART,
-  LOG_ACTIONS_EXPORT_XLSX_DASHBOARD_CHART,
-  LOG_ACTIONS_FORCE_REFRESH_CHART,
+    LOG_ACTIONS_CHANGE_DASHBOARD_FILTER,
+    LOG_ACTIONS_EXPLORE_DASHBOARD_CHART,
+    LOG_ACTIONS_EXPORT_CSV_DASHBOARD_CHART,
+    LOG_ACTIONS_EXPORT_XLSX_DASHBOARD_CHART,
+    LOG_ACTIONS_FORCE_REFRESH_CHART,
 } from 'src/logger/LogUtils';
 import { areObjectsEqual } from 'src/reduxUtils';
 import { postFormData } from 'src/explore/exploreUtils/formData';
@@ -125,47 +126,30 @@ const SliceContainer = styled.div`
   max-height: 100%;
 `;
 
-class Chart extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      width: props.width,
-      height: props.height,
-      descriptionHeight: 0,
-    };
+const Chart = (props) => {
 
-    this.changeFilter = this.changeFilter.bind(this);
-    this.handleFilterMenuOpen = this.handleFilterMenuOpen.bind(this);
-    this.handleFilterMenuClose = this.handleFilterMenuClose.bind(this);
-    this.exportCSV = this.exportCSV.bind(this);
-    this.exportFullCSV = this.exportFullCSV.bind(this);
-    this.exportXLSX = this.exportXLSX.bind(this);
-    this.exportFullXLSX = this.exportFullXLSX.bind(this);
-    this.forceRefresh = this.forceRefresh.bind(this);
-    this.resize = debounce(this.resize.bind(this), RESIZE_TIMEOUT);
-    this.setDescriptionRef = this.setDescriptionRef.bind(this);
-    this.setHeaderRef = this.setHeaderRef.bind(this);
-    this.getChartHeight = this.getChartHeight.bind(this);
-    this.getDescriptionHeight = this.getDescriptionHeight.bind(this);
-  }
 
-  shouldComponentUpdate(nextProps, nextState) {
+    const [width, setWidth] = useState(props.width);
+    const [height, setHeight] = useState(props.height);
+    const [descriptionHeight, setDescriptionHeight] = useState(0);
+
+    const shouldComponentUpdateHandler = useCallback(nextProps, nextState => {
     // this logic mostly pertains to chart resizing. we keep a copy of the dimensions in
     // state so that we can buffer component size updates and only update on the final call
     // which improves performance significantly
     if (
-      nextState.width !== this.state.width ||
-      nextState.height !== this.state.height ||
-      nextState.descriptionHeight !== this.state.descriptionHeight ||
-      !isEqual(nextProps.datasource, this.props.datasource)
+      nextState.width !== width ||
+      nextState.height !== height ||
+      nextState.descriptionHeight !== descriptionHeight ||
+      !isEqual(nextProps.datasource, props.datasource)
     ) {
       return true;
     }
 
     // allow chart to update if the status changed and the previous status was loading.
     if (
-      this.props?.chart?.chartStatus !== nextProps?.chart?.chartStatus &&
-      this.props?.chart?.chartStatus === 'loading'
+      props?.chart?.chartStatus !== nextProps?.chart?.chartStatus &&
+      props?.chart?.chartStatus === 'loading'
     ) {
       return true;
     }
@@ -177,124 +161,113 @@ class Chart extends React.Component {
         return true;
       }
 
-      if (nextProps.isFullSize !== this.props.isFullSize) {
-        this.resize();
+      if (nextProps.isFullSize !== props.isFullSize) {
+        resizeHandler();
         return false;
       }
 
       if (
-        nextProps.width !== this.props.width ||
-        nextProps.height !== this.props.height ||
-        nextProps.width !== this.state.width ||
-        nextProps.height !== this.state.height
+        nextProps.width !== props.width ||
+        nextProps.height !== props.height ||
+        nextProps.width !== width ||
+        nextProps.height !== height
       ) {
-        this.resize();
+        resizeHandler();
       }
 
       for (let i = 0; i < SHOULD_UPDATE_ON_PROP_CHANGES.length; i += 1) {
         const prop = SHOULD_UPDATE_ON_PROP_CHANGES[i];
         // use deep objects equality comparison to prevent
         // unnecessary updates when objects references change
-        if (!areObjectsEqual(nextProps[prop], this.props[prop])) {
+        if (!areObjectsEqual(nextProps[prop], props[prop])) {
           return true;
         }
       }
     } else if (
       // chart should re-render if color scheme or label color was changed
-      nextProps.formData?.color_scheme !== this.props.formData?.color_scheme ||
+      nextProps.formData?.color_scheme !== props.formData?.color_scheme ||
       !areObjectsEqual(
         nextProps.formData?.label_colors,
-        this.props.formData?.label_colors,
+        props.formData?.label_colors,
       )
     ) {
       return true;
     }
 
     // `cacheBusterProp` is jected by react-hot-loader
-    return this.props.cacheBusterProp !== nextProps.cacheBusterProp;
-  }
-
-  componentDidMount() {
-    if (this.props.isExpanded) {
-      const descriptionHeight = this.getDescriptionHeight();
-      this.setState({ descriptionHeight });
+    return props.cacheBusterProp !== nextProps.cacheBusterProp;
+  }, []);
+    useEffect(() => {
+    if (props.isExpanded) {
+      const descriptionHeight = getDescriptionHeightHandler();
+      setDescriptionHeight(descriptionHeight);
     }
-  }
-
-  componentWillUnmount() {
-    this.resize.cancel();
-  }
-
-  componentDidUpdate(prevProps) {
-    if (this.props.isExpanded !== prevProps.isExpanded) {
-      const descriptionHeight = this.getDescriptionHeight();
+  }, [descriptionHeight]);
+    useEffect(() => {
+    return () => {
+    resizeHandler.cancel();
+  };
+}, []);
+    useEffect(() => {
+    if (props.isExpanded !== prevProps.isExpanded) {
+      const descriptionHeight = getDescriptionHeightHandler();
       // eslint-disable-next-line react/no-did-update-set-state
-      this.setState({ descriptionHeight });
+      setDescriptionHeight(descriptionHeight);
     }
-  }
-
-  getDescriptionHeight() {
-    return this.props.isExpanded && this.descriptionRef
-      ? this.descriptionRef.offsetHeight
+  }, [descriptionHeight]);
+    const getDescriptionHeightHandler = useCallback( => {
+    return props.isExpanded && descriptionRefHandler
+      ? descriptionRefHandler.offsetHeight
       : 0;
-  }
-
-  getChartHeight() {
-    const headerHeight = this.getHeaderHeight();
+  }, []);
+    const getChartHeightHandler = useCallback( => {
+    const headerHeight = getHeaderHeightHandler();
     return Math.max(
-      this.state.height - headerHeight - this.state.descriptionHeight,
+      height - headerHeight - descriptionHeight,
       20,
     );
-  }
-
-  getHeaderHeight() {
-    if (this.headerRef) {
-      const computedStyle = getComputedStyle(this.headerRef).getPropertyValue(
+  }, [height, descriptionHeight]);
+    const getHeaderHeightHandler = useCallback( => {
+    if (headerRefHandler) {
+      const computedStyle = getComputedStyle(headerRefHandler).getPropertyValue(
         'margin-bottom',
       );
       const marginBottom = parseInt(computedStyle, 10) || 0;
-      return this.headerRef.offsetHeight + marginBottom;
+      return headerRefHandler.offsetHeight + marginBottom;
     }
     return DEFAULT_HEADER_HEIGHT;
-  }
-
-  setDescriptionRef(ref) {
-    this.descriptionRef = ref;
-  }
-
-  setHeaderRef(ref) {
-    this.headerRef = ref;
-  }
-
-  resize() {
-    const { width, height } = this.props;
-    this.setState(() => ({ width, height }));
-  }
-
-  changeFilter(newSelectedValues = {}) {
+  }, []);
+    const setDescriptionRefHandler = useCallback(ref => {
+    descriptionRefHandler = ref;
+  }, []);
+    const setHeaderRefHandler = useCallback(ref => {
+    headerRefHandler = ref;
+  }, []);
+    const resizeHandler = useCallback( => {
+    const { width, height } = props;
+    setWidth(width);
+    setHeight(height);
+  }, [width, height]);
+    const changeFilterHandler = useCallback(newSelectedValues = {} => {
     this.props.logEvent(LOG_ACTIONS_CHANGE_DASHBOARD_FILTER, {
-      id: this.props.chart.id,
+      id: props.chart.id,
       columns: Object.keys(newSelectedValues),
     });
-    this.props.changeFilter(this.props.chart.id, newSelectedValues);
-  }
-
-  handleFilterMenuOpen(chartId, column) {
-    this.props.setFocusedFilterField(chartId, column);
-  }
-
-  handleFilterMenuClose(chartId, column) {
-    this.props.unsetFocusedFilterField(chartId, column);
-  }
-
-  logExploreChart = () => {
-    this.props.logEvent(LOG_ACTIONS_EXPLORE_DASHBOARD_CHART, {
-      slice_id: this.props.slice.slice_id,
-      is_cached: this.props.isCached,
+    props.changeFilter(props.chart.id, newSelectedValues);
+  }, []);
+    const handleFilterMenuOpenHandler = useCallback(chartId, column => {
+    props.setFocusedFilterField(chartId, column);
+  }, []);
+    const handleFilterMenuCloseHandler = useCallback(chartId, column => {
+    props.unsetFocusedFilterField(chartId, column);
+  }, []);
+    const logExploreChartHandler = useCallback(() => {
+    props.logEvent(LOG_ACTIONS_EXPLORE_DASHBOARD_CHART, {
+      slice_id: props.slice.slice_id,
+      is_cached: props.isCached,
     });
-  };
-
-  onExploreChart = async clickEvent => {
+  }, []);
+    const onExploreChartHandler = useCallback(async clickEvent => {
     const isOpenInNewTab =
       clickEvent.shiftKey || clickEvent.ctrlKey || clickEvent.metaKey;
     try {
@@ -303,76 +276,69 @@ class Chart extends React.Component {
         ? String(Number.parseInt(lastTabId, 10) + 1)
         : undefined;
       const key = await postFormData(
-        this.props.datasource.id,
-        this.props.datasource.type,
-        this.props.formData,
-        this.props.slice.slice_id,
+        props.datasource.id,
+        props.datasource.type,
+        props.formData,
+        props.slice.slice_id,
         nextTabId,
       );
       const url = mountExploreUrl(null, {
         [URL_PARAMS.formDataKey.name]: key,
-        [URL_PARAMS.sliceId.name]: this.props.slice.slice_id,
+        [URL_PARAMS.sliceId.name]: props.slice.slice_id,
       });
       if (isOpenInNewTab) {
         window.open(url, '_blank', 'noreferrer');
       } else {
-        this.props.history.push(url);
+        props.history.push(url);
       }
     } catch (error) {
       logging.error(error);
-      this.props.addDangerToast(t('An error occurred while opening Explore'));
+      props.addDangerToast(t('An error occurred while opening Explore'));
     }
-  };
-
-  exportFullCSV() {
-    this.exportCSV(true);
-  }
-
-  exportCSV(isFullCSV = false) {
-    this.exportTable('csv', isFullCSV);
-  }
-
-  exportXLSX() {
-    this.exportTable('xlsx', false);
-  }
-
-  exportFullXLSX() {
-    this.exportTable('xlsx', true);
-  }
-
-  exportTable(format, isFullCSV) {
+  }, []);
+    const exportFullCSVHandler = useCallback( => {
+    exportCSVHandler(true);
+  }, []);
+    const exportCSVHandler = useCallback(isFullCSV = false => {
+    exportTableHandler('csv', isFullCSV);
+  }, []);
+    const exportXLSXHandler = useCallback( => {
+    exportTableHandler('xlsx', false);
+  }, []);
+    const exportFullXLSXHandler = useCallback( => {
+    exportTableHandler('xlsx', true);
+  }, []);
+    const exportTableHandler = useCallback(format, isFullCSV => {
     const logAction =
       format === 'csv'
         ? LOG_ACTIONS_EXPORT_CSV_DASHBOARD_CHART
         : LOG_ACTIONS_EXPORT_XLSX_DASHBOARD_CHART;
-    this.props.logEvent(logAction, {
-      slice_id: this.props.slice.slice_id,
-      is_cached: this.props.isCached,
+    props.logEvent(logAction, {
+      slice_id: props.slice.slice_id,
+      is_cached: props.isCached,
     });
     exportChart({
       formData: isFullCSV
-        ? { ...this.props.formData, row_limit: this.props.maxRows }
-        : this.props.formData,
+        ? { ...props.formData, row_limit: props.maxRows }
+        : props.formData,
       resultType: 'full',
       resultFormat: format,
       force: true,
-      ownState: this.props.ownState,
+      ownState: props.ownState,
     });
-  }
-
-  forceRefresh() {
-    this.props.logEvent(LOG_ACTIONS_FORCE_REFRESH_CHART, {
-      slice_id: this.props.slice.slice_id,
-      is_cached: this.props.isCached,
+  }, []);
+    const forceRefreshHandler = useCallback( => {
+    props.logEvent(LOG_ACTIONS_FORCE_REFRESH_CHART, {
+      slice_id: props.slice.slice_id,
+      is_cached: props.isCached,
     });
-    return this.props.refreshChart(
-      this.props.chart.id,
+    return props.refreshChart(
+      props.chart.id,
       true,
-      this.props.dashboardId,
+      props.dashboardId,
     );
-  }
+  }, []);
 
-  render() {
     const {
       id,
       componentId,
@@ -405,13 +371,13 @@ class Chart extends React.Component {
       isInView,
       emitCrossFilters,
       logEvent,
-    } = this.props;
+    } = props;
 
-    const { width } = this.state;
+    
     // this prevents throwing in the case that a gridComponent
     // references a chart that is not associated with the dashboard
     if (!chart || !slice) {
-      return <MissingChart height={this.getChartHeight()} />;
+      return <MissingChart height={getChartHeightHandler()} />;
     }
 
     const { queriesResponse, chartUpdateEndTime, chartStatus } = chart;
@@ -438,23 +404,23 @@ class Chart extends React.Component {
         data-test-chart-name={slice.slice_name}
       >
         <SliceHeader
-          innerRef={this.setHeaderRef}
+          innerRef={setHeaderRefHandler}
           slice={slice}
           isExpanded={isExpanded}
           isCached={isCached}
           cachedDttm={cachedDttm}
           updatedDttm={chartUpdateEndTime}
           toggleExpandSlice={toggleExpandSlice}
-          forceRefresh={this.forceRefresh}
+          forceRefresh={forceRefreshHandler}
           editMode={editMode}
           annotationQuery={chart.annotationQuery}
-          logExploreChart={this.logExploreChart}
+          logExploreChart={logExploreChartHandler}
           logEvent={logEvent}
-          onExploreChart={this.onExploreChart}
-          exportCSV={this.exportCSV}
-          exportXLSX={this.exportXLSX}
-          exportFullCSV={this.exportFullCSV}
-          exportFullXLSX={this.exportFullXLSX}
+          onExploreChart={onExploreChartHandler}
+          exportCSV={exportCSVHandler}
+          exportXLSX={exportXLSXHandler}
+          exportFullCSV={exportFullCSVHandler}
+          exportFullXLSX={exportFullXLSXHandler}
           updateSliceName={updateSliceName}
           sliceName={sliceName}
           supersetCanExplore={supersetCanExplore}
@@ -470,7 +436,7 @@ class Chart extends React.Component {
           chartStatus={chart.chartStatus}
           formData={formData}
           width={width}
-          height={this.getHeaderHeight()}
+          height={getHeaderHeightHandler()}
         />
 
         {/*
@@ -483,7 +449,7 @@ class Chart extends React.Component {
         {isExpanded && slice.description_markeddown && (
           <div
             className="slice_description bs-callout bs-callout-default"
-            ref={this.setDescriptionRef}
+            ref={setDescriptionRefHandler}
             // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: slice.description_markeddown }}
           />
@@ -499,17 +465,17 @@ class Chart extends React.Component {
             <ChartOverlay
               style={{
                 width,
-                height: this.getChartHeight(),
+                height: getChartHeightHandler(),
               }}
             />
           )}
 
           <ChartContainer
             width={width}
-            height={this.getChartHeight()}
-            addFilter={this.changeFilter}
-            onFilterMenuOpen={this.handleFilterMenuOpen}
-            onFilterMenuClose={this.handleFilterMenuClose}
+            height={getChartHeightHandler()}
+            addFilter={changeFilterHandler}
+            onFilterMenuOpen={handleFilterMenuOpenHandler}
+            onFilterMenuClose={handleFilterMenuCloseHandler}
             annotationData={chart.annotationData}
             chartAlert={chart.chartAlert}
             chartId={id}
@@ -534,9 +500,11 @@ class Chart extends React.Component {
           />
         </ChartWrapper>
       </SliceContainer>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 Chart.propTypes = propTypes;
 Chart.defaultProps = defaultProps;

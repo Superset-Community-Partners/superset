@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import React, { useState, useRef, useCallback } from 'react';
 import { legacyValidateNumber, legacyValidateInteger } from '@superset-ui/core';
 import debounce from 'lodash/debounce';
 import { FAST_DEBOUNCE } from 'src/constants';
@@ -45,24 +46,17 @@ export interface TextControlState {
 const safeStringify = (value?: InputValueType | null) =>
   value == null ? '' : String(value);
 
-export default class TextControl<
-  T extends InputValueType = InputValueType,
-> extends React.Component<TextControlProps<T>, TextControlState> {
-  initialValue?: TextControlProps['value'];
+const TextControl = (props: TextControlProps<T>) => {
 
-  constructor(props: TextControlProps<T>) {
-    super(props);
-    this.initialValue = props.value;
-    this.state = {
-      value: safeStringify(this.initialValue),
-    };
-  }
 
-  onChange = (inputValue: string) => {
+    const [value, setValue] = useState(safeStringify(initialValue.current));
+
+    const initialValue = useRef<TextControlProps['value']>();
+    const onChangeHandler = useCallback((inputValue: string) => {
     let parsedValue: InputValueType = inputValue;
     // Validation & casting
     const errors = [];
-    if (inputValue !== '' && this.props.isFloat) {
+    if (inputValue !== '' && props.isFloat) {
       const error = legacyValidateNumber(inputValue);
       if (error) {
         errors.push(error);
@@ -72,7 +66,7 @@ export default class TextControl<
           : parseFloat(inputValue);
       }
     }
-    if (inputValue !== '' && this.props.isInt) {
+    if (inputValue !== '' && props.isInt) {
       const error = legacyValidateInteger(inputValue);
       if (error) {
         errors.push(error);
@@ -80,40 +74,39 @@ export default class TextControl<
         parsedValue = parseInt(inputValue, 10);
       }
     }
-    this.props.onChange?.(parsedValue as T, errors);
-  };
-
-  debouncedOnChange = debounce((inputValue: string) => {
-    this.onChange(inputValue);
-  }, FAST_DEBOUNCE);
-
-  onChangeWrapper = (event: React.ChangeEvent<HTMLInputElement>) => {
+    props.onChange?.(parsedValue as T, errors);
+  }, []);
+    const debouncedOnChange = useRef(debounce((inputValue: string) => {
+    onChangeHandler(inputValue);
+  }, FAST_DEBOUNCE));
+    const onChangeWrapperHandler = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
-    this.setState({ value }, () => {
-      this.debouncedOnChange(value);
-    });
-  };
+    setValue(value);
+  }, [value]);
 
-  render() {
-    let { value } = this.state;
-    if (this.initialValue !== this.props.value) {
-      this.initialValue = this.props.value;
-      value = safeStringify(this.props.value);
+    
+    if (initialValue.current !== props.value) {
+      initialValue.current = props.value;
+      setValue(safeStringify(props.value));
     }
     return (
       <div>
-        <ControlHeader {...this.props} />
+        <ControlHeader {...props} />
         <Input
           type="text"
           data-test="inline-name"
-          placeholder={this.props.placeholder}
-          onChange={this.onChangeWrapper}
-          onFocus={this.props.onFocus}
+          placeholder={props.placeholder}
+          onChange={onChangeWrapperHandler}
+          onFocus={props.onFocus}
           value={value}
-          disabled={this.props.disabled}
-          aria-label={this.props.label}
+          disabled={props.disabled}
+          aria-label={props.label}
         />
       </div>
-    );
-  }
-}
+    ); 
+};
+
+export default TextControl;
+
+
+

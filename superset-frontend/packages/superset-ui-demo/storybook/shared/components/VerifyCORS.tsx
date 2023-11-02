@@ -17,13 +17,14 @@
  * under the License.
  */
 
-import React, { ReactNode } from 'react';
+
+import React, { ReactNode, useState, useEffect, useCallback } from "react";
 import {
-  SupersetClient,
-  Method,
-  makeApi,
-  SupersetApiError,
-  t,
+    SupersetClient,
+    Method,
+    makeApi,
+    SupersetApiError,
+    t,
 } from '@superset-ui/core';
 import ErrorMessage from './ErrorMessage';
 
@@ -53,29 +54,27 @@ export const renderError = (error: Error) => (
   </div>
 );
 
-export default class VerifyCORS extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { didVerify: false };
-    this.handleVerify = this.handleVerify.bind(this);
-  }
+const VerifyCORS = (props: Props) => {
 
-  componentDidUpdate(prevProps: Props) {
-    const { endpoint, host, postPayload, method } = this.props;
+
+    const [didVerify, setDidVerify] = useState(false);
+
+    useEffect(() => {
+    const { endpoint, host, postPayload, method } = props;
     if (
-      (this.state.didVerify || this.state.error) &&
+      (didVerify || error) &&
       (prevProps.endpoint !== endpoint ||
         prevProps.host !== host ||
         prevProps.postPayload !== postPayload ||
         prevProps.method !== method)
     ) {
       // eslint-disable-next-line react/no-did-update-set-state
-      this.setState({ didVerify: false, error: undefined });
+      setDidVerify(false);
+    setError(undefined);
     }
-  }
-
-  handleVerify() {
-    const { endpoint, host, postPayload, method } = this.props;
+  }, [didVerify]);
+    const handleVerifyHandler = useCallback(() => {
+    const { endpoint, host, postPayload, method } = props;
     SupersetClient.reset();
     SupersetClient.configure({
       credentials: 'include',
@@ -94,14 +93,15 @@ export default class VerifyCORS extends React.Component<Props, State> {
         return { error: 'Must provide valid endpoint and payload.' };
       })
       .then(result =>
-        this.setState({ didVerify: true, error: undefined, payload: result }),
+        setDidVerify(true);
+    setError(undefined);
+    setPayload(result);,
       )
-      .catch(error => this.setState({ error }));
-  }
+      .catch(error => setError(error););
+  }, []);
 
-  render() {
-    const { didVerify, error, payload } = this.state;
-    const { children } = this.props;
+    
+    const { children } = props;
 
     return didVerify ? (
       children({ payload })
@@ -120,7 +120,7 @@ export default class VerifyCORS extends React.Component<Props, State> {
           <button
             type="button"
             className="btn btn-primary btn-sm"
-            onClick={this.handleVerify}
+            onClick={handleVerifyHandler}
           >
             {t('Verify')}
           </button>
@@ -134,6 +134,10 @@ export default class VerifyCORS extends React.Component<Props, State> {
           </div>
         )}
       </div>
-    );
-  }
-}
+    ); 
+};
+
+export default VerifyCORS;
+
+
+

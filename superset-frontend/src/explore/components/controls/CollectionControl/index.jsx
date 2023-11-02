@@ -16,21 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { List } from 'src/components';
 import shortid from 'shortid';
 import { t, withTheme } from '@superset-ui/core';
 import {
-  SortableContainer,
-  SortableHandle,
-  SortableElement,
-  arrayMove,
+    SortableContainer,
+    SortableHandle,
+    SortableElement,
+    arrayMove,
 } from 'react-sortable-hoc';
 import Icons from 'src/components/Icons';
 import {
-  HeaderContainer,
-  AddIconButton,
+    HeaderContainer,
+    AddIconButton,
 } from 'src/explore/components/controls/OptionControls';
 import { InfoTooltipWithTrigger } from '@superset-ui/chart-controls';
 import ControlHeader from 'src/explore/components/ControlHeader';
@@ -73,53 +74,48 @@ const SortableDragger = SortableHandle(() => (
   />
 ));
 
-class CollectionControl extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onAdd = this.onAdd.bind(this);
-  }
+const CollectionControl = (props) => {
 
-  onChange(i, value) {
-    const newValue = [...this.props.value];
-    newValue[i] = { ...this.props.value[i], ...value };
-    this.props.onChange(newValue);
-  }
 
-  onAdd() {
-    this.props.onChange(this.props.value.concat([this.props.itemGenerator()]));
-  }
+    
 
-  onSortEnd({ oldIndex, newIndex }) {
-    this.props.onChange(arrayMove(this.props.value, oldIndex, newIndex));
-  }
-
-  removeItem(i) {
-    this.props.onChange(this.props.value.filter((o, ix) => i !== ix));
-  }
-
-  renderList() {
-    if (this.props.value.length === 0) {
-      return <div className="text-muted">{this.props.placeholder}</div>;
+    const onChangeHandler = useCallback((i, value) => {
+    const newValue = [...props.value];
+    newValue[i] = { ...props.value[i], ...value };
+    props.onChange(newValue);
+  }, []);
+    const onAddHandler = useCallback(() => {
+    props.onChange(props.value.concat([props.itemGenerator()]));
+  }, []);
+    const onSortEndHandler = useCallback(({ oldIndex, newIndex }) => {
+    props.onChange(arrayMove(props.value, oldIndex, newIndex));
+  }, []);
+    const removeItemHandler = useCallback((i) => {
+    props.onChange(props.value.filter((o, ix) => i !== ix));
+  }, []);
+    const renderListHandler = useCallback(() => {
+    if (props.value.length === 0) {
+      return <div className="text-muted">{props.placeholder}</div>;
     }
-    const Control = controlMap[this.props.controlName];
+    const Control = controlMap[props.controlName];
     return (
       <SortableList
         useDragHandle
         lockAxis="y"
-        onSortEnd={this.onSortEnd.bind(this)}
+        onSortEnd={onSortEndHandler.bind(this)}
         bordered
         css={theme => ({
           borderRadius: theme.gridUnit,
         })}
       >
-        {this.props.value.map((o, i) => {
+        {props.value.map((o, i) => {
           // label relevant only for header, not here
-          const { label, ...commonProps } = this.props;
+          const { label, ...commonProps } = props;
           return (
             <SortableListItem
               className="clearfix"
               css={{ justifyContent: 'flex-start' }}
-              key={this.props.keyAccessor(o)}
+              key={props.keyAccessor(o)}
               index={i}
             >
               <SortableDragger />
@@ -133,7 +129,7 @@ class CollectionControl extends React.Component {
                 <Control
                   {...commonProps}
                   {...o}
-                  onChange={this.onChange.bind(this, i)}
+                  onChange={onChangeHandler.bind(this, i)}
                 />
               </div>
               <InfoTooltipWithTrigger
@@ -141,33 +137,34 @@ class CollectionControl extends React.Component {
                 label="remove-item"
                 tooltip={t('Remove item')}
                 bsStyle="primary"
-                onClick={this.removeItem.bind(this, i)}
+                onClick={removeItemHandler.bind(this, i)}
               />
             </SortableListItem>
           );
         })}
       </SortableList>
     );
-  }
+  }, []);
 
-  render() {
-    const { theme } = this.props;
+    const { theme } = props;
     return (
       <div data-test="CollectionControl" className="CollectionControl">
         <HeaderContainer>
-          <ControlHeader {...this.props} />
-          <AddIconButton onClick={this.onAdd}>
+          <ControlHeader {...props} />
+          <AddIconButton onClick={onAddHandler}>
             <Icons.PlusLarge
               iconSize="s"
               iconColor={theme.colors.grayscale.light5}
             />
           </AddIconButton>
         </HeaderContainer>
-        {this.renderList()}
+        {renderListHandler()}
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 CollectionControl.propTypes = propTypes;
 CollectionControl.defaultProps = defaultProps;

@@ -17,7 +17,8 @@
  * under the License.
  */
 /* eslint-env browser */
-import React from 'react';
+
+import { useState, useCallback, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { FixedSizeList as List } from 'react-window';
@@ -29,17 +30,17 @@ import Loading from 'src/components/Loading';
 import Button from 'src/components/Button';
 import Icons from 'src/components/Icons';
 import {
-  LocalStorageKeys,
-  getItem,
-  setItem,
+    LocalStorageKeys,
+    getItem,
+    setItem,
 } from 'src/utils/localStorageHelpers';
 import {
-  CHART_TYPE,
-  NEW_COMPONENT_SOURCE_TYPE,
+    CHART_TYPE,
+    NEW_COMPONENT_SOURCE_TYPE,
 } from 'src/dashboard/util/componentTypes';
 import {
-  NEW_CHART_ID,
-  NEW_COMPONENTS_SOURCE_ID,
+    NEW_CHART_ID,
+    NEW_COMPONENTS_SOURCE_ID,
 } from 'src/dashboard/util/constants';
 import { slicePropShape } from 'src/dashboard/util/propShapes';
 import { debounce, pickBy } from 'lodash';
@@ -124,132 +125,100 @@ export const ChartList = styled.div`
   min-height: 0;
 `;
 
-class SliceAdder extends React.Component {
-  static sortByComparator(attr) {
-    const desc = attr === 'changed_on' ? -1 : 1;
+const SliceAdder = (props) => {
 
-    return (a, b) => {
-      if (a[attr] < b[attr]) {
-        return -1 * desc;
-      }
-      if (a[attr] > b[attr]) {
-        return 1 * desc;
-      }
-      return 0;
-    };
-  }
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      filteredSlices: [],
-      searchTerm: '',
-      sortBy: DEFAULT_SORT_KEY,
-      selectedSliceIdsSet: new Set(props.selectedSliceIds),
-      showOnlyMyCharts: getItem(
+    const [filteredSlices, setFilteredSlices] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState(DEFAULT_SORT_KEY);
+    const [selectedSliceIdsSet, setSelectedSliceIdsSet] = useState(new Set(props.selectedSliceIds));
+    const [showOnlyMyCharts, setShowOnlyMyCharts] = useState(getItem(
         LocalStorageKeys.dashboard__editor_show_only_my_charts,
         true,
-      ),
-    };
-    this.rowRenderer = this.rowRenderer.bind(this);
-    this.searchUpdated = this.searchUpdated.bind(this);
-    this.handleSelect = this.handleSelect.bind(this);
-    this.userIdForFetch = this.userIdForFetch.bind(this);
-    this.onShowOnlyMyCharts = this.onShowOnlyMyCharts.bind(this);
-  }
+      ));
 
-  userIdForFetch() {
-    return this.state.showOnlyMyCharts ? this.props.userId : undefined;
-  }
-
-  componentDidMount() {
-    this.slicesRequest = this.props.fetchSlices(this.userIdForFetch());
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps) {
+    const userIdForFetchHandler = useCallback(() => {
+    return showOnlyMyCharts ? props.userId : undefined;
+  }, [showOnlyMyCharts]);
+    useEffect(() => {
+    slicesRequestHandler = props.fetchSlices(userIdForFetchHandler());
+  }, []);
+    const UNSAFE_componentWillReceivePropsHandler = useCallback((nextProps) => {
     const nextState = {};
-    if (nextProps.lastUpdated !== this.props.lastUpdated) {
-      nextState.filteredSlices = this.getFilteredSortedSlices(
+    if (nextProps.lastUpdated !== props.lastUpdated) {
+      nextState.filteredSlices = getFilteredSortedSlicesHandler(
         nextProps.slices,
-        this.state.searchTerm,
-        this.state.sortBy,
-        this.state.showOnlyMyCharts,
+        searchTerm,
+        sortBy,
+        showOnlyMyCharts,
       );
     }
 
-    if (nextProps.selectedSliceIds !== this.props.selectedSliceIds) {
+    if (nextProps.selectedSliceIds !== props.selectedSliceIds) {
       nextState.selectedSliceIdsSet = new Set(nextProps.selectedSliceIds);
     }
 
     if (Object.keys(nextState).length) {
-      this.setState(nextState);
+      setStateHandler(nextState);
     }
-  }
-
-  componentWillUnmount() {
+  }, [searchTerm, sortBy, showOnlyMyCharts]);
+    useEffect(() => {
+    return () => {
     // Clears the redux store keeping only selected items
-    const selectedSlices = pickBy(this.props.slices, value =>
-      this.state.selectedSliceIdsSet.has(value.slice_id),
+    const selectedSlices = pickBy(props.slices, value =>
+      selectedSliceIdsSet.has(value.slice_id),
     );
-    this.props.updateSlices(selectedSlices);
-    if (this.slicesRequest && this.slicesRequest.abort) {
-      this.slicesRequest.abort();
+    props.updateSlices(selectedSlices);
+    if (slicesRequestHandler && slicesRequestHandler.abort) {
+      slicesRequestHandler.abort();
     }
-  }
-
-  getFilteredSortedSlices(slices, searchTerm, sortBy, showOnlyMyCharts) {
+  };
+}, [selectedSliceIdsSet]);
+    const getFilteredSortedSlicesHandler = useCallback((slices, searchTerm, sortBy, showOnlyMyCharts) => {
     return Object.values(slices)
       .filter(slice =>
         showOnlyMyCharts
           ? (slice.owners &&
-              slice.owners.find(owner => owner.id === this.props.userId)) ||
-            (slice.created_by && slice.created_by.id === this.props.userId)
+              slice.owners.find(owner => owner.id === props.userId)) ||
+            (slice.created_by && slice.created_by.id === props.userId)
           : true,
       )
       .filter(createFilter(searchTerm, KEYS_TO_FILTERS))
       .sort(SliceAdder.sortByComparator(sortBy));
-  }
-
-  handleChange = debounce(value => {
-    this.searchUpdated(value);
-    this.slicesRequest = this.props.fetchSlices(
-      this.userIdForFetch(),
+  }, [searchTerm, sortBy, showOnlyMyCharts]);
+    const handleChange = useRef(debounce(value => {
+    searchUpdatedHandler(value);
+    slicesRequestHandler = props.fetchSlices(
+      userIdForFetchHandler(),
       value,
-      this.state.sortBy,
+      sortBy,
     );
-  }, 300);
-
-  searchUpdated(searchTerm) {
-    this.setState(prevState => ({
-      searchTerm,
-      filteredSlices: this.getFilteredSortedSlices(
-        this.props.slices,
+  }, 300));
+    const searchUpdatedHandler = useCallback((searchTerm) => {
+    setSearchTerm(searchTerm);
+    setFilteredSlices(getFilteredSortedSlicesHandler(
+        props.slices,
         searchTerm,
         prevState.sortBy,
         prevState.showOnlyMyCharts,
-      ),
-    }));
-  }
-
-  handleSelect(sortBy) {
-    this.setState(prevState => ({
-      sortBy,
-      filteredSlices: this.getFilteredSortedSlices(
-        this.props.slices,
+      ));
+  }, [searchTerm]);
+    const handleSelectHandler = useCallback((sortBy) => {
+    setSortBy(sortBy);
+    setFilteredSlices(getFilteredSortedSlicesHandler(
+        props.slices,
         prevState.searchTerm,
         sortBy,
         prevState.showOnlyMyCharts,
-      ),
-    }));
-    this.slicesRequest = this.props.fetchSlices(
-      this.userIdForFetch(),
-      this.state.searchTerm,
+      ));
+    slicesRequestHandler = props.fetchSlices(
+      userIdForFetchHandler(),
+      searchTerm,
       sortBy,
     );
-  }
-
-  rowRenderer({ key, index, style }) {
-    const { filteredSlices, selectedSliceIdsSet } = this.state;
+  }, [sortBy, searchTerm]);
+    const rowRendererHandler = useCallback(({ key, index, style }) => {
+    
     const cellData = filteredSlices[index];
     const isSelected = selectedSliceIdsSet.has(cellData.slice_id);
     const type = CHART_TYPE;
@@ -270,7 +239,7 @@ class SliceAdder extends React.Component {
         index={index}
         depth={0}
         disableDragDrop={isSelected}
-        editMode={this.props.editMode}
+        editMode={props.editMode}
         // we must use a custom drag preview within the List because
         // it does not seem to work within a fixed-position container
         useEmptyDragPreview
@@ -293,32 +262,28 @@ class SliceAdder extends React.Component {
         )}
       </DragDroppable>
     );
-  }
-
-  onShowOnlyMyCharts(showOnlyMyCharts) {
+  }, [filteredSlices, selectedSliceIdsSet]);
+    const onShowOnlyMyChartsHandler = useCallback((showOnlyMyCharts) => {
     if (!showOnlyMyCharts) {
-      this.slicesRequest = this.props.fetchSlices(
+      slicesRequestHandler = props.fetchSlices(
         undefined,
-        this.state.searchTerm,
-        this.state.sortBy,
+        searchTerm,
+        sortBy,
       );
     }
-    this.setState(prevState => ({
-      showOnlyMyCharts,
-      filteredSlices: this.getFilteredSortedSlices(
-        this.props.slices,
+    setShowOnlyMyCharts(showOnlyMyCharts);
+    setFilteredSlices(getFilteredSortedSlicesHandler(
+        props.slices,
         prevState.searchTerm,
         prevState.sortBy,
         showOnlyMyCharts,
-      ),
-    }));
+      ));
     setItem(
       LocalStorageKeys.dashboard__editor_show_only_my_charts,
       showOnlyMyCharts,
     );
-  }
+  }, [showOnlyMyCharts, searchTerm, sortBy]);
 
-  render() {
     return (
       <div
         css={css`
@@ -333,7 +298,7 @@ class SliceAdder extends React.Component {
             buttonSize="xsmall"
             onClick={() =>
               window.open(
-                `/chart/add?dashboard_id=${this.props.dashboardId}`,
+                `/chart/add?dashboard_id=${props.dashboardId}`,
                 '_blank',
                 'noopener noreferrer',
               )
@@ -346,18 +311,18 @@ class SliceAdder extends React.Component {
         <Controls>
           <Input
             placeholder={
-              this.state.showOnlyMyCharts
+              showOnlyMyCharts
                 ? t('Filter your charts')
                 : t('Filter charts')
             }
             className="search-input"
-            onChange={ev => this.handleChange(ev.target.value)}
+            onChange={ev => handleChange.current(ev.target.value)}
             data-test="dashboard-charts-filter-search-input"
           />
           <StyledSelect
             id="slice-adder-sortby"
-            value={this.state.sortBy}
-            onChange={this.handleSelect}
+            value={sortBy}
+            onChange={handleSelectHandler}
             options={Object.entries(KEYS_TO_SORT).map(([key, label]) => ({
               label: t('Sort by %s', label),
               value: key,
@@ -377,8 +342,8 @@ class SliceAdder extends React.Component {
           `}
         >
           <Checkbox
-            onChange={this.onShowOnlyMyCharts}
-            checked={this.state.showOnlyMyCharts}
+            onChange={onShowOnlyMyChartsHandler}
+            checked={showOnlyMyCharts}
           />
           {t('Show only my charts')}
           <InfoTooltipWithTrigger
@@ -389,41 +354,55 @@ class SliceAdder extends React.Component {
             )}
           />
         </div>
-        {this.props.isLoading && <Loading />}
-        {!this.props.isLoading && this.state.filteredSlices.length > 0 && (
+        {props.isLoading && <Loading />}
+        {!props.isLoading && filteredSlices.length > 0 && (
           <ChartList>
             <AutoSizer>
               {({ height, width }) => (
                 <List
                   width={width}
                   height={height}
-                  itemCount={this.state.filteredSlices.length}
+                  itemCount={filteredSlices.length}
                   itemSize={DEFAULT_CELL_HEIGHT}
-                  searchTerm={this.state.searchTerm}
-                  sortBy={this.state.sortBy}
-                  selectedSliceIds={this.props.selectedSliceIds}
+                  searchTerm={searchTerm}
+                  sortBy={sortBy}
+                  selectedSliceIds={props.selectedSliceIds}
                 >
-                  {this.rowRenderer}
+                  {rowRendererHandler}
                 </List>
               )}
             </AutoSizer>
           </ChartList>
         )}
-        {this.props.errorMessage && (
+        {props.errorMessage && (
           <div
             css={css`
               padding: 16px;
             `}
           >
-            {this.props.errorMessage}
+            {props.errorMessage}
           </div>
         )}
         {/* Drag preview is just a single fixed-position element */}
-        <AddSliceDragPreview slices={this.state.filteredSlices} />
+        <AddSliceDragPreview slices={filteredSlices} />
       </div>
-    );
-  }
-}
+    ); 
+};
+
+SliceAdder.sortByComparator = (attr) => {
+    const desc = attr === 'changed_on' ? -1 : 1;
+
+    return (a, b) => {
+      if (a[attr] < b[attr]) {
+        return -1 * desc;
+      }
+      if (a[attr] > b[attr]) {
+        return 1 * desc;
+      }
+      return 0;
+    };
+  };
+
 
 SliceAdder.propTypes = propTypes;
 SliceAdder.defaultProps = defaultProps;

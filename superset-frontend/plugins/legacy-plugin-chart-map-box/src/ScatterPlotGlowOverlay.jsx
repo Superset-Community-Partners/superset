@@ -17,8 +17,9 @@
  * under the License.
  */
 /* eslint-disable react/require-default-props */
+
 import PropTypes from 'prop-types';
-import React from 'react';
+import { useCallback } from 'react';
 import { CanvasOverlay } from 'react-map-gl';
 import { kmToPixels, MILES_PER_KM } from './utils/geo';
 import roundDecimal from './utils/roundDecimal';
@@ -73,13 +74,12 @@ const computeClusterLabel = (properties, aggregation) => {
   return count;
 };
 
-class ScatterPlotGlowOverlay extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.redraw = this.redraw.bind(this);
-  }
+const ScatterPlotGlowOverlay = (props) => {
 
-  drawText(ctx, pixel, options = {}) {
+
+    
+
+    const drawTextHandler = useCallback((ctx, pixel, options = {}) => {
     const IS_DARK_THRESHOLD = 110;
     const {
       fontHeight = 0,
@@ -107,16 +107,15 @@ class ScatterPlotGlowOverlay extends React.PureComponent {
       ctx.font = `${scale * maxWidth}px sans-serif`;
     }
 
-    const { compositeOperation } = this.props;
+    const { compositeOperation } = props;
 
     ctx.fillText(label, pixel[0], pixel[1]);
     ctx.globalCompositeOperation = compositeOperation;
     ctx.shadowBlur = 0;
     ctx.shadowColor = '';
-  }
-
-  // Modified: https://github.com/uber/react-map-gl/blob/master/overlays/scatterplot.react.js
-  redraw({ width, height, ctx, isDragging, project }) {
+  }, []);
+    // Modified: https://github.com/uber/react-map-gl/blob/master/overlays/scatterplot.react.js
+    const redrawHandler = useCallback(({ width, height, ctx, isDragging, project }) => {
     const {
       aggregation,
       compositeOperation,
@@ -127,7 +126,7 @@ class ScatterPlotGlowOverlay extends React.PureComponent {
       renderWhileDragging,
       rgb,
       zoom,
-    } = this.props;
+    } = props;
 
     const radius = dotRadius;
     const clusterLabelMap = [];
@@ -202,7 +201,7 @@ class ScatterPlotGlowOverlay extends React.PureComponent {
               } else if (clusterLabel >= 1000) {
                 clusterLabel = `${Math.round(clusterLabel / 100) / 10}k`;
               }
-              this.drawText(ctx, pixelRounded, {
+              drawTextHandler(ctx, pixelRounded, {
                 fontHeight,
                 label: clusterLabel,
                 radius: scaledRadius,
@@ -255,7 +254,7 @@ class ScatterPlotGlowOverlay extends React.PureComponent {
             ctx.fill();
 
             if (pointLabel !== undefined) {
-              this.drawText(ctx, pixelRounded, {
+              drawTextHandler(ctx, pixelRounded, {
                 fontHeight: roundDecimal(pointRadius, 1),
                 label: pointLabel,
                 radius: pointRadius,
@@ -267,12 +266,13 @@ class ScatterPlotGlowOverlay extends React.PureComponent {
         }
       }, this);
     }
-  }
+  }, []);
 
-  render() {
-    return <CanvasOverlay redraw={this.redraw} />;
-  }
-}
+    return <CanvasOverlay redraw={redrawHandler} />; 
+};
+
+
+
 
 ScatterPlotGlowOverlay.propTypes = propTypes;
 ScatterPlotGlowOverlay.defaultProps = defaultProps;

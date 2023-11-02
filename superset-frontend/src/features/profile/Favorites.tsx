@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import rison from 'rison';
 import moment from 'moment';
 import { t } from '@superset-ui/core';
@@ -28,8 +29,12 @@ interface FavoritesProps {
   user: BootstrapUser;
 }
 
-export default class Favorites extends React.PureComponent<FavoritesProps> {
-  renderSliceTable() {
+const Favorites = () => {
+
+
+    
+
+    const renderSliceTableHandler = useCallback(() => {
     const mutator = (payload: { result: Chart[] }) =>
       payload.result.map(slice => ({
         slice: <a href={slice.slice_url}>{slice.slice_name}</a>,
@@ -62,9 +67,8 @@ export default class Favorites extends React.PureComponent<FavoritesProps> {
         sortable
       />
     );
-  }
-
-  renderDashboardTable() {
+  }, []);
+    const renderDashboardTableHandler = useCallback(() => {
     const search = [{ col: 'id', opr: 'dashboard_is_favorite', value: true }];
     const query = rison.encode({
       keys: ['none'],
@@ -91,17 +95,20 @@ export default class Favorites extends React.PureComponent<FavoritesProps> {
         sortable
       />
     );
-  }
+  }, []);
 
-  render() {
     return (
       <div>
         <h3>{t('Dashboards')}</h3>
-        {this.renderDashboardTable()}
+        {renderDashboardTableHandler()}
         <hr />
         <h3>{t('Charts')}</h3>
-        {this.renderSliceTable()}
+        {renderSliceTableHandler()}
       </div>
-    );
-  }
-}
+    ); 
+};
+
+export default Favorites;
+
+
+

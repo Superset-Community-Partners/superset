@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { css, isEqualArray, t } from '@superset-ui/core';
 import Select from 'src/components/Select/Select';
@@ -87,31 +88,24 @@ const defaultProps = {
   valueKey: 'value',
 };
 
-export default class SelectControl extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      options: this.getOptions(props),
-    };
-    this.onChange = this.onChange.bind(this);
-    this.handleFilterOptions = this.handleFilterOptions.bind(this);
-  }
+const SelectControl = (props) => {
 
-  UNSAFE_componentWillReceiveProps(nextProps) {
+
+    const [options, setOptions] = useState(getOptionsHandler(props));
+
+    const UNSAFE_componentWillReceivePropsHandler = useCallback((nextProps) => {
     if (
-      !isEqualArray(nextProps.choices, this.props.choices) ||
-      !isEqualArray(nextProps.options, this.props.options)
+      !isEqualArray(nextProps.choices, props.choices) ||
+      !isEqualArray(nextProps.options, props.options)
     ) {
-      const options = this.getOptions(nextProps);
-      this.setState({ options });
+      const options = getOptionsHandler(nextProps);
+      setOptions(options);
     }
-  }
-
-  // Beware: This is acting like an on-click instead of an on-change
-  // (firing every time user chooses vs firing only if a new option is chosen).
-  onChange(val) {
+  }, [options]);
+    // (firing every time user chooses vs firing only if a new option is chosen).
+    const onChangeHandler = useCallback((val) => {
     // will eventually call `exploreReducer`: SET_FIELD_VALUE
-    const { valueKey } = this.props;
+    const { valueKey } = props;
     let onChangeVal = val;
 
     if (Array.isArray(val)) {
@@ -123,22 +117,21 @@ export default class SelectControl extends React.PureComponent {
     if (typeof val === 'object' && val?.[valueKey] !== undefined) {
       onChangeVal = val[valueKey];
     }
-    this.props.onChange(onChangeVal, []);
-  }
-
-  getOptions(props) {
+    props.onChange(onChangeVal, []);
+  }, []);
+    const getOptionsHandler = useCallback((props) => {
     const { choices, optionRenderer, valueKey } = props;
     let options = [];
     if (props.options) {
-      options = props.options.map(o => ({
+      setOptions(props.options.map(o => ({
         ...o,
         value: o[valueKey],
         label: o.label || o[valueKey],
         customLabel: optionRenderer ? optionRenderer(o) : undefined,
-      }));
+      })));
     } else if (choices) {
       // Accepts different formats of input
-      options = choices.map(c => {
+      setOptions(choices.map(c => {
         if (Array.isArray(c)) {
           const [value, label] = c.length > 1 ? c : [c[0], c[0]];
           return {
@@ -154,17 +147,15 @@ export default class SelectControl extends React.PureComponent {
           };
         }
         return { value: c, label: c };
-      });
+      }));
     }
     return options;
-  }
-
-  handleFilterOptions(text, option) {
-    const { filterOption } = this.props;
+  }, [options]);
+    const handleFilterOptionsHandler = useCallback((text, option) => {
+    const { filterOption } = props;
     return filterOption({ data: option }, text);
-  }
+  }, []);
 
-  render() {
     const {
       ariaLabel,
       autoFocus,
@@ -196,7 +187,7 @@ export default class SelectControl extends React.PureComponent {
       tooltipOnClick,
       warning,
       danger,
-    } = this.props;
+    } = props;
 
     const headerProps = {
       name,
@@ -216,12 +207,12 @@ export default class SelectControl extends React.PureComponent {
     const getValue = () => {
       const currentValue =
         value ||
-        (this.props.default !== undefined ? this.props.default : undefined);
+        (props.default !== undefined ? props.default : undefined);
 
       // safety check - the value is intended to be undefined but null was used
       if (
         currentValue === null &&
-        !this.state.options.find(o => o.value === null)
+        !options.find(o => o.value === null)
       ) {
         return undefined;
       }
@@ -237,19 +228,19 @@ export default class SelectControl extends React.PureComponent {
       disabled,
       filterOption:
         filterOption && typeof filterOption === 'function'
-          ? this.handleFilterOptions
+          ? handleFilterOptionsHandler
           : true,
       header: showHeader && <ControlHeader {...headerProps} />,
       loading: isLoading,
-      mode: this.props.mode || (isMulti || multi ? 'multiple' : 'single'),
+      mode: props.mode || (isMulti || multi ? 'multiple' : 'single'),
       name: `select-${name}`,
-      onChange: this.onChange,
+      onChange: onChangeHandler,
       onFocus,
       onSelect,
       onDeselect,
-      options: this.state.options,
+      options: options,
       placeholder,
-      sortComparator: this.props.sortComparator,
+      sortComparator: props.sortComparator,
       value: getValue(),
       tokenSeparators,
       notFoundContent,
@@ -271,9 +262,13 @@ export default class SelectControl extends React.PureComponent {
       >
         <Select {...selectProps} />
       </div>
-    );
-  }
-}
+    ); 
+};
+
+export default SelectControl;
+
+
+
 
 SelectControl.propTypes = propTypes;
 SelectControl.defaultProps = defaultProps;

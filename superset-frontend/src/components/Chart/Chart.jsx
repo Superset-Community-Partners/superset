@@ -16,15 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 import PropTypes from 'prop-types';
-import React from 'react';
+import { useEffect, useCallback } from 'react';
 import {
-  ensureIsArray,
-  FeatureFlag,
-  isFeatureEnabled,
-  logging,
-  styled,
-  t,
+    ensureIsArray,
+    FeatureFlag,
+    isFeatureEnabled,
+    logging,
+    styled,
+    t,
 } from '@superset-ui/core';
 import { PLACEHOLDER_DATASOURCE } from 'src/dashboard/constants';
 import Loading from 'src/components/Loading';
@@ -135,51 +136,46 @@ const MonospaceDiv = styled.div`
   white-space: pre-wrap;
 `;
 
-class Chart extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.handleRenderContainerFailure =
-      this.handleRenderContainerFailure.bind(this);
-  }
+const Chart = (props) => {
 
-  componentDidMount() {
-    if (this.props.triggerQuery) {
-      this.runQuery();
+
+    
+
+    useEffect(() => {
+    if (props.triggerQuery) {
+      runQueryHandler();
     }
-  }
-
-  componentDidUpdate() {
-    if (this.props.triggerQuery) {
-      this.runQuery();
+  }, []);
+    useEffect(() => {
+    if (props.triggerQuery) {
+      runQueryHandler();
     }
-  }
-
-  runQuery() {
-    if (this.props.chartId > 0 && isFeatureEnabled(FeatureFlag.CLIENT_CACHE)) {
+  }, []);
+    const runQueryHandler = useCallback(() => {
+    if (props.chartId > 0 && isFeatureEnabled(FeatureFlag.CLIENT_CACHE)) {
       // Load saved chart with a GET request
-      this.props.actions.getSavedChart(
-        this.props.formData,
-        this.props.force || getUrlParam(URL_PARAMS.force), // allow override via url params force=true
-        this.props.timeout,
-        this.props.chartId,
-        this.props.dashboardId,
-        this.props.ownState,
+      props.actions.getSavedChart(
+        props.formData,
+        props.force || getUrlParam(URL_PARAMS.force), // allow override via url params force=true
+        props.timeout,
+        props.chartId,
+        props.dashboardId,
+        props.ownState,
       );
     } else {
       // Create chart with POST request
-      this.props.actions.postChartFormData(
-        this.props.formData,
-        this.props.force || getUrlParam(URL_PARAMS.force), // allow override via url params force=true
-        this.props.timeout,
-        this.props.chartId,
-        this.props.dashboardId,
-        this.props.ownState,
+      props.actions.postChartFormData(
+        props.formData,
+        props.force || getUrlParam(URL_PARAMS.force), // allow override via url params force=true
+        props.timeout,
+        props.chartId,
+        props.dashboardId,
+        props.ownState,
       );
     }
-  }
-
-  handleRenderContainerFailure(error, info) {
-    const { actions, chartId } = this.props;
+  }, []);
+    const handleRenderContainerFailureHandler = useCallback((error, info) => {
+    const { actions, chartId } = props;
     logging.warn(error);
     actions.chartRenderingFailed(
       error.toString(),
@@ -191,13 +187,12 @@ class Chart extends React.PureComponent {
       slice_id: chartId,
       has_err: true,
       error_details: error.toString(),
-      start_offset: this.renderStartTime,
+      start_offset: renderStartTimeHandler,
       ts: new Date().getTime(),
-      duration: Logger.getTimestamp() - this.renderStartTime,
+      duration: Logger.getTimestamp() - renderStartTimeHandler,
     });
-  }
-
-  renderErrorMessage(queryResponse) {
+  }, []);
+    const renderErrorMessageHandler = useCallback((queryResponse) => {
     const {
       chartId,
       chartAlert,
@@ -206,7 +201,7 @@ class Chart extends React.PureComponent {
       dashboardId,
       height,
       datasetsStatus,
-    } = this.props;
+    } = props;
     const error = queryResponse?.errors?.[0];
     const message = chartAlert || queryResponse?.message;
 
@@ -242,9 +237,8 @@ class Chart extends React.PureComponent {
         stackTrace={chartStackTrace}
       />
     );
-  }
+  }, []);
 
-  render() {
     const {
       height,
       chartAlert,
@@ -253,12 +247,12 @@ class Chart extends React.PureComponent {
       chartIsStale,
       queriesResponse = [],
       width,
-    } = this.props;
+    } = props;
 
     const isLoading = chartStatus === 'loading';
-    this.renderContainerStartTime = Logger.getTimestamp();
+    renderContainerStartTimeHandler = Logger.getTimestamp();
     if (chartStatus === 'failed') {
-      return queriesResponse.map(item => this.renderErrorMessage(item));
+      return queriesResponse.map(item => renderErrorMessageHandler(item));
     }
 
     if (errorMessage && ensureIsArray(queriesResponse).length === 0) {
@@ -286,7 +280,7 @@ class Chart extends React.PureComponent {
               {t(
                 'Click on "Create chart" button in the control panel on the left to preview a visualization or',
               )}{' '}
-              <span role="button" tabIndex={0} onClick={this.props.onQuery}>
+              <span role="button" tabIndex={0} onClick={props.onQuery}>
                 {t('click here')}
               </span>
               .
@@ -299,7 +293,7 @@ class Chart extends React.PureComponent {
 
     return (
       <ErrorBoundary
-        onError={this.handleRenderContainerFailure}
+        onError={handleRenderContainerFailureHandler}
         showMessage={false}
       >
         <Styles
@@ -310,13 +304,13 @@ class Chart extends React.PureComponent {
           width={width}
         >
           <div className="slice_container" data-test="slice-container">
-            {this.props.isInView ||
+            {props.isInView ||
             !isFeatureEnabled(FeatureFlag.DASHBOARD_VIRTUALIZATION) ||
             isCurrentUserBot() ? (
               <ChartRenderer
-                {...this.props}
-                source={this.props.dashboardId ? 'dashboard' : 'explore'}
-                data-test={this.props.vizType}
+                {...props}
+                source={props.dashboardId ? 'dashboard' : 'explore'}
+                data-test={props.vizType}
               />
             ) : (
               <Loading />
@@ -325,9 +319,11 @@ class Chart extends React.PureComponent {
           {isLoading && <Loading />}
         </Styles>
       </ErrorBoundary>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 Chart.propTypes = propTypes;
 Chart.defaultProps = defaultProps;

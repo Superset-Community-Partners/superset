@@ -17,16 +17,15 @@
  * under the License.
  */
 
-import React from 'react';
+
+import React, { useState, useCallback } from 'react';
 import { formatTime } from '@superset-ui/core';
 
-class TimeFormatValidator extends React.PureComponent {
-  state: {
-    formatString: string;
-    testValues: (Date | number | null | undefined)[];
-  } = {
-    formatString: '%Y-%m-%d %H:%M:%S',
-    testValues: [
+const TimeFormatValidator = () => {
+
+
+    const [formatString, setFormatString] = useState('%Y-%m-%d %H:%M:%S');
+    const [testValues, setTestValues] = useState([
       new Date(Date.UTC(1986, 5, 14, 8, 30, 53)),
       new Date(Date.UTC(2001, 9, 27, 13, 45, 2, 678)),
       new Date(Date.UTC(2009, 1, 1, 0, 0, 0)),
@@ -34,22 +33,15 @@ class TimeFormatValidator extends React.PureComponent {
       0,
       null,
       undefined,
-    ],
-  };
+    ]);
+    const [formatString, setFormatString] = useState();
+    const [testValues, setTestValues] = useState();
 
-  constructor(props) {
-    super(props);
-    this.handleFormatChange = this.handleFormatChange.bind(this);
-  }
+    const handleFormatChangeHandler = useCallback((event) => {
+    setFormatString(event.target.value);
+  }, []);
 
-  handleFormatChange(event) {
-    this.setState({
-      formatString: event.target.value,
-    });
-  }
-
-  render() {
-    const { formatString, testValues } = this.state;
+     
 
     return (
       <div className="container">
@@ -84,7 +76,7 @@ class TimeFormatValidator extends React.PureComponent {
                     className="form-control form-control-lg"
                     type="text"
                     value={formatString}
-                    onChange={this.handleFormatChange}
+                    onChange={handleFormatChangeHandler}
                   />
                 </label>
               </div>
@@ -119,9 +111,11 @@ class TimeFormatValidator extends React.PureComponent {
           </div>
         </div>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 export default {
   title: 'Core Packages/@superset-ui-time-format',

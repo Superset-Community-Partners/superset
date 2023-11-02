@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { css, styled } from '@superset-ui/core';
@@ -83,9 +83,14 @@ const NewComponentPlaceholder = styled.div`
   `}
 `;
 
-export default class DraggableNewComponent extends React.PureComponent {
-  render() {
-    const { label, id, type, className, meta } = this.props;
+const DraggableNewComponent = (props) => {
+
+
+    
+
+    
+
+    const { label, id, type, className, meta } = props;
     return (
       <DragDroppable
         component={{ type, id, meta }}
@@ -106,9 +111,13 @@ export default class DraggableNewComponent extends React.PureComponent {
           </NewComponent>
         )}
       </DragDroppable>
-    );
-  }
-}
+    ); 
+};
+
+export default DraggableNewComponent;
+
+
+
 
 DraggableNewComponent.propTypes = propTypes;
 DraggableNewComponent.defaultProps = defaultProps;

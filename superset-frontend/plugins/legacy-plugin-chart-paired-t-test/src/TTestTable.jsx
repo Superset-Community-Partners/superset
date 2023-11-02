@@ -17,8 +17,9 @@
  * under the License.
  */
 /* eslint-disable react/no-array-index-key, react/jsx-no-bind */
+
 import dist from 'distributions';
-import React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Table, Tr, Td, Thead, Th } from 'reactable';
 import PropTypes from 'prop-types';
 
@@ -49,23 +50,19 @@ const defaultProps = {
   pValPrec: 6,
 };
 
-class TTestTable extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      control: 0,
-      liftValues: [],
-      pValues: [],
-    };
-  }
+const TTestTable = (props) => {
 
-  componentDidMount() {
-    const { control } = this.state;
-    this.computeTTest(control); // initially populate table
-  }
 
-  getLiftStatus(row) {
-    const { control, liftValues } = this.state;
+    const [control, setControl] = useState(0);
+    const [liftValues, setLiftValues] = useState([]);
+    const [pValues, setPValues] = useState([]);
+
+    useEffect(() => {
+    
+    computeTTestHandler(control); // initially populate table
+  }, [control]);
+    const getLiftStatusHandler = useCallback((row) => {
+    
     // Get a css class name for coloring
     if (row === control) {
       return 'control';
@@ -76,10 +73,9 @@ class TTestTable extends React.Component {
     }
 
     return liftVal >= 0 ? 'true' : 'false'; // green on true, red on false
-  }
-
-  getPValueStatus(row) {
-    const { control, pValues } = this.state;
+  }, [control, liftValues]);
+    const getPValueStatusHandler = useCallback((row) => {
+    
     if (row === control) {
       return 'control';
     }
@@ -89,11 +85,10 @@ class TTestTable extends React.Component {
     }
 
     return ''; // p-values won't normally be colored
-  }
-
-  getSignificance(row) {
-    const { control, pValues } = this.state;
-    const { alpha } = this.props;
+  }, [control, pValues]);
+    const getSignificanceHandler = useCallback((row) => {
+    
+    const { alpha } = props;
     // Color significant as green, else red
     if (row === control) {
       return 'control';
@@ -101,10 +96,9 @@ class TTestTable extends React.Component {
 
     // p-values significant below set threshold
     return pValues[row] <= alpha;
-  }
-
-  computeLift(values, control) {
-    const { liftValPrec } = this.props;
+  }, [control, pValues]);
+    const computeLiftHandler = useCallback((values, control) => {
+    const { liftValPrec } = props;
     // Compute the lift value between two time series
     let sumValues = 0;
     let sumControl = 0;
@@ -114,10 +108,9 @@ class TTestTable extends React.Component {
     });
 
     return (((sumValues - sumControl) / sumControl) * 100).toFixed(liftValPrec);
-  }
-
-  computePValue(values, control) {
-    const { pValPrec } = this.props;
+  }, [control]);
+    const computePValueHandler = useCallback((values, control) => {
+    const { pValPrec } = props;
     // Compute the p-value from Student's t-test
     // between two time series
     let diffSum = 0;
@@ -145,12 +138,11 @@ class TTestTable extends React.Component {
     } catch (error) {
       return NaN;
     }
-  }
-
-  computeTTest(control) {
+  }, [control]);
+    const computeTTestHandler = useCallback((control) => {
     // Compute lift and p-values for each row
     // against the selected control
-    const { data } = this.props;
+    const { data } = props;
     const pValues = [];
     const liftValues = [];
     if (!data) {
@@ -161,16 +153,17 @@ class TTestTable extends React.Component {
         pValues.push('control');
         liftValues.push('control');
       } else {
-        pValues.push(this.computePValue(data[i].values, data[control].values));
-        liftValues.push(this.computeLift(data[i].values, data[control].values));
+        pValues.push(computePValueHandler(data[i].values, data[control].values));
+        liftValues.push(computeLiftHandler(data[i].values, data[control].values));
       }
     }
-    this.setState({ control, liftValues, pValues });
-  }
+    setControl(control)
+    setLiftValues(liftValues)
+    setPValues(pValues);
+  }, [control, pValues, liftValues]);
 
-  render() {
-    const { data, metric, groups } = this.props;
-    const { control, liftValues, pValues } = this.state;
+    const { data, metric, groups } = props;
+    
 
     if (!Array.isArray(groups) || groups.length === 0) {
       throw Error('Group by param is required');
@@ -209,7 +202,7 @@ class TTestTable extends React.Component {
       values.push(
         <Td
           key={numGroups + 1}
-          className={this.getPValueStatus(i)}
+          className={getPValueStatusHandler(i)}
           column="pValue"
           data={pValues[i]}
         />,
@@ -217,7 +210,7 @@ class TTestTable extends React.Component {
       values.push(
         <Td
           key={numGroups + 2}
-          className={this.getLiftStatus(i)}
+          className={getLiftStatusHandler(i)}
           column="liftValue"
           data={liftValues[i]}
         />,
@@ -225,9 +218,9 @@ class TTestTable extends React.Component {
       values.push(
         <Td
           key={numGroups + 3}
-          className={this.getSignificance(i).toString()}
+          className={getSignificanceHandler(i).toString()}
           column="significant"
-          data={this.getSignificance(i)}
+          data={getSignificanceHandler(i)}
         />,
       );
 
@@ -235,7 +228,7 @@ class TTestTable extends React.Component {
         <Tr
           key={i}
           className={i === control ? 'control' : ''}
-          onClick={this.computeTTest.bind(this, i)}
+          onClick={computeTTestHandler.bind(this, i)}
         >
           {values}
         </Tr>
@@ -292,9 +285,11 @@ class TTestTable extends React.Component {
           {rows}
         </Table>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 TTestTable.propTypes = propTypes;
 TTestTable.defaultProps = defaultProps;

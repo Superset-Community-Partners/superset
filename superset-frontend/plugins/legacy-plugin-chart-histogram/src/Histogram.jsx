@@ -17,8 +17,8 @@
  * under the License.
  */
 /* eslint-disable react/sort-prop-types */
+
 import PropTypes from 'prop-types';
-import React from 'react';
 import { Histogram, BarSeries, XAxis, YAxis } from '@data-ui/histogram';
 import { chartTheme } from '@data-ui/theme';
 import { LegendOrdinal } from '@vx/legend';
@@ -56,8 +56,13 @@ const defaultProps = {
   yAxisLabel: '',
 };
 
-class CustomHistogram extends React.PureComponent {
-  render() {
+const CustomHistogram = (props) => {
+
+
+    
+
+    
+
     const {
       className,
       data,
@@ -72,7 +77,7 @@ class CustomHistogram extends React.PureComponent {
       yAxisLabel,
       showLegend,
       sliceId,
-    } = this.props;
+    } = props;
 
     const colorFn = CategoricalColorNamespace.getScale(colorScheme);
     const keys = data.map(d => d.key);
@@ -147,9 +152,11 @@ class CustomHistogram extends React.PureComponent {
           </Histogram>
         )}
       />
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 CustomHistogram.propTypes = propTypes;
 CustomHistogram.defaultProps = defaultProps;

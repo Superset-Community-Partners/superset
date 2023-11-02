@@ -17,23 +17,24 @@
  * under the License.
  */
 /* eslint-env browser */
+
 import moment from 'moment';
-import React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
-  styled,
-  css,
-  isFeatureEnabled,
-  FeatureFlag,
-  t,
-  getSharedLabelColor,
-  getExtensionsRegistry,
+    styled,
+    css,
+    isFeatureEnabled,
+    FeatureFlag,
+    t,
+    getSharedLabelColor,
+    getExtensionsRegistry,
 } from '@superset-ui/core';
 import { Global } from '@emotion/react';
 import {
-  LOG_ACTIONS_PERIODIC_RENDER_DASHBOARD,
-  LOG_ACTIONS_FORCE_REFRESH_DASHBOARD,
-  LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD,
+    LOG_ACTIONS_PERIODIC_RENDER_DASHBOARD,
+    LOG_ACTIONS_FORCE_REFRESH_DASHBOARD,
+    LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD,
 } from 'src/logger/LogUtils';
 import Icons from 'src/components/Icons';
 import Button from 'src/components/Button';
@@ -47,12 +48,12 @@ import UndoRedoKeyListeners from 'src/dashboard/components/UndoRedoKeyListeners'
 import PropertiesModal from 'src/dashboard/components/PropertiesModal';
 import { chartPropShape } from 'src/dashboard/util/propShapes';
 import {
-  UNDO_LIMIT,
-  SAVE_TYPE_OVERWRITE,
-  DASHBOARD_POSITION_DATA_LIMIT,
+    UNDO_LIMIT,
+    SAVE_TYPE_OVERWRITE,
+    DASHBOARD_POSITION_DATA_LIMIT,
 } from 'src/dashboard/util/constants';
 import setPeriodicRunner, {
-  stopPeriodicRender,
+    stopPeriodicRender,
 } from 'src/dashboard/util/setPeriodicRunner';
 import { PageHeaderWithActions } from 'src/components/PageHeaderWithActions';
 import { DashboardEmbedModal } from '../DashboardEmbedControls';
@@ -169,128 +170,99 @@ const discardBtnStyle = theme => css`
   height: ${theme.gridUnit * 8}px;
 `;
 
-class Header extends React.PureComponent {
-  static discardChanges() {
-    const url = new URL(window.location.href);
+const Header = (props) => {
 
-    url.searchParams.delete('edit');
-    window.location.assign(url);
-  }
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      didNotifyMaxUndoHistoryToast: false,
-      emphasizeUndo: false,
-      emphasizeRedo: false,
-      showingPropertiesModal: false,
-      isDropdownVisible: false,
-    };
+    const [didNotifyMaxUndoHistoryToast, setDidNotifyMaxUndoHistoryToast] = useState(false);
+    const [emphasizeUndo, setEmphasizeUndo] = useState(false);
+    const [emphasizeRedo, setEmphasizeRedo] = useState(false);
+    const [showingPropertiesModal, setShowingPropertiesModal] = useState(false);
+    const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+    const [showingEmbedModal, setShowingEmbedModal] = useState();
 
-    this.handleChangeText = this.handleChangeText.bind(this);
-    this.handleCtrlZ = this.handleCtrlZ.bind(this);
-    this.handleCtrlY = this.handleCtrlY.bind(this);
-    this.toggleEditMode = this.toggleEditMode.bind(this);
-    this.forceRefresh = this.forceRefresh.bind(this);
-    this.startPeriodicRender = this.startPeriodicRender.bind(this);
-    this.overwriteDashboard = this.overwriteDashboard.bind(this);
-    this.showPropertiesModal = this.showPropertiesModal.bind(this);
-    this.hidePropertiesModal = this.hidePropertiesModal.bind(this);
-    this.setIsDropdownVisible = this.setIsDropdownVisible.bind(this);
-  }
-
-  componentDidMount() {
-    const { refreshFrequency } = this.props;
-    this.startPeriodicRender(refreshFrequency * 1000);
-  }
-
-  componentDidUpdate(prevProps) {
-    if (this.props.refreshFrequency !== prevProps.refreshFrequency) {
-      const { refreshFrequency } = this.props;
-      this.startPeriodicRender(refreshFrequency * 1000);
+    useEffect(() => {
+    const { refreshFrequency } = props;
+    startPeriodicRenderHandler(refreshFrequency * 1000);
+  }, []);
+    useEffect(() => {
+    if (props.refreshFrequency !== prevProps.refreshFrequency) {
+      const { refreshFrequency } = props;
+      startPeriodicRenderHandler(refreshFrequency * 1000);
     }
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps) {
+  }, []);
+    const UNSAFE_componentWillReceivePropsHandler = useCallback((nextProps) => {
     if (
       UNDO_LIMIT - nextProps.undoLength <= 0 &&
-      !this.state.didNotifyMaxUndoHistoryToast
+      !didNotifyMaxUndoHistoryToast
     ) {
-      this.setState(() => ({ didNotifyMaxUndoHistoryToast: true }));
-      this.props.maxUndoHistoryToast();
+      setStateHandler(() => ({ didNotifyMaxUndoHistoryToast: true }));
+      props.maxUndoHistoryToast();
     }
     if (
       nextProps.undoLength > UNDO_LIMIT &&
-      !this.props.maxUndoHistoryExceeded
+      !props.maxUndoHistoryExceeded
     ) {
-      this.props.setMaxUndoHistoryExceeded();
+      props.setMaxUndoHistoryExceeded();
     }
-  }
-
-  componentWillUnmount() {
-    stopPeriodicRender(this.refreshTimer);
-    this.props.setRefreshFrequency(0);
-    clearTimeout(this.ctrlYTimeout);
-    clearTimeout(this.ctrlZTimeout);
-  }
-
-  handleChangeText(nextText) {
-    const { updateDashboardTitle, onChange } = this.props;
-    if (nextText && this.props.dashboardTitle !== nextText) {
+  }, [didNotifyMaxUndoHistoryToast]);
+    useEffect(() => {
+    return () => {
+    stopPeriodicRender(refreshTimerHandler);
+    props.setRefreshFrequency(0);
+    clearTimeout(ctrlYTimeoutHandler);
+    clearTimeout(ctrlZTimeoutHandler);
+  };
+}, []);
+    const handleChangeTextHandler = useCallback((nextText) => {
+    const { updateDashboardTitle, onChange } = props;
+    if (nextText && props.dashboardTitle !== nextText) {
       updateDashboardTitle(nextText);
       onChange();
     }
-  }
-
-  setIsDropdownVisible(visible) {
-    this.setState({
-      isDropdownVisible: visible,
-    });
-  }
-
-  handleCtrlY() {
-    this.props.onRedo();
-    this.setState({ emphasizeRedo: true }, () => {
-      if (this.ctrlYTimeout) clearTimeout(this.ctrlYTimeout);
-      this.ctrlYTimeout = setTimeout(() => {
-        this.setState({ emphasizeRedo: false });
+  }, []);
+    const setIsDropdownVisibleHandler = useCallback((visible) => {
+    setIsDropdownVisible(visible);
+  }, []);
+    const handleCtrlYHandler = useCallback(() => {
+    props.onRedo();
+    setStateHandler({ emphasizeRedo: true }, () => {
+      if (ctrlYTimeoutHandler) clearTimeout(ctrlYTimeoutHandler);
+      ctrlYTimeoutHandler = setTimeout(() => {
+        setEmphasizeRedo(false);
       }, 100);
     });
-  }
-
-  handleCtrlZ() {
-    this.props.onUndo();
-    this.setState({ emphasizeUndo: true }, () => {
-      if (this.ctrlZTimeout) clearTimeout(this.ctrlZTimeout);
-      this.ctrlZTimeout = setTimeout(() => {
-        this.setState({ emphasizeUndo: false });
+  }, []);
+    const handleCtrlZHandler = useCallback(() => {
+    props.onUndo();
+    setStateHandler({ emphasizeUndo: true }, () => {
+      if (ctrlZTimeoutHandler) clearTimeout(ctrlZTimeoutHandler);
+      ctrlZTimeoutHandler = setTimeout(() => {
+        setEmphasizeUndo(false);
       }, 100);
     });
-  }
-
-  forceRefresh() {
-    if (!this.props.isLoading) {
-      const chartList = Object.keys(this.props.charts);
-      this.props.logEvent(LOG_ACTIONS_FORCE_REFRESH_DASHBOARD, {
+  }, []);
+    const forceRefreshHandler = useCallback(() => {
+    if (!props.isLoading) {
+      const chartList = Object.keys(props.charts);
+      props.logEvent(LOG_ACTIONS_FORCE_REFRESH_DASHBOARD, {
         force: true,
         interval: 0,
         chartCount: chartList.length,
       });
-      return this.props.onRefresh(
+      return props.onRefresh(
         chartList,
         true,
         0,
-        this.props.dashboardInfo.id,
+        props.dashboardInfo.id,
       );
     }
     return false;
-  }
-
-  startPeriodicRender(interval) {
+  }, []);
+    const startPeriodicRenderHandler = useCallback((interval) => {
     let intervalMessage;
 
     if (interval) {
-      const { dashboardInfo } = this.props;
+      const { dashboardInfo } = props;
       const periodicRefreshOptions =
         dashboardInfo.common?.conf?.DASHBOARD_AUTO_REFRESH_INTERVALS;
       const predefinedValue = periodicRefreshOptions.find(
@@ -305,7 +277,7 @@ class Header extends React.PureComponent {
     }
 
     const periodicRender = () => {
-      const { fetchCharts, logEvent, charts, dashboardInfo } = this.props;
+      const { fetchCharts, logEvent, charts, dashboardInfo } = props;
       const { metadata } = dashboardInfo;
       const immune = metadata.timed_refresh_immune_slices || [];
       const affectedCharts = Object.values(charts)
@@ -316,7 +288,7 @@ class Header extends React.PureComponent {
         interval,
         chartCount: affectedCharts.length,
       });
-      this.props.addWarningToast(
+      props.addWarningToast(
         t(
           `This dashboard is currently auto refreshing; the next auto refresh will be in %s.`,
           intervalMessage,
@@ -339,21 +311,19 @@ class Header extends React.PureComponent {
       );
     };
 
-    this.refreshTimer = setPeriodicRunner({
+    refreshTimerHandler = setPeriodicRunner({
       interval,
       periodicRender,
-      refreshTimer: this.refreshTimer,
+      refreshTimer: refreshTimerHandler,
     });
-  }
-
-  toggleEditMode() {
-    this.props.logEvent(LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD, {
-      edit_mode: !this.props.editMode,
+  }, []);
+    const toggleEditModeHandler = useCallback(() => {
+    props.logEvent(LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD, {
+      edit_mode: !props.editMode,
     });
-    this.props.setEditMode(!this.props.editMode);
-  }
-
-  overwriteDashboard() {
+    props.setEditMode(!props.editMode);
+  }, []);
+    const overwriteDashboardHandler = useCallback(() => {
     const {
       dashboardTitle,
       layout: positions,
@@ -365,7 +335,7 @@ class Header extends React.PureComponent {
       shouldPersistRefreshFrequency,
       lastModifiedTime,
       slug,
-    } = this.props;
+    } = props;
 
     // check refresh frequency is for current session or persist
     const refreshFrequency = shouldPersistRefreshFrequency
@@ -405,37 +375,32 @@ class Header extends React.PureComponent {
       dashboardInfo.common.conf.SUPERSET_DASHBOARD_POSITION_DATA_LIMIT ||
       DASHBOARD_POSITION_DATA_LIMIT;
     if (positionJSONLength >= limit) {
-      this.props.addDangerToast(
+      props.addDangerToast(
         t(
           'Your dashboard is too large. Please reduce its size before saving it.',
         ),
       );
     } else {
       if (positionJSONLength >= limit * 0.9) {
-        this.props.addWarningToast('Your dashboard is near the size limit.');
+        props.addWarningToast('Your dashboard is near the size limit.');
       }
 
-      this.props.onSave(data, dashboardInfo.id, SAVE_TYPE_OVERWRITE);
+      props.onSave(data, dashboardInfo.id, SAVE_TYPE_OVERWRITE);
     }
-  }
+  }, []);
+    const showPropertiesModalHandler = useCallback(() => {
+    setShowingPropertiesModal(true);
+  }, []);
+    const hidePropertiesModalHandler = useCallback(() => {
+    setShowingPropertiesModal(false);
+  }, []);
+    const showEmbedModalHandler = useCallback(() => {
+    setShowingEmbedModal(true);
+  }, []);
+    const hideEmbedModalHandler = useCallback(() => {
+    setShowingEmbedModal(false);
+  }, []);
 
-  showPropertiesModal() {
-    this.setState({ showingPropertiesModal: true });
-  }
-
-  hidePropertiesModal() {
-    this.setState({ showingPropertiesModal: false });
-  }
-
-  showEmbedModal = () => {
-    this.setState({ showingEmbedModal: true });
-  };
-
-  hideEmbedModal = () => {
-    this.setState({ showingEmbedModal: false });
-  };
-
-  render() {
     const {
       dashboardTitle,
       layout,
@@ -464,7 +429,7 @@ class Header extends React.PureComponent {
       setRefreshFrequency,
       lastModifiedTime,
       logEvent,
-    } = this.props;
+    } = props;
 
     const userCanEdit =
       dashboardInfo.dash_edit_perm && !dashboardInfo.is_managed_externally;
@@ -480,7 +445,7 @@ class Header extends React.PureComponent {
         ?.SUPERSET_DASHBOARD_PERIODICAL_REFRESH_WARNING_MESSAGE;
 
     const handleOnPropertiesChange = updates => {
-      const { dashboardInfoChanged, dashboardTitleChanged } = this.props;
+      const { dashboardInfoChanged, dashboardTitleChanged } = props;
 
       setColorScheme(updates.colorScheme);
       dashboardInfoChanged({
@@ -508,7 +473,7 @@ class Header extends React.PureComponent {
           editableTitleProps={{
             title: dashboardTitle,
             canEdit: userCanEdit && editMode,
-            onSave: this.handleChangeText,
+            onSave: handleChangeTextHandler,
             placeholder: t('Add the name of the dashboard'),
             label: t('Dashboard title'),
             showTooltip: false,
@@ -519,9 +484,9 @@ class Header extends React.PureComponent {
           }}
           faveStarProps={{
             itemId: dashboardInfo.id,
-            fetchFaveStar: this.props.fetchFaveStar,
-            saveFaveStar: this.props.saveFaveStar,
-            isStarred: this.props.isStarred,
+            fetchFaveStar: props.fetchFaveStar,
+            saveFaveStar: props.saveFaveStar,
+            isStarred: props.isStarred,
             showTooltip: true,
           }}
           titlePanelAdditionalItems={[
@@ -529,7 +494,7 @@ class Header extends React.PureComponent {
               <PublishedStatus
                 dashboardId={dashboardInfo.id}
                 isPublished={isPublished}
-                savePublished={this.props.savePublished}
+                savePublished={props.savePublished}
                 canEdit={userCanEdit}
                 canSave={userCanSaveAs}
                 visible={!editMode}
@@ -557,7 +522,7 @@ class Header extends React.PureComponent {
                             <Icons.Undo
                               css={[
                                 undoRedoStyle,
-                                this.state.emphasizeUndo && undoRedoEmphasized,
+                                emphasizeUndo && undoRedoEmphasized,
                                 undoLength < 1 && undoRedoDisabled,
                               ]}
                               onClick={undoLength && onUndo}
@@ -577,7 +542,7 @@ class Header extends React.PureComponent {
                             <Icons.Redo
                               css={[
                                 undoRedoStyle,
-                                this.state.emphasizeRedo && undoRedoEmphasized,
+                                emphasizeRedo && undoRedoEmphasized,
                                 redoLength < 1 && undoRedoDisabled,
                               ]}
                               onClick={redoLength && onRedo}
@@ -590,7 +555,7 @@ class Header extends React.PureComponent {
                       <Button
                         css={discardBtnStyle}
                         buttonSize="small"
-                        onClick={this.constructor.discardChanges}
+                        onClick={constructorHandler.discardChanges}
                         buttonStyle="default"
                         data-test="discard-changes-button"
                         aria-label={t('Discard')}
@@ -602,7 +567,7 @@ class Header extends React.PureComponent {
                         buttonSize="small"
                         disabled={!hasUnsavedChanges}
                         buttonStyle="primary"
-                        onClick={this.overwriteDashboard}
+                        onClick={overwriteDashboardHandler}
                         data-test="header-save-button"
                         aria-label={t('Save')}
                       >
@@ -614,8 +579,8 @@ class Header extends React.PureComponent {
               )}
               {editMode ? (
                 <UndoRedoKeyListeners
-                  onUndo={this.handleCtrlZ}
-                  onRedo={this.handleCtrlY}
+                  onUndo={handleCtrlZHandler}
+                  onRedo={handleCtrlYHandler}
                 />
               ) : (
                 <div css={actionButtonsStyle}>
@@ -623,7 +588,7 @@ class Header extends React.PureComponent {
                   {userCanEdit && (
                     <Button
                       buttonStyle="secondary"
-                      onClick={this.toggleEditMode}
+                      onClick={toggleEditModeHandler}
                       data-test="edit-dashboard-button"
                       className="action-button"
                       css={editButtonStyle}
@@ -639,13 +604,13 @@ class Header extends React.PureComponent {
           menuDropdownProps={{
             getPopupContainer: triggerNode =>
               triggerNode.closest('.header-with-actions'),
-            visible: this.state.isDropdownVisible,
-            onVisibleChange: this.setIsDropdownVisible,
+            visible: isDropdownVisible,
+            onVisibleChange: setIsDropdownVisibleHandler,
           }}
           additionalActionsMenu={
             <HeaderActionsDropdown
-              addSuccessToast={this.props.addSuccessToast}
-              addDangerToast={this.props.addDangerToast}
+              addSuccessToast={props.addSuccessToast}
+              addDangerToast={props.addDangerToast}
               dashboardId={dashboardInfo.id}
               dashboardTitle={dashboardTitle}
               dashboardInfo={dashboardInfo}
@@ -657,8 +622,8 @@ class Header extends React.PureComponent {
               colorScheme={colorScheme}
               onSave={onSave}
               onChange={onChange}
-              forceRefreshAllCharts={this.forceRefresh}
-              startPeriodicRender={this.startPeriodicRender}
+              forceRefreshAllCharts={forceRefreshHandler}
+              startPeriodicRender={startPeriodicRenderHandler}
               refreshFrequency={refreshFrequency}
               shouldPersistRefreshFrequency={shouldPersistRefreshFrequency}
               setRefreshFrequency={setRefreshFrequency}
@@ -670,27 +635,27 @@ class Header extends React.PureComponent {
               userCanSave={userCanSaveAs}
               userCanCurate={userCanCurate}
               isLoading={isLoading}
-              showPropertiesModal={this.showPropertiesModal}
-              manageEmbedded={this.showEmbedModal}
+              showPropertiesModal={showPropertiesModalHandler}
+              manageEmbedded={showEmbedModalHandler}
               refreshLimit={refreshLimit}
               refreshWarning={refreshWarning}
               lastModifiedTime={lastModifiedTime}
-              isDropdownVisible={this.state.isDropdownVisible}
-              setIsDropdownVisible={this.setIsDropdownVisible}
+              isDropdownVisible={isDropdownVisible}
+              setIsDropdownVisible={setIsDropdownVisibleHandler}
               logEvent={logEvent}
             />
           }
           showFaveStar={user?.userId && dashboardInfo?.id}
           showTitlePanelItems
         />
-        {this.state.showingPropertiesModal && (
+        {showingPropertiesModal && (
           <PropertiesModal
             dashboardId={dashboardInfo.id}
             dashboardInfo={dashboardInfo}
             dashboardTitle={dashboardTitle}
-            show={this.state.showingPropertiesModal}
-            onHide={this.hidePropertiesModal}
-            colorScheme={this.props.colorScheme}
+            show={showingPropertiesModal}
+            onHide={hidePropertiesModalHandler}
+            colorScheme={props.colorScheme}
             onSubmit={handleOnPropertiesChange}
             onlyApply
           />
@@ -700,8 +665,8 @@ class Header extends React.PureComponent {
 
         {userCanCurate && (
           <DashboardEmbedModal
-            show={this.state.showingEmbedModal}
-            onHide={this.hideEmbedModal}
+            show={showingEmbedModal}
+            onHide={hideEmbedModalHandler}
             dashboardId={dashboardInfo.id}
           />
         )}
@@ -713,9 +678,16 @@ class Header extends React.PureComponent {
           `}
         />
       </div>
-    );
-  }
-}
+    ); 
+};
+
+Header.discardChanges = () => {
+    const url = new URL(window.location.href);
+
+    url.searchParams.delete('edit');
+    window.location.assign(url);
+  };
+
 
 Header.propTypes = propTypes;
 Header.defaultProps = defaultProps;

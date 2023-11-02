@@ -17,10 +17,11 @@
  * under the License.
  */
 
-import React, { ReactNode, RefObject } from 'react';
+
+import React, { ReactNode, RefObject, useRef, useCallback } from "react";
 import ErrorBoundary, {
-  ErrorBoundaryProps,
-  FallbackProps,
+    ErrorBoundaryProps,
+    FallbackProps,
 } from 'react-error-boundary';
 import { ParentSize } from '@vx/responsive';
 import { createSelector } from 'reselect';
@@ -94,15 +95,17 @@ export type Props = Omit<SuperChartCoreProps, 'chartProps'> &
 
 type PropsWithDefault = Props & Readonly<typeof defaultProps>;
 
-class SuperChart extends React.PureComponent<Props, {}> {
-  /**
+const SuperChart = (inputProps: Props) => {
+
+
+    
+
+    /**
    * SuperChart's core
    */
-  core?: SuperChartCore | null;
-
-  private createChartProps = ChartProps.createSelector();
-
-  private parseDimension = createSelector(
+    const core = useRef<SuperChartCore | null>();
+    const createChartProps = useRef(ChartProps.createSelector());
+    const parseDimension = useRef(createSelector(
     [
       ({ width }: { width: string | number; height: string | number }) => width,
       ({ height }) => height,
@@ -139,18 +142,13 @@ class SuperChart extends React.PureComponent<Props, {}> {
 
       return { BoundingBox, heightInfo, widthInfo };
     },
-  );
-
-  static defaultProps = defaultProps;
-
-  private setRef = (core: SuperChartCore | null) => {
-    this.core = core;
-  };
-
-  private getQueryCount = () =>
-    getChartMetadataRegistry().get(this.props.chartType)?.queryObjectCount ?? 1;
-
-  renderChart(width: number, height: number) {
+  ));
+    const setRefHandler = useCallback((core: SuperChartCore | null) => {
+    core.current = core;
+  }, []);
+    const getQueryCountHandler = useCallback(() =>
+    getChartMetadataRegistry().get(props.chartType)?.queryObjectCount ?? 1, []);
+    const renderChartHandler = useCallback((width: number, height: number) => {
     const {
       id,
       className,
@@ -169,9 +167,9 @@ class SuperChart extends React.PureComponent<Props, {}> {
       noResults,
       theme,
       ...rest
-    } = this.props as PropsWithDefault;
+    } = props as PropsWithDefault;
 
-    const chartProps = this.createChartProps({
+    const chartProps = createChartProps.current({
       ...rest,
       queriesData,
       height,
@@ -185,7 +183,7 @@ class SuperChart extends React.PureComponent<Props, {}> {
       enableNoResults &&
       (!queriesData ||
         queriesData
-          .slice(0, this.getQueryCount())
+          .slice(0, getQueryCountHandler())
           .every(
             ({ data }) => !data || (Array.isArray(data) && data.length === 0),
           ));
@@ -201,7 +199,7 @@ class SuperChart extends React.PureComponent<Props, {}> {
     } else {
       const chartWithoutWrapper = (
         <SuperChartCore
-          ref={this.setRef}
+          ref={setRefHandler}
           id={id}
           className={className}
           chartType={chartType}
@@ -234,22 +232,21 @@ class SuperChart extends React.PureComponent<Props, {}> {
         {chart}
       </ErrorBoundary>
     );
-  }
+  }, []);
 
-  render() {
-    const { heightInfo, widthInfo, BoundingBox } = this.parseDimension(
-      this.props as PropsWithDefault,
+    const { heightInfo, widthInfo, BoundingBox } = parseDimension.current(
+      props as PropsWithDefault,
     );
 
     // If any of the dimension is dynamic, get parent's dimension
     if (widthInfo.isDynamic || heightInfo.isDynamic) {
-      const { debounceTime } = this.props;
+      const { debounceTime } = props;
 
       return (
         <BoundingBox>
           <ParentSize debounceTime={debounceTime}>
             {({ width, height }) =>
-              this.renderChart(
+              renderChartHandler(
                 widthInfo.isDynamic ? Math.floor(width) : widthInfo.value,
                 heightInfo.isDynamic ? Math.floor(height) : heightInfo.value,
               )
@@ -259,8 +256,10 @@ class SuperChart extends React.PureComponent<Props, {}> {
       );
     }
 
-    return this.renderChart(widthInfo.value, heightInfo.value);
-  }
-}
+    return renderChartHandler(widthInfo.value, heightInfo.value); 
+};
+
+SuperChart.defaultProps = defaultProps;
+
 
 export default withTheme(SuperChart);

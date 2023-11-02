@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import { OptionSortType } from 'src/explore/types';
 import AdhocFilterEditPopover from 'src/explore/components/controls/FilterControl/AdhocFilterEditPopover';
 import AdhocFilter from 'src/explore/components/controls/FilterControl/AdhocFilter';
@@ -43,61 +44,47 @@ interface AdhocFilterPopoverTriggerState {
   popoverVisible: boolean;
 }
 
-class AdhocFilterPopoverTrigger extends React.PureComponent<
-  AdhocFilterPopoverTriggerProps,
-  AdhocFilterPopoverTriggerState
-> {
-  constructor(props: AdhocFilterPopoverTriggerProps) {
-    super(props);
-    this.onPopoverResize = this.onPopoverResize.bind(this);
-    this.closePopover = this.closePopover.bind(this);
-    this.togglePopover = this.togglePopover.bind(this);
-    this.state = {
-      popoverVisible: false,
-    };
-  }
+const AdhocFilterPopoverTrigger = (props: AdhocFilterPopoverTriggerProps) => {
 
-  onPopoverResize() {
-    this.forceUpdate();
-  }
 
-  closePopover() {
-    this.togglePopover(false);
-  }
+    const [popoverVisible, setPopoverVisible] = useState(false);
 
-  togglePopover(visible: boolean) {
-    this.setState({
-      popoverVisible: visible,
-    });
-  }
+    const onPopoverResizeHandler = useCallback(() => {
+    forceUpdateHandler();
+  }, []);
+    const closePopoverHandler = useCallback(() => {
+    togglePopoverHandler(false);
+  }, []);
+    const togglePopoverHandler = useCallback((visible: boolean) => {
+    setPopoverVisible(visible);
+  }, []);
 
-  render() {
-    const { adhocFilter, isControlledComponent } = this.props;
+    const { adhocFilter, isControlledComponent } = props;
 
     const { visible, togglePopover, closePopover } = isControlledComponent
       ? {
-          visible: this.props.visible,
-          togglePopover: this.props.togglePopover,
-          closePopover: this.props.closePopover,
+          visible: props.visible,
+          togglePopover: props.togglePopover,
+          closePopover: props.closePopover,
         }
       : {
-          visible: this.state.popoverVisible,
-          togglePopover: this.togglePopover,
-          closePopover: this.closePopover,
+          visible: popoverVisible,
+          togglePopover: togglePopoverHandler,
+          closePopover: closePopoverHandler,
         };
     const overlayContent = (
       <ExplorePopoverContent>
         <AdhocFilterEditPopover
           adhocFilter={adhocFilter}
-          options={this.props.options}
-          datasource={this.props.datasource}
-          partitionColumn={this.props.partitionColumn}
-          onResize={this.onPopoverResize}
+          options={props.options}
+          datasource={props.datasource}
+          partitionColumn={props.partitionColumn}
+          onResize={onPopoverResizeHandler}
           onClose={closePopover}
-          sections={this.props.sections}
-          operators={this.props.operators}
-          onChange={this.props.onFilterEdit}
-          requireSave={this.props.requireSave}
+          sections={props.sections}
+          operators={props.operators}
+          onChange={props.onFilterEdit}
+          requireSave={props.requireSave}
         />
       </ExplorePopoverContent>
     );
@@ -111,10 +98,12 @@ class AdhocFilterPopoverTrigger extends React.PureComponent<
         onVisibleChange={togglePopover}
         destroyTooltipOnHide
       >
-        {this.props.children}
+        {props.children}
       </ControlPopover>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 export default AdhocFilterPopoverTrigger;

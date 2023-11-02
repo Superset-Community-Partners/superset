@@ -17,9 +17,10 @@
  * under the License.
  */
 /* eslint-env browser */
+
 import PropTypes from 'prop-types';
-import React from 'react';
-import { getCategoricalSchemeRegistry, t } from '@superset-ui/core';
+import { useState, useCallback } from 'react';
+import { t } from '@superset-ui/core';
 
 import ColorSchemeControl from 'src/explore/components/controls/ColorSchemeControl';
 
@@ -36,21 +37,16 @@ const defaultProps = {
   onChange: () => {},
 };
 
-class ColorSchemeControlWrapper extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = { hovered: false };
-    this.categoricalSchemeRegistry = getCategoricalSchemeRegistry();
-    this.choices = this.categoricalSchemeRegistry.keys().map(s => [s, s]);
-    this.schemes = this.categoricalSchemeRegistry.getMap();
-  }
+const ColorSchemeControlWrapper = (props) => {
 
-  setHover(hovered) {
-    this.setState({ hovered });
-  }
 
-  render() {
-    const { colorScheme, labelMargin = 0, hasCustomLabelColors } = this.props;
+    const [hovered, setHovered] = useState(false);
+
+    const setHoverHandler = useCallback((hovered) => {
+    setHovered(hovered);
+  }, [hovered]);
+
+    const { colorScheme, labelMargin = 0, hasCustomLabelColors } = props;
     return (
       <ColorSchemeControl
         description={t(
@@ -58,17 +54,19 @@ class ColorSchemeControlWrapper extends React.PureComponent {
         )}
         labelMargin={labelMargin}
         name="color_scheme"
-        onChange={this.props.onChange}
+        onChange={props.onChange}
         value={colorScheme}
-        choices={this.choices}
+        choices={choicesHandler}
         clearable
-        schemes={this.schemes}
-        hovered={this.state.hovered}
+        schemes={schemesHandler}
+        hovered={hovered}
         hasCustomLabelColors={hasCustomLabelColors}
       />
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 ColorSchemeControlWrapper.propTypes = propTypes;
 ColorSchemeControlWrapper.defaultProps = defaultProps;

@@ -17,7 +17,8 @@
  * under the License.
  */
 
-import React, { CSSProperties, ReactNode, PureComponent } from 'react';
+
+import { CSSProperties, ReactNode, useCallback } from "react";
 import { ParentSize } from '@vx/responsive';
 
 const defaultProps = {
@@ -52,11 +53,13 @@ const CHART_STYLE_BASE: CSSProperties = {
   position: 'relative',
 };
 
-class WithLegend extends PureComponent<Props, {}> {
-  static defaultProps = defaultProps;
+const WithLegend = (inputProps: Props) => {
 
-  getContainerDirection(): CSSProperties['flexDirection'] {
-    const { position } = this.props;
+
+    
+
+    const getContainerDirectionHandler = useCallback(() => {
+    const { position } = props;
 
     if (position === 'left') {
       return 'row';
@@ -69,10 +72,9 @@ class WithLegend extends PureComponent<Props, {}> {
     }
 
     return 'column';
-  }
-
-  getLegendJustifyContent() {
-    const { legendJustifyContent, position } = this.props;
+  }, []);
+    const getLegendJustifyContentHandler = useCallback(() => {
+    const { legendJustifyContent, position } = props;
     if (legendJustifyContent) {
       return legendJustifyContent;
     }
@@ -82,9 +84,8 @@ class WithLegend extends PureComponent<Props, {}> {
     }
 
     return 'flex-end';
-  }
+  }, []);
 
-  render() {
     const {
       className,
       debounceTime,
@@ -93,13 +94,13 @@ class WithLegend extends PureComponent<Props, {}> {
       position,
       renderChart,
       renderLegend,
-    } = this.props;
+    } = props;
 
     const isHorizontal = position === 'left' || position === 'right';
 
     const style: CSSProperties = {
       display: 'flex',
-      flexDirection: this.getContainerDirection(),
+      flexDirection: getContainerDirectionHandler(),
       height,
       width,
     };
@@ -115,7 +116,7 @@ class WithLegend extends PureComponent<Props, {}> {
     const legendStyle: CSSProperties = {
       ...LEGEND_STYLE_BASE,
       flexDirection: legendDirection,
-      justifyContent: this.getLegendJustifyContent(),
+      justifyContent: getLegendJustifyContentHandler(),
     };
 
     return (
@@ -139,8 +140,10 @@ class WithLegend extends PureComponent<Props, {}> {
           </ParentSize>
         </div>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+WithLegend.defaultProps = defaultProps;
+
 
 export default WithLegend;

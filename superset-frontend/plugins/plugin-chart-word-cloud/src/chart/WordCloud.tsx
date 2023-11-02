@@ -17,19 +17,20 @@
  * under the License.
  */
 
-import React from 'react';
+
+import { useState, useRef, useEffect, useCallback } from 'react';
 import cloudLayout, { Word } from 'd3-cloud';
 import {
-  PlainObject,
-  createEncoderFactory,
-  DeriveEncoding,
-  Encoder,
+    PlainObject,
+    createEncoderFactory,
+    DeriveEncoding,
+    Encoder,
 } from 'encodable';
 import {
-  SupersetThemeProps,
-  withTheme,
-  seed,
-  CategoricalColorScale,
+    SupersetThemeProps,
+    withTheme,
+    seed,
+    CategoricalColorScale,
 } from '@superset-ui/core';
 import { isEqual } from 'lodash';
 
@@ -88,17 +89,15 @@ const MAX_SCALE_FACTOR = 3;
 // Needed to avoid clutter when shrinking a chart with many records.
 const TOP_RESULTS_PERCENTAGE = 0.1;
 
-class WordCloud extends React.PureComponent<
-  FullWordCloudProps,
-  WordCloudState
-> {
-  static defaultProps = defaultProps;
+const WordCloud = (inputProps: FullWordCloudProps) => {
 
-  // Cannot name it isMounted because of conflict
-  // with React's component function name
-  isComponentMounted = false;
 
-  wordCloudEncoderFactory = createEncoderFactory<WordCloudEncodingConfig>({
+    const [words, setWords] = useState([]);
+    const [scaleFactor, setScaleFactor] = useState(1);
+
+    // with React's component function name
+    const isComponentMounted = useRef(false);
+    const wordCloudEncoderFactory = useRef(createEncoderFactory<WordCloudEncodingConfig>({
     channelTypes: {
       color: 'Color',
       fontFamily: 'Category',
@@ -107,32 +106,20 @@ class WordCloud extends React.PureComponent<
       text: 'Text',
     },
     defaultEncoding: {
-      color: { value: this.props.theme.colors.grayscale.dark2 },
-      fontFamily: { value: this.props.theme.typography.families.sansSerif },
+      color: { value: props.theme.colors.grayscale.dark2 },
+      fontFamily: { value: props.theme.typography.families.sansSerif },
       fontSize: { value: 20 },
       fontWeight: { value: 'bold' },
       text: { value: '' },
     },
-  });
-
-  createEncoder = this.wordCloudEncoderFactory.createSelector();
-
-  constructor(props: FullWordCloudProps) {
-    super(props);
-    this.state = {
-      words: [],
-      scaleFactor: 1,
-    };
-    this.setWords = this.setWords.bind(this);
-  }
-
-  componentDidMount() {
-    this.isComponentMounted = true;
-    this.update();
-  }
-
-  componentDidUpdate(prevProps: WordCloudProps) {
-    const { data, encoding, width, height, rotation } = this.props;
+  }));
+    const createEncoder = useRef(wordCloudEncoderFactory.current.createSelector());
+    useEffect(() => {
+    isComponentMounted.current = true;
+    updateHandler();
+  }, []);
+    useEffect(() => {
+    const { data, encoding, width, height, rotation } = props;
 
     if (
       !isEqual(prevProps.data, data) ||
@@ -141,24 +128,23 @@ class WordCloud extends React.PureComponent<
       prevProps.height !== height ||
       prevProps.rotation !== rotation
     ) {
-      this.update();
+      updateHandler();
     }
-  }
-
-  componentWillUnmount() {
-    this.isComponentMounted = false;
-  }
-
-  setWords(words: Word[]) {
-    if (this.isComponentMounted) {
-      this.setState({ words });
+  }, []);
+    useEffect(() => {
+    return () => {
+    isComponentMounted.current = false;
+  };
+}, []);
+    const setWordsHandler = useCallback((words: Word[]) => {
+    if (isComponentMounted.current) {
+      setWords(words);
     }
-  }
+  }, [words]);
+    const updateHandler = useCallback(() => {
+    const { data, encoding } = props;
 
-  update() {
-    const { data, encoding } = this.props;
-
-    const encoder = this.createEncoder(encoding);
+    const encoder = createEncoder.current(encoding);
     encoder.setDomainFromDataset(data);
 
     const sortedData = [...data].sort(
@@ -173,21 +159,18 @@ class WordCloud extends React.PureComponent<
     const topResults = sortedData.slice(0, topResultsCount);
 
     // Ensure top results are always included in the final word cloud by scaling chart down if needed
-    this.generateCloud(encoder, 1, (words: Word[]) =>
+    generateCloudHandler(encoder, 1, (words: Word[]) =>
       topResults.every((d: PlainObject) =>
         words.find(
           ({ text }) => encoder.channels.text.getValueFromDatum(d) === text,
         ),
       ),
     );
-  }
-
-  generateCloud(
-    encoder: Encoder<WordCloudEncodingConfig>,
+  }, [words]);
+    const generateCloudHandler = useCallback((encoder: Encoder<WordCloudEncodingConfig>,
     scaleFactor: number,
-    isValid: (word: Word[]) => boolean,
-  ) {
-    const { data, width, height, rotation } = this.props;
+    isValid: (word: Word[]) => boolean) => {
+    const { data, width, height, rotation } = props;
 
     cloudLayout()
       .size([width * scaleFactor, height * scaleFactor])
@@ -199,29 +182,29 @@ class WordCloud extends React.PureComponent<
       .font(d =>
         encoder.channels.fontFamily.encodeDatum(
           d,
-          this.props.theme.typography.families.sansSerif,
+          props.theme.typography.families.sansSerif,
         ),
       )
       .fontWeight(d => encoder.channels.fontWeight.encodeDatum(d, 'normal'))
       .fontSize(d => encoder.channels.fontSize.encodeDatum(d, 0))
       .on('end', (words: Word[]) => {
         if (isValid(words) || scaleFactor > MAX_SCALE_FACTOR) {
-          if (this.isComponentMounted) {
-            this.setState({ words, scaleFactor });
+          if (isComponentMounted.current) {
+            setWords(words)
+    setScaleFactor(scaleFactor);
           }
         } else {
-          this.generateCloud(encoder, scaleFactor + SCALE_FACTOR_STEP, isValid);
+          generateCloudHandler(encoder, scaleFactor + SCALE_FACTOR_STEP, isValid);
         }
       })
       .start();
-  }
+  }, [scaleFactor, words]);
 
-  render() {
-    const { scaleFactor } = this.state;
-    const { width, height, encoding, sliceId } = this.props;
-    const { words } = this.state;
+    
+    const { width, height, encoding, sliceId } = props;
+    
 
-    const encoder = this.createEncoder(encoding);
+    const encoder = createEncoder.current(encoding);
     encoder.channels.color.setDomainFromDataset(words);
 
     const { getValueFromDatum } = encoder.channels.color;
@@ -254,8 +237,10 @@ class WordCloud extends React.PureComponent<
           ))}
         </g>
       </svg>
-    );
-  }
-}
+    ); 
+};
+
+WordCloud.defaultProps = defaultProps;
+
 
 export default withTheme(WordCloud);

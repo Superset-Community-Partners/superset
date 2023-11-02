@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { css, styled } from '@superset-ui/core';
@@ -34,8 +35,8 @@ import headerStyleOptions from 'src/dashboard/util/headerStyleOptions';
 import backgroundStyleOptions from 'src/dashboard/util/backgroundStyleOptions';
 import { componentShape } from 'src/dashboard/util/propShapes';
 import {
-  SMALL_HEADER,
-  BACKGROUND_TRANSPARENT,
+    SMALL_HEADER,
+    BACKGROUND_TRANSPARENT,
 } from 'src/dashboard/util/constants';
 
 const propTypes = {
@@ -114,29 +115,16 @@ const HeaderStyles = styled.div`
   `}
 `;
 
-class Header extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isFocused: false,
-    };
-    this.handleDeleteComponent = this.handleDeleteComponent.bind(this);
-    this.handleChangeFocus = this.handleChangeFocus.bind(this);
-    this.handleUpdateMeta = this.handleUpdateMeta.bind(this);
-    this.handleChangeSize = this.handleUpdateMeta.bind(this, 'headerSize');
-    this.handleChangeBackground = this.handleUpdateMeta.bind(
-      this,
-      'background',
-    );
-    this.handleChangeText = this.handleUpdateMeta.bind(this, 'text');
-  }
+const Header = (props) => {
 
-  handleChangeFocus(nextFocus) {
-    this.setState(() => ({ isFocused: nextFocus }));
-  }
 
-  handleUpdateMeta(metaKey, nextValue) {
-    const { updateComponents, component } = this.props;
+    const [isFocused, setIsFocused] = useState(false);
+
+    const handleChangeFocusHandler = useCallback((nextFocus) => {
+    setStateHandler(() => ({ isFocused: nextFocus }));
+  }, []);
+    const handleUpdateMetaHandler = useCallback((metaKey, nextValue) => {
+    const { updateComponents, component } = props;
     if (nextValue && component.meta[metaKey] !== nextValue) {
       updateComponents({
         [component.id]: {
@@ -148,15 +136,13 @@ class Header extends React.PureComponent {
         },
       });
     }
-  }
-
-  handleDeleteComponent() {
-    const { deleteComponent, id, parentId } = this.props;
+  }, []);
+    const handleDeleteComponentHandler = useCallback(() => {
+    const { deleteComponent, id, parentId } = props;
     deleteComponent(id, parentId);
-  }
+  }, []);
 
-  render() {
-    const { isFocused } = this.state;
+    
 
     const {
       dashboardId,
@@ -166,7 +152,7 @@ class Header extends React.PureComponent {
       index,
       handleComponentDrop,
       editMode,
-    } = this.props;
+    } = props;
 
     const headerStyle = headerStyleOptions.find(
       opt => opt.value === (component.meta.headerSize || SMALL_HEADER),
@@ -197,18 +183,18 @@ class Header extends React.PureComponent {
                 </HoverMenu>
               )}
             <WithPopoverMenu
-              onChangeFocus={this.handleChangeFocus}
+              onChangeFocus={handleChangeFocusHandler}
               menuItems={[
                 <PopoverDropdown
                   id={`${component.id}-header-style`}
                   options={headerStyleOptions}
                   value={component.meta.headerSize}
-                  onChange={this.handleChangeSize}
+                  onChange={handleChangeSizeHandler}
                 />,
                 <BackgroundStyleDropdown
                   id={`${component.id}-background`}
                   value={component.meta.background}
-                  onChange={this.handleChangeBackground}
+                  onChange={handleChangeBackgroundHandler}
                 />,
               ]}
               editMode={editMode}
@@ -224,14 +210,14 @@ class Header extends React.PureComponent {
                 {editMode && (
                   <HoverMenu position="top">
                     <DeleteComponentButton
-                      onDelete={this.handleDeleteComponent}
+                      onDelete={handleDeleteComponentHandler}
                     />
                   </HoverMenu>
                 )}
                 <EditableTitle
                   title={component.meta.text}
                   canEdit={editMode}
-                  onSaveTitle={this.handleChangeText}
+                  onSaveTitle={handleChangeTextHandler}
                   showTooltip={false}
                 />
                 {!editMode && (
@@ -244,9 +230,11 @@ class Header extends React.PureComponent {
           </div>
         )}
       </DragDroppable>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 Header.propTypes = propTypes;
 Header.defaultProps = defaultProps;

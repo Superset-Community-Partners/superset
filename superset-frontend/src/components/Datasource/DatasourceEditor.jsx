@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 import rison from 'rison';
-import React, { useCallback } from 'react';
+import { useCallback, useState } from "react";
 import PropTypes from 'prop-types';
 import { Radio } from 'src/components/Radio';
 import Card from 'src/components/Card';
@@ -25,15 +26,12 @@ import Alert from 'src/components/Alert';
 import Badge from 'src/components/Badge';
 import shortid from 'shortid';
 import {
-  css,
-  isFeatureEnabled,
-  getCurrencySymbol,
-  ensureIsArray,
-  FeatureFlag,
-  styled,
-  SupersetClient,
-  t,
-  withTheme,
+    css,
+    isFeatureEnabled, FeatureFlag,
+    styled,
+    SupersetClient,
+    t,
+    withTheme
 } from '@superset-ui/core';
 import { Select, AsyncSelect, Row, Col } from 'src/components';
 import { FormLabel } from 'src/components/Form';
@@ -576,11 +574,17 @@ function OwnersSelector({ datasource, onChange }) {
   );
 }
 
-class DatasourceEditor extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      datasource: {
+const DatasourceEditor = (props) => {
+const {
+            certified_by: certifiedByMetric,
+            certification_details: certificationDetails,
+          } = metric;
+    const {
+            certification: { details, certified_by: certifiedBy } = {},
+            warning_markdown: warningMarkdown,
+          } = JSON.parse(metric.extra || '{}') || {};
+
+    const [datasource, setDatasource] = useState({
         ...props.datasource,
         owners: props.datasource.owners.map(owner => ({
           value: owner.value || owner.id,
@@ -602,104 +606,73 @@ class DatasourceEditor extends React.PureComponent {
             certified_by: certifiedBy || certifiedByMetric,
           };
         }),
-      },
-      errors: [],
-      isSqla:
-        props.datasource.datasource_type === 'table' ||
-        props.datasource.type === 'table',
-      isEditMode: false,
-      databaseColumns: props.datasource.columns.filter(col => !col.expression),
-      calculatedColumns: props.datasource.columns.filter(
+      });
+    const [errors, setErrors] = useState([]);
+    const [isSqla, setIsSqla] = useState(props.datasource.datasource_type === 'table' ||
+        props.datasource.type === 'table');
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [databaseColumns, setDatabaseColumns] = useState(props.datasource.columns.filter(col => !col.expression));
+    const [calculatedColumns, setCalculatedColumns] = useState(props.datasource.columns.filter(
         col => !!col.expression,
-      ),
-      metadataLoading: false,
-      activeTabKey: 0,
-      datasourceType: props.datasource.sql
+      ));
+    const [metadataLoading, setMetadataLoading] = useState(false);
+    const [activeTabKey, setActiveTabKey] = useState(0);
+    const [datasourceType, setDatasourceType] = useState(props.datasource.sql
         ? DATASOURCE_TYPES.virtual.key
-        : DATASOURCE_TYPES.physical.key,
-    };
+        : DATASOURCE_TYPES.physical.key);
 
-    this.onChange = this.onChange.bind(this);
-    this.onChangeEditMode = this.onChangeEditMode.bind(this);
-    this.onDatasourcePropChange = this.onDatasourcePropChange.bind(this);
-    this.onDatasourceChange = this.onDatasourceChange.bind(this);
-    this.tableChangeAndSyncMetadata =
-      this.tableChangeAndSyncMetadata.bind(this);
-    this.syncMetadata = this.syncMetadata.bind(this);
-    this.setColumns = this.setColumns.bind(this);
-    this.validateAndChange = this.validateAndChange.bind(this);
-    this.handleTabSelect = this.handleTabSelect.bind(this);
-    this.allowEditSource = !isFeatureEnabled(
-      FeatureFlag.DISABLE_DATASET_SOURCE_EDIT,
-    );
-    this.currencies = ensureIsArray(props.currencies).map(currencyCode => ({
-      value: currencyCode,
-      label: `${getCurrencySymbol({
-        symbol: currencyCode,
-      })} (${currencyCode})`,
-    }));
-  }
-
-  onChange() {
+    const onChangeHandler = useCallback(() => {
     // Emptying SQL if "Physical" radio button is selected
     // Currently the logic to know whether the source is
     // physical or virtual is based on whether SQL is empty or not.
-    const { datasourceType, datasource } = this.state;
+    
     const sql =
       datasourceType === DATASOURCE_TYPES.physical.key ? '' : datasource.sql;
     const newDatasource = {
-      ...this.state.datasource,
+      ...datasource,
       sql,
-      columns: [...this.state.databaseColumns, ...this.state.calculatedColumns],
+      columns: [...databaseColumns, ...calculatedColumns],
     };
-    this.props.onChange(newDatasource, this.state.errors);
-  }
-
-  onChangeEditMode() {
-    this.props.setIsEditing(!this.state.isEditMode);
-    this.setState(prevState => ({ isEditMode: !prevState.isEditMode }));
-  }
-
-  onDatasourceChange(datasource, callback = this.validateAndChange) {
-    this.setState({ datasource }, callback);
-  }
-
-  onDatasourcePropChange(attr, value) {
+    props.onChange(newDatasource, errors);
+  }, [datasourceType, datasource, databaseColumns, calculatedColumns, errors]);
+    const onChangeEditModeHandler = useCallback(() => {
+    props.setIsEditing(!isEditMode);
+    setStateHandler(prevState => ({ isEditMode: !prevState.isEditMode }));
+  }, [isEditMode]);
+    const onDatasourceChangeHandler = useCallback((datasource, callback = validateAndChangeHandler) => {
+    setStateHandler({ datasource }, callback);
+  }, [datasource]);
+    const onDatasourcePropChangeHandler = useCallback((attr, value) => {
     if (value === undefined) return; // if value is undefined do not update state
-    const datasource = { ...this.state.datasource, [attr]: value };
-    this.setState(
+    const datasource = { ...datasource, [attr]: value };
+    setStateHandler(
       prevState => ({
         datasource: { ...prevState.datasource, [attr]: value },
       }),
       attr === 'table_name'
-        ? this.onDatasourceChange(datasource, this.tableChangeAndSyncMetadata)
-        : this.onDatasourceChange(datasource, this.validateAndChange),
+        ? onDatasourceChangeHandler(datasource, tableChangeAndSyncMetadataHandler)
+        : onDatasourceChangeHandler(datasource, validateAndChangeHandler),
     );
-  }
-
-  onDatasourceTypeChange(datasourceType) {
-    this.setState({ datasourceType });
-  }
-
-  setColumns(obj) {
+  }, [datasource]);
+    const onDatasourceTypeChangeHandler = useCallback((datasourceType) => {
+    setDatasourceType(datasourceType);
+  }, [datasourceType]);
+    const setColumnsHandler = useCallback((obj) => {
     // update calculatedColumns or databaseColumns
-    this.setState(obj, this.validateAndChange);
-  }
-
-  validateAndChange() {
-    this.validate(this.onChange);
-  }
-
-  tableChangeAndSyncMetadata() {
-    this.validate(() => {
-      this.syncMetadata();
-      this.onChange();
+    setStateHandler(obj, validateAndChangeHandler);
+  }, []);
+    const validateAndChangeHandler = useCallback(() => {
+    validateHandler(onChangeHandler);
+  }, []);
+    const tableChangeAndSyncMetadataHandler = useCallback(() => {
+    validateHandler(() => {
+      syncMetadata();
+      onChangeHandler();
     });
-  }
-
-  updateColumns(cols) {
+  }, []);
+    const updateColumnsHandler = useCallback((cols) => {
     // cols: Array<{column_name: string; is_dttm: boolean; type: string;}>
-    const { databaseColumns } = this.state;
+    
     const databaseColumnNames = cols.map(col => col.column_name);
     const currentCols = databaseColumns.reduce(
       (agg, col) => ({
@@ -750,13 +723,12 @@ class DatasourceEditor extends React.PureComponent {
       results.modified.length ||
       results.removed.length
     ) {
-      this.setColumns({ databaseColumns: finalColumns });
+      setColumnsHandler({ databaseColumns: finalColumns });
     }
     return results;
-  }
-
-  syncMetadata() {
-    const { datasource } = this.state;
+  }, [databaseColumns]);
+    const syncMetadata = useMemo(() => {
+    
     const params = {
       datasource_type: datasource.type || datasource.datasource_type,
       database_name:
@@ -777,40 +749,39 @@ class DatasourceEditor extends React.PureComponent {
     const endpoint = `/datasource/external_metadata_by_name/?q=${rison.encode(
       params,
     )}`;
-    this.setState({ metadataLoading: true });
+    setMetadataLoading(true);
 
     SupersetClient.get({ endpoint })
       .then(({ json }) => {
-        const results = this.updateColumns(json);
+        const results = updateColumnsHandler(json);
         if (results.modified.length) {
-          this.props.addSuccessToast(
+          props.addSuccessToast(
             t('Modified columns: %s', results.modified.join(', ')),
           );
         }
         if (results.removed.length) {
-          this.props.addSuccessToast(
+          props.addSuccessToast(
             t('Removed columns: %s', results.removed.join(', ')),
           );
         }
         if (results.added.length) {
-          this.props.addSuccessToast(
+          props.addSuccessToast(
             t('New columns added: %s', results.added.join(', ')),
           );
         }
-        this.props.addSuccessToast(t('Metadata has been synced'));
-        this.setState({ metadataLoading: false });
+        props.addSuccessToast(t('Metadata has been synced'));
+        setMetadataLoading(false);
       })
       .catch(response =>
         getClientErrorObject(response).then(({ error, statusText }) => {
-          this.props.addDangerToast(
+          props.addDangerToast(
             error || statusText || t('An error has occurred'),
           );
-          this.setState({ metadataLoading: false });
+          setMetadataLoading(false);
         }),
       );
-  }
-
-  findDuplicates(arr, accessor) {
+  }, [datasource]);
+    const findDuplicatesHandler = useCallback((arr, accessor) => {
     const seen = {};
     const dups = [];
     arr.forEach(obj => {
@@ -822,38 +793,37 @@ class DatasourceEditor extends React.PureComponent {
       }
     });
     return dups;
-  }
-
-  validate(callback) {
+  }, []);
+    const validateHandler = useCallback((callback) => {
     let errors = [];
     let dups;
-    const { datasource } = this.state;
+    
 
     // Looking for duplicate column_name
-    dups = this.findDuplicates(datasource.columns, obj => obj.column_name);
-    errors = errors.concat(
+    dups = findDuplicatesHandler(datasource.columns, obj => obj.column_name);
+    setErrors(errors.concat(
       dups.map(name => t('Column name [%s] is duplicated', name)),
-    );
+    ));
 
     // Looking for duplicate metric_name
-    dups = this.findDuplicates(datasource.metrics, obj => obj.metric_name);
-    errors = errors.concat(
+    dups = findDuplicatesHandler(datasource.metrics, obj => obj.metric_name);
+    setErrors(errors.concat(
       dups.map(name => t('Metric name [%s] is duplicated', name)),
-    );
+    ));
 
     // Making sure calculatedColumns have an expression defined
-    const noFilterCalcCols = this.state.calculatedColumns.filter(
+    const noFilterCalcCols = calculatedColumns.filter(
       col => !col.expression && !col.json,
     );
-    errors = errors.concat(
+    setErrors(errors.concat(
       noFilterCalcCols.map(col =>
         t('Calculated column [%s] requires an expression', col.column_name),
       ),
-    );
+    ));
 
     // validate currency code
     try {
-      this.state.datasource.metrics?.forEach(
+      datasource.metrics?.forEach(
         metric =>
           metric.currency?.symbol &&
           new Intl.NumberFormat('en-US', {
@@ -862,27 +832,24 @@ class DatasourceEditor extends React.PureComponent {
           }),
       );
     } catch {
-      errors = errors.concat([t('Invalid currency code in saved metrics')]);
+      setErrors(errors.concat([t('Invalid currency code in saved metrics')]));
     }
 
-    this.setState({ errors }, callback);
-  }
-
-  handleTabSelect(activeTabKey) {
-    this.setState({ activeTabKey });
-  }
-
-  sortMetrics(metrics) {
+    setStateHandler({ errors }, callback);
+  }, [errors, datasource, calculatedColumns]);
+    const handleTabSelectHandler = useCallback((activeTabKey) => {
+    setActiveTabKey(activeTabKey);
+  }, [activeTabKey]);
+    const sortMetricsHandler = useCallback((metrics) => {
     return metrics.sort(({ id: a }, { id: b }) => b - a);
-  }
-
-  renderSettingsFieldset() {
-    const { datasource } = this.state;
+  }, []);
+    const renderSettingsFieldsetHandler = useCallback(() => {
+    
     return (
       <Fieldset
         title={t('Basic')}
         item={datasource}
-        onChange={this.onDatasourceChange}
+        onChange={onDatasourceChangeHandler}
       >
         <Field
           fieldKey="description"
@@ -910,7 +877,7 @@ class DatasourceEditor extends React.PureComponent {
           description={t('Whether to populate autocomplete filters options')}
           control={<CheckboxControl />}
         />
-        {this.state.isSqla && (
+        {isSqla && (
           <Field
             fieldKey="fetch_values_predicate"
             label={t('Autocomplete query predicate')}
@@ -931,7 +898,7 @@ class DatasourceEditor extends React.PureComponent {
             }
           />
         )}
-        {this.state.isSqla && (
+        {isSqla && (
           <Field
             fieldKey="extra"
             label={t('Extra')}
@@ -954,20 +921,19 @@ class DatasourceEditor extends React.PureComponent {
         <OwnersSelector
           datasource={datasource}
           onChange={newOwners => {
-            this.onDatasourceChange({ ...datasource, owners: newOwners });
+            onDatasourceChangeHandler({ ...datasource, owners: newOwners });
           }}
         />
       </Fieldset>
     );
-  }
-
-  renderAdvancedFieldset() {
-    const { datasource } = this.state;
+  }, [datasource, isSqla]);
+    const renderAdvancedFieldsetHandler = useCallback(() => {
+    
     return (
       <Fieldset
         title={t('Advanced')}
         item={datasource}
-        onChange={this.onDatasourceChange}
+        onChange={onDatasourceChangeHandler}
       >
         <Field
           fieldKey="cache_timeout"
@@ -985,7 +951,7 @@ class DatasourceEditor extends React.PureComponent {
             'The number of hours, negative or positive, to shift the time column. This can be used to move UTC time to local time.',
           )}
         />
-        {this.state.isSqla && (
+        {isSqla && (
           <Field
             fieldKey="template_params"
             label={t('Template parameters')}
@@ -1015,10 +981,9 @@ class DatasourceEditor extends React.PureComponent {
         />
       </Fieldset>
     );
-  }
-
-  renderSpatialTab() {
-    const { datasource } = this.state;
+  }, [datasource, isSqla]);
+    const renderSpatialTabHandler = useCallback(() => {
+    
     const { spatials, all_cols: allCols } = datasource;
     return (
       <Tabs.TabPane
@@ -1027,7 +992,7 @@ class DatasourceEditor extends React.PureComponent {
       >
         <CollectionTable
           tableColumns={['name', 'config']}
-          onChange={this.onDatasourcePropChange.bind(this, 'spatials')}
+          onChange={onDatasourcePropChangeHandler.bind(this, 'spatials')}
           itemGenerator={() => ({
             name: t('<new spatial>'),
             type: t('<no type>'),
@@ -1046,25 +1011,24 @@ class DatasourceEditor extends React.PureComponent {
         />
       </Tabs.TabPane>
     );
-  }
-
-  renderSourceFieldset(theme) {
-    const { datasource } = this.state;
+  }, [datasource]);
+    const renderSourceFieldsetHandler = useCallback((theme) => {
+    
     return (
       <div>
-        {this.allowEditSource && (
+        {allowEditSourceHandler && (
           <EditLockContainer>
-            <span role="button" tabIndex={0} onClick={this.onChangeEditMode}>
-              {this.state.isEditMode ? (
+            <span role="button" tabIndex={0} onClick={onChangeEditModeHandler}>
+              {isEditMode ? (
                 <Icons.LockUnlocked iconColor={theme.colors.grayscale.base} />
               ) : (
                 <Icons.LockLocked iconColor={theme.colors.grayscale.base} />
               )}
             </span>
-            {!this.state.isEditMode && (
+            {!isEditMode && (
               <div>{t('Click the lock to make changes.')}</div>
             )}
-            {this.state.isEditMode && (
+            {isEditMode && (
               <div>{t('Click the lock to prevent further changes.')}</div>
             )}
           </EditLockContainer>
@@ -1075,19 +1039,19 @@ class DatasourceEditor extends React.PureComponent {
               key={type.key}
               value={type.key}
               inline
-              onChange={this.onDatasourceTypeChange.bind(this, type.key)}
-              checked={this.state.datasourceType === type.key}
-              disabled={!this.state.isEditMode}
+              onChange={onDatasourceTypeChangeHandler.bind(this, type.key)}
+              checked={datasourceType === type.key}
+              disabled={!isEditMode}
             >
               {type.label}
             </Radio>
           ))}
         </div>
         <hr />
-        <Fieldset item={datasource} onChange={this.onDatasourceChange} compact>
-          {this.state.datasourceType === DATASOURCE_TYPES.virtual.key && (
+        <Fieldset item={datasource} onChange={onDatasourceChangeHandler} compact>
+          {datasourceType === DATASOURCE_TYPES.virtual.key && (
             <div>
-              {this.state.isSqla && (
+              {isSqla && (
                 <>
                   <Col xs={24} md={12}>
                     <Field
@@ -1099,16 +1063,16 @@ class DatasourceEditor extends React.PureComponent {
                             db={datasource?.database}
                             schema={datasource.schema}
                             onSchemaChange={schema =>
-                              this.state.isEditMode &&
-                              this.onDatasourcePropChange('schema', schema)
+                              isEditMode &&
+                              onDatasourcePropChangeHandler('schema', schema)
                             }
                             onDbChange={database =>
-                              this.state.isEditMode &&
-                              this.onDatasourcePropChange('database', database)
+                              isEditMode &&
+                              onDatasourcePropChangeHandler('database', database)
                             }
                             formMode={false}
-                            handleError={this.props.addDangerToast}
-                            readOnly={!this.state.isEditMode}
+                            handleError={props.addDangerToast}
+                            readOnly={!isEditMode}
                           />
                         </div>
                       }
@@ -1121,10 +1085,10 @@ class DatasourceEditor extends React.PureComponent {
                           <TextControl
                             controlId="table_name"
                             onChange={table => {
-                              this.onDatasourcePropChange('table_name', table);
+                              onDatasourcePropChangeHandler('table_name', table);
                             }}
                             placeholder={t('Dataset name')}
-                            disabled={!this.state.isEditMode}
+                            disabled={!isEditMode}
                           />
                         }
                       />
@@ -1144,7 +1108,7 @@ class DatasourceEditor extends React.PureComponent {
                         offerEditInModal={false}
                         minLines={20}
                         maxLines={20}
-                        readOnly={!this.state.isEditMode}
+                        readOnly={!isEditMode}
                         resize="both"
                       />
                     }
@@ -1153,9 +1117,9 @@ class DatasourceEditor extends React.PureComponent {
               )}
             </div>
           )}
-          {this.state.datasourceType === DATASOURCE_TYPES.physical.key && (
+          {datasourceType === DATASOURCE_TYPES.physical.key && (
             <Col xs={24} md={12}>
-              {this.state.isSqla && (
+              {isSqla && (
                 <Field
                   fieldKey="tableSelector"
                   label={t('Physical')}
@@ -1170,32 +1134,32 @@ class DatasourceEditor extends React.PureComponent {
                             datasource.database?.name,
                         }}
                         dbId={datasource.database?.id}
-                        handleError={this.props.addDangerToast}
+                        handleError={props.addDangerToast}
                         schema={datasource.schema}
                         sqlLabMode={false}
                         tableValue={datasource.table_name}
                         onSchemaChange={
-                          this.state.isEditMode
+                          isEditMode
                             ? schema =>
-                                this.onDatasourcePropChange('schema', schema)
+                                onDatasourcePropChangeHandler('schema', schema)
                             : undefined
                         }
                         onDbChange={
-                          this.state.isEditMode
+                          isEditMode
                             ? database =>
-                                this.onDatasourcePropChange(
+                                onDatasourcePropChangeHandler(
                                   'database',
                                   database,
                                 )
                             : undefined
                         }
                         onTableSelectChange={
-                          this.state.isEditMode
+                          isEditMode
                             ? table =>
-                                this.onDatasourcePropChange('table_name', table)
+                                onDatasourcePropChangeHandler('table_name', table)
                             : undefined
                         }
-                        readOnly={!this.state.isEditMode}
+                        readOnly={!isEditMode}
                       />
                     </div>
                   }
@@ -1211,17 +1175,16 @@ class DatasourceEditor extends React.PureComponent {
         </Fieldset>
       </div>
     );
-  }
-
-  renderErrors() {
-    if (this.state.errors.length > 0) {
+  }, [isEditMode, datasourceType, datasource, isSqla]);
+    const renderErrorsHandler = useCallback(() => {
+    if (errors.length > 0) {
       return (
         <Alert
           css={theme => ({ marginBottom: theme.gridUnit * 4 })}
           type="error"
           message={
             <>
-              {this.state.errors.map(err => (
+              {errors.map(err => (
                 <div key={err}>{err}</div>
               ))}
             </>
@@ -1230,12 +1193,11 @@ class DatasourceEditor extends React.PureComponent {
       );
     }
     return null;
-  }
-
-  renderMetricCollection() {
-    const { datasource } = this.state;
+  }, [errors]);
+    const renderMetricCollectionHandler = useCallback(() => {
+    
     const { metrics } = datasource;
-    const sortedMetrics = metrics?.length ? this.sortMetrics(metrics) : [];
+    const sortedMetrics = metrics?.length ? sortMetricsHandler(metrics) : [];
     return (
       <CollectionTable
         tableColumns={['metric_name', 'verbose_name', 'expression']}
@@ -1328,7 +1290,7 @@ class DatasourceEditor extends React.PureComponent {
         }
         collection={sortedMetrics}
         allowAddItem
-        onChange={this.onDatasourcePropChange.bind(this, 'metrics')}
+        onChange={onDatasourcePropChangeHandler.bind(this, 'metrics')}
         itemGenerator={() => ({
           metric_name: t('<new metric>'),
           verbose_name: '',
@@ -1389,17 +1351,16 @@ class DatasourceEditor extends React.PureComponent {
         stickyHeader
       />
     );
-  }
+  }, [datasource]);
 
-  render() {
-    const { datasource, activeTabKey } = this.state;
+    
     const { metrics } = datasource;
-    const sortedMetrics = metrics?.length ? this.sortMetrics(metrics) : [];
-    const { theme } = this.props;
+    const sortedMetrics = metrics?.length ? sortMetricsHandler(metrics) : [];
+    const { theme } = props;
 
     return (
       <DatasourceContainer>
-        {this.renderErrors()}
+        {renderErrorsHandler()}
         <Alert
           css={theme => ({ marginBottom: theme.gridUnit * 4 })}
           type="warning"
@@ -1417,11 +1378,11 @@ class DatasourceEditor extends React.PureComponent {
           fullWidth={false}
           id="table-tabs"
           data-test="edit-dataset-tabs"
-          onChange={this.handleTabSelect}
+          onChange={handleTabSelectHandler}
           defaultActiveKey={activeTabKey}
         >
           <Tabs.TabPane key={0} tab={t('Source')}>
-            {this.renderSourceFieldset(theme)}
+            {renderSourceFieldsetHandler(theme)}
           </Tabs.TabPane>
           <Tabs.TabPane
             tab={
@@ -1432,12 +1393,12 @@ class DatasourceEditor extends React.PureComponent {
             }
             key={1}
           >
-            {this.renderMetricCollection()}
+            {renderMetricCollectionHandler()}
           </Tabs.TabPane>
           <Tabs.TabPane
             tab={
               <CollectionTabTitle
-                collection={this.state.databaseColumns}
+                collection={databaseColumns}
                 title={t('Columns')}
               />
             }
@@ -1449,9 +1410,9 @@ class DatasourceEditor extends React.PureComponent {
                   <Button
                     buttonSize="small"
                     buttonStyle="tertiary"
-                    onClick={this.syncMetadata}
+                    onClick={syncMetadata}
                     className="sync-from-source"
-                    disabled={this.state.isEditMode}
+                    disabled={isEditMode}
                   >
                     <i className="fa fa-database" />{' '}
                     {t('Sync columns from source')}
@@ -1460,20 +1421,20 @@ class DatasourceEditor extends React.PureComponent {
               </ColumnButtonWrapper>
               <ColumnCollectionTable
                 className="columns-table"
-                columns={this.state.databaseColumns}
+                columns={databaseColumns}
                 datasource={datasource}
                 onColumnsChange={databaseColumns =>
-                  this.setColumns({ databaseColumns })
+                  setColumnsHandler({ databaseColumns })
                 }
-                onDatasourceChange={this.onDatasourceChange}
+                onDatasourceChange={onDatasourceChangeHandler}
               />
-              {this.state.metadataLoading && <Loading />}
+              {metadataLoading && <Loading />}
             </StyledColumnsTabWrapper>
           </Tabs.TabPane>
           <Tabs.TabPane
             tab={
               <CollectionTabTitle
-                collection={this.state.calculatedColumns}
+                collection={calculatedColumns}
                 title={t('Calculated columns')}
               />
             }
@@ -1481,9 +1442,9 @@ class DatasourceEditor extends React.PureComponent {
           >
             <StyledColumnsTabWrapper>
               <ColumnCollectionTable
-                columns={this.state.calculatedColumns}
+                columns={calculatedColumns}
                 onColumnsChange={calculatedColumns =>
-                  this.setColumns({ calculatedColumns })
+                  setColumnsHandler({ calculatedColumns })
                 }
                 columnLabelTooltips={{
                   column_name: t(
@@ -1492,7 +1453,7 @@ class DatasourceEditor extends React.PureComponent {
                       'as the alias in the SQL query.',
                   ),
                 }}
-                onDatasourceChange={this.onDatasourceChange}
+                onDatasourceChange={onDatasourceChangeHandler}
                 datasource={datasource}
                 editableColumnName
                 showExpression
@@ -1511,18 +1472,20 @@ class DatasourceEditor extends React.PureComponent {
           <Tabs.TabPane key={4} tab={t('Settings')}>
             <Row gutter={16}>
               <Col xs={24} md={12}>
-                <FormContainer>{this.renderSettingsFieldset()}</FormContainer>
+                <FormContainer>{renderSettingsFieldsetHandler()}</FormContainer>
               </Col>
               <Col xs={24} md={12}>
-                <FormContainer>{this.renderAdvancedFieldset()}</FormContainer>
+                <FormContainer>{renderAdvancedFieldsetHandler()}</FormContainer>
               </Col>
             </Row>
           </Tabs.TabPane>
         </StyledTableTabs>
       </DatasourceContainer>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 DatasourceEditor.defaultProps = defaultProps;
 DatasourceEditor.propTypes = propTypes;

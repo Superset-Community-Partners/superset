@@ -17,7 +17,8 @@
  * under the License.
  */
 
-import React, { CSSProperties, PureComponent, ReactNode } from 'react';
+
+import { CSSProperties, ReactNode } from 'react';
 
 interface TooltipRowData {
   key: string | number;
@@ -39,11 +40,14 @@ type Props = {
 
 const VALUE_CELL_STYLE: CSSProperties = { paddingLeft: 8, textAlign: 'right' };
 
-export default class TooltipTable extends PureComponent<Props, {}> {
-  static defaultProps = defaultProps;
+const TooltipTable = (inputProps: Props) => {
 
-  render() {
-    const { className, data } = this.props;
+
+    
+
+    
+
+    const { className, data } = props;
 
     return (
       <table className={className}>
@@ -64,6 +68,10 @@ export default class TooltipTable extends PureComponent<Props, {}> {
           ))}
         </tbody>
       </table>
-    );
-  }
-}
+    ); 
+};
+
+export default TooltipTable;
+
+TooltipTable.defaultProps = defaultProps;
+

@@ -18,14 +18,15 @@
  * under the License.
  */
 
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
-  DatasourceType,
-  SupersetClient,
-  styled,
-  t,
-  withTheme,
+    DatasourceType,
+    SupersetClient,
+    styled,
+    t,
+    withTheme,
 } from '@superset-ui/core';
 import { getTemporalColumns } from '@superset-ui/chart-controls';
 import { getUrlParam } from 'src/utils/urlUtils';
@@ -34,8 +35,8 @@ import { Menu } from 'src/components/Menu';
 import { Tooltip } from 'src/components/Tooltip';
 import Icons from 'src/components/Icons';
 import {
-  ChangeDatasourceModal,
-  DatasourceModal,
+    ChangeDatasourceModal,
+    DatasourceModal,
 } from 'src/components/Datasource';
 import Button from 'src/components/Button';
 import ErrorAlert from 'src/components/ErrorMessage/ErrorAlert';
@@ -43,8 +44,8 @@ import WarningIconWithTooltip from 'src/components/WarningIconWithTooltip';
 import { URL_PARAMS } from 'src/constants';
 import { getDatasourceAsSaveableDataset } from 'src/utils/datasourceUtils';
 import {
-  userHasPermission,
-  isUserAdmin,
+    userHasPermission,
+    isUserAdmin,
 } from 'src/dashboard/util/permissionUtils';
 import ModalTrigger from 'src/components/ModalTrigger';
 import ViewQueryModalFooter from 'src/explore/components/controls/ViewQueryModalFooter';
@@ -162,23 +163,20 @@ export const getDatasourceTitle = datasource => {
   return datasource?.name || '';
 };
 
-class DatasourceControl extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      showEditDatasourceModal: false,
-      showChangeDatasourceModal: false,
-      showSaveDatasetModal: false,
-    };
-  }
+const DatasourceControl = (props) => {
 
-  onDatasourceSave = datasource => {
-    this.props.actions.changeDatasource(datasource);
+
+    const [showEditDatasourceModal, setShowEditDatasourceModal] = useState(false);
+    const [showChangeDatasourceModal, setShowChangeDatasourceModal] = useState(false);
+    const [showSaveDatasetModal, setShowSaveDatasetModal] = useState(false);
+
+    const onDatasourceSaveHandler = useCallback(datasource => {
+    props.actions.changeDatasource(datasource);
     const { temporalColumns, defaultTemporalColumn } =
       getTemporalColumns(datasource);
     const { columns } = datasource;
     // the current granularity_sqla might not be a temporal column anymore
-    const timeCol = this.props.form_data?.granularity_sqla;
+    const timeCol = props.form_data?.granularity_sqla;
     const isGranularitySqalTemporal = columns.find(
       ({ column_name }) => column_name === timeCol,
     )?.is_dttm;
@@ -193,54 +191,41 @@ class DatasourceControl extends React.PureComponent {
       const temporalColumn = isDefaultTemporal
         ? defaultTemporalColumn
         : temporalColumns?.[0];
-      this.props.actions.setControlValue(
+      props.actions.setControlValue(
         'granularity_sqla',
         temporalColumn || null,
       );
     }
 
-    if (this.props.onDatasourceSave) {
-      this.props.onDatasourceSave(datasource);
+    if (props.onDatasourceSave) {
+      props.onDatasourceSave(datasource);
     }
-  };
-
-  toggleShowDatasource = () => {
-    this.setState(({ showDatasource }) => ({
-      showDatasource: !showDatasource,
-    }));
-  };
-
-  toggleChangeDatasourceModal = () => {
-    this.setState(({ showChangeDatasourceModal }) => ({
-      showChangeDatasourceModal: !showChangeDatasourceModal,
-    }));
-  };
-
-  toggleEditDatasourceModal = () => {
-    this.setState(({ showEditDatasourceModal }) => ({
-      showEditDatasourceModal: !showEditDatasourceModal,
-    }));
-  };
-
-  toggleSaveDatasetModal = () => {
-    this.setState(({ showSaveDatasetModal }) => ({
-      showSaveDatasetModal: !showSaveDatasetModal,
-    }));
-  };
-
-  handleMenuItemClick = ({ key }) => {
+  }, []);
+    const toggleShowDatasourceHandler = useCallback(() => {
+    setShowDatasource(showDatasource => !showDatasource);
+  }, []);
+    const toggleChangeDatasourceModalHandler = useCallback(() => {
+    setShowChangeDatasourceModal(showChangeDatasourceModal => !showChangeDatasourceModal);
+  }, [showChangeDatasourceModal]);
+    const toggleEditDatasourceModalHandler = useCallback(() => {
+    setShowEditDatasourceModal(showEditDatasourceModal => !showEditDatasourceModal);
+  }, [showEditDatasourceModal]);
+    const toggleSaveDatasetModalHandler = useCallback(() => {
+    setShowSaveDatasetModal(showSaveDatasetModal => !showSaveDatasetModal);
+  }, [showSaveDatasetModal]);
+    const handleMenuItemClickHandler = useCallback(({ key }) => {
     switch (key) {
       case CHANGE_DATASET:
-        this.toggleChangeDatasourceModal();
+        toggleChangeDatasourceModalHandler();
         break;
 
       case EDIT_DATASET:
-        this.toggleEditDatasourceModal();
+        toggleEditDatasourceModalHandler();
         break;
 
       case VIEW_IN_SQL_LAB:
         {
-          const { datasource } = this.props;
+          const { datasource } = props;
           const payload = {
             datasourceKey: `${datasource.id}__${datasource.type}`,
             sql: datasource.sql,
@@ -252,21 +237,16 @@ class DatasourceControl extends React.PureComponent {
         break;
 
       case SAVE_AS_DATASET:
-        this.toggleSaveDatasetModal();
+        toggleSaveDatasetModalHandler();
         break;
 
       default:
         break;
     }
-  };
+  }, []);
 
-  render() {
-    const {
-      showChangeDatasourceModal,
-      showEditDatasourceModal,
-      showSaveDatasetModal,
-    } = this.state;
-    const { datasource, onChange, theme } = this.props;
+    
+    const { datasource, onChange, theme } = props;
     const isMissingDatasource = !datasource?.id;
     let isMissingParams = false;
     if (isMissingDatasource) {
@@ -278,7 +258,7 @@ class DatasourceControl extends React.PureComponent {
       }
     }
 
-    const { user } = this.props;
+    const { user } = props;
     const allowEdit =
       datasource.owners?.map(o => o.id || o.value).includes(user.userId) ||
       isUserAdmin(user);
@@ -288,8 +268,8 @@ class DatasourceControl extends React.PureComponent {
     const editText = t('Edit dataset');
 
     const defaultDatasourceMenu = (
-      <Menu onClick={this.handleMenuItemClick}>
-        {this.props.isEditable && !isMissingDatasource && (
+      <Menu onClick={handleMenuItemClickHandler}>
+        {props.isEditable && !isMissingDatasource && (
           <Menu.Item
             key={EDIT_DATASET}
             data-test="edit-dataset"
@@ -316,7 +296,7 @@ class DatasourceControl extends React.PureComponent {
     );
 
     const queryDatasourceMenu = (
-      <Menu onClick={this.handleMenuItemClick}>
+      <Menu onClick={handleMenuItemClickHandler}>
         <Menu.Item key={QUERY_PREVIEW}>
           <ModalTrigger
             triggerNode={
@@ -330,7 +310,7 @@ class DatasourceControl extends React.PureComponent {
             }
             modalFooter={
               <ViewQueryModalFooter
-                changeDatasource={this.toggleSaveDatasetModal}
+                changeDatasource={toggleSaveDatasetModalHandler}
                 datasource={datasource}
               />
             }
@@ -429,7 +409,7 @@ class DatasourceControl extends React.PureComponent {
                     <Button
                       buttonStyle="primary"
                       onClick={() =>
-                        this.handleMenuItemClick({ key: CHANGE_DATASET })
+                        handleMenuItemClickHandler({ key: CHANGE_DATASET })
                       }
                     >
                       {t('Swap dataset')}
@@ -444,14 +424,14 @@ class DatasourceControl extends React.PureComponent {
           <DatasourceModal
             datasource={datasource}
             show={showEditDatasourceModal}
-            onDatasourceSave={this.onDatasourceSave}
-            onHide={this.toggleEditDatasourceModal}
+            onDatasourceSave={onDatasourceSaveHandler}
+            onHide={toggleEditDatasourceModalHandler}
           />
         )}
         {showChangeDatasourceModal && (
           <ChangeDatasourceModal
-            onDatasourceSave={this.onDatasourceSave}
-            onHide={this.toggleChangeDatasourceModal}
+            onDatasourceSave={onDatasourceSaveHandler}
+            onHide={toggleChangeDatasourceModalHandler}
             show={showChangeDatasourceModal}
             onChange={onChange}
           />
@@ -459,7 +439,7 @@ class DatasourceControl extends React.PureComponent {
         {showSaveDatasetModal && (
           <SaveDatasetModal
             visible={showSaveDatasetModal}
-            onHide={this.toggleSaveDatasetModal}
+            onHide={toggleSaveDatasetModalHandler}
             buttonTextOnSave={t('Save')}
             buttonTextOnOverwrite={t('Overwrite')}
             modalDescription={t(
@@ -467,13 +447,15 @@ class DatasourceControl extends React.PureComponent {
             )}
             datasource={getDatasourceAsSaveableDataset(datasource)}
             openWindow={false}
-            formData={this.props.form_data}
+            formData={props.form_data}
           />
         )}
       </Styles>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 DatasourceControl.propTypes = propTypes;
 DatasourceControl.defaultProps = defaultProps;

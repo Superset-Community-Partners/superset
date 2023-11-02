@@ -17,13 +17,15 @@
  * under the License.
  */
 
-import React from 'react';
+
+import React, { useState, useCallback } from 'react';
 import { formatNumber } from '@superset-ui/core';
 
-class NumberFormatValidator extends React.PureComponent {
-  state: { formatString: string; testValues: (number | null | undefined)[] } = {
-    formatString: '.3~s',
-    testValues: [
+const NumberFormatValidator = () => {
+
+
+    const [formatString, setFormatString] = useState('.3~s');
+    const [testValues, setTestValues] = useState([
       987654321,
       12345.6789,
       3000,
@@ -42,23 +44,15 @@ class NumberFormatValidator extends React.PureComponent {
       NaN,
       null,
       undefined,
-    ],
-  };
+    ]);
+    const [formatString, setFormatString] = useState();
+    const [testValues, setTestValues] = useState();
 
-  constructor(props) {
-    super(props);
+    const handleFormatChangeHandler = useCallback((event) => {
+    setFormatString(event.target.value);
+  }, []);
 
-    this.handleFormatChange = this.handleFormatChange.bind(this);
-  }
-
-  handleFormatChange(event) {
-    this.setState({
-      formatString: event.target.value,
-    });
-  }
-
-  render() {
-    const { formatString, testValues } = this.state;
+     
 
     return (
       <div className="container">
@@ -94,7 +88,7 @@ class NumberFormatValidator extends React.PureComponent {
                     className="form-control form-control-lg"
                     type="text"
                     value={formatString}
-                    onChange={this.handleFormatChange}
+                    onChange={handleFormatChangeHandler}
                   />
                 </label>
               </div>
@@ -127,9 +121,11 @@ class NumberFormatValidator extends React.PureComponent {
           </div>
         </div>
       </div>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 export default {
   title: 'Core Packages/@superset-ui-number-format',

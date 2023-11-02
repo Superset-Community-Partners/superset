@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { OptionControlLabel } from 'src/explore/components/controls/OptionControls';
 import { DndItemType } from 'src/explore/components/DndItemType';
@@ -41,18 +42,16 @@ const propTypes = {
   datasourceWarningMessage: PropTypes.string,
 };
 
-class AdhocMetricOption extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.onRemoveMetric = this.onRemoveMetric.bind(this);
-  }
+const AdhocMetricOption = (props) => {
 
-  onRemoveMetric(e) {
+
+    
+
+    const onRemoveMetricHandler = useCallback((e) => {
     e?.stopPropagation();
-    this.props.onRemoveMetric(this.props.index);
-  }
+    props.onRemoveMetric(props.index);
+  }, []);
 
-  render() {
     const {
       adhocMetric,
       onMetricEdit,
@@ -66,7 +65,7 @@ class AdhocMetricOption extends React.PureComponent {
       type,
       multi,
       datasourceWarningMessage,
-    } = this.props;
+    } = props;
 
     return (
       <AdhocMetricPopoverTrigger
@@ -81,7 +80,7 @@ class AdhocMetricOption extends React.PureComponent {
           savedMetric={savedMetric}
           adhocMetric={adhocMetric}
           label={adhocMetric.label}
-          onRemove={this.onRemoveMetric}
+          onRemove={onRemoveMetricHandler}
           onMoveLabel={onMoveLabel}
           onDropLabel={onDropLabel}
           index={index}
@@ -92,9 +91,11 @@ class AdhocMetricOption extends React.PureComponent {
           datasourceWarningMessage={datasourceWarningMessage}
         />
       </AdhocMetricPopoverTrigger>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 export default AdhocMetricOption;
 

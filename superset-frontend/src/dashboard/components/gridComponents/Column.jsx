@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { css, styled, t } from '@superset-ui/core';
@@ -99,31 +100,20 @@ const emptyColumnContentStyles = theme => css`
   color: ${theme.colors.text.label};
 `;
 
-class Column extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isFocused: false,
-    };
-    this.handleChangeBackground = this.handleUpdateMeta.bind(
-      this,
-      'background',
-    );
-    this.handleChangeFocus = this.handleChangeFocus.bind(this);
-    this.handleDeleteComponent = this.handleDeleteComponent.bind(this);
-  }
+const Column = (props) => {
 
-  handleDeleteComponent() {
-    const { deleteComponent, id, parentId } = this.props;
+
+    const [isFocused, setIsFocused] = useState(false);
+
+    const handleDeleteComponentHandler = useCallback(() => {
+    const { deleteComponent, id, parentId } = props;
     deleteComponent(id, parentId);
-  }
-
-  handleChangeFocus(nextFocus) {
-    this.setState(() => ({ isFocused: Boolean(nextFocus) }));
-  }
-
-  handleUpdateMeta(metaKey, nextValue) {
-    const { updateComponents, component } = this.props;
+  }, []);
+    const handleChangeFocusHandler = useCallback((nextFocus) => {
+    setStateHandler(() => ({ isFocused: Boolean(nextFocus) }));
+  }, []);
+    const handleUpdateMetaHandler = useCallback((metaKey, nextValue) => {
+    const { updateComponents, component } = props;
     if (nextValue && component.meta[metaKey] !== nextValue) {
       updateComponents({
         [component.id]: {
@@ -135,9 +125,8 @@ class Column extends React.PureComponent {
         },
       });
     }
-  }
+  }, []);
 
-  render() {
     const {
       component: columnComponent,
       parentComponent,
@@ -153,7 +142,7 @@ class Column extends React.PureComponent {
       editMode,
       onChangeTab,
       isComponentVisible,
-    } = this.props;
+    } = props;
 
     const columnItems = columnComponent.children || [];
     const backgroundStyle = backgroundStyleOptions.find(
@@ -189,14 +178,14 @@ class Column extends React.PureComponent {
             editMode={editMode}
           >
             <WithPopoverMenu
-              isFocused={this.state.isFocused}
-              onChangeFocus={this.handleChangeFocus}
+              isFocused={isFocused}
+              onChangeFocus={handleChangeFocusHandler}
               disableClick
               menuItems={[
                 <BackgroundStyleDropdown
                   id={`${columnComponent.id}-background`}
                   value={columnComponent.meta.background}
-                  onChange={this.handleChangeBackground}
+                  onChange={handleChangeBackgroundHandler}
                 />,
               ]}
               editMode={editMode}
@@ -205,10 +194,10 @@ class Column extends React.PureComponent {
                 <HoverMenu innerRef={dragSourceRef} position="top">
                   <DragHandle position="top" />
                   <DeleteComponentButton
-                    onDelete={this.handleDeleteComponent}
+                    onDelete={handleDeleteComponentHandler}
                   />
                   <IconButton
-                    onClick={this.handleChangeFocus}
+                    onClick={handleChangeFocusHandler}
                     icon={<Icons.Cog iconSize="xl" />}
                   />
                 </HoverMenu>
@@ -243,9 +232,11 @@ class Column extends React.PureComponent {
           </ResizableContainer>
         )}
       </DragDroppable>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 Column.propTypes = propTypes;
 Column.defaultProps = defaultProps;

@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import React, { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { t } from '@superset-ui/core';
 import { Tooltip } from 'src/components/Tooltip';
@@ -45,95 +46,87 @@ const defaultProps = {
   hideTooltip: false,
 };
 
-class CopyToClipboard extends React.Component {
-  constructor(props) {
-    super(props);
+const CopyToClipboard = (props) => {
 
-    // bindings
-    this.copyToClipboard = this.copyToClipboard.bind(this);
-    this.onClick = this.onClick.bind(this);
-  }
 
-  onClick() {
-    if (this.props.getText) {
-      this.props.getText(d => {
-        this.copyToClipboard(Promise.resolve(d));
+    
+
+    const onClickHandler = useCallback(() => {
+    if (props.getText) {
+      props.getText(d => {
+        copyToClipboardHandler(Promise.resolve(d));
       });
     } else {
-      this.copyToClipboard(Promise.resolve(this.props.text));
+      copyToClipboardHandler(Promise.resolve(props.text));
     }
-  }
-
-  getDecoratedCopyNode() {
-    return React.cloneElement(this.props.copyNode, {
+  }, []);
+    const getDecoratedCopyNodeHandler = useCallback(() => {
+    return React.cloneElement(props.copyNode, {
       style: { cursor: 'pointer' },
-      onClick: this.onClick,
+      onClick: onClickHandler,
     });
-  }
-
-  copyToClipboard(textToCopy) {
+  }, []);
+    const copyToClipboardHandler = useCallback((textToCopy) => {
     copyTextToClipboard(() => textToCopy)
       .then(() => {
-        this.props.addSuccessToast(t('Copied to clipboard!'));
+        props.addSuccessToast(t('Copied to clipboard!'));
       })
       .catch(() => {
-        this.props.addDangerToast(
+        props.addDangerToast(
           t(
             'Sorry, your browser does not support copying. Use Ctrl / Cmd + C!',
           ),
         );
       })
       .finally(() => {
-        this.props.onCopyEnd();
+        props.onCopyEnd();
       });
-  }
-
-  renderTooltip(cursor) {
+  }, []);
+    const renderTooltipHandler = useCallback((cursor) => {
     return (
       <>
-        {!this.props.hideTooltip ? (
+        {!props.hideTooltip ? (
           <Tooltip
             id="copy-to-clipboard-tooltip"
             placement="topRight"
             style={{ cursor }}
-            title={this.props.tooltipText}
+            title={props.tooltipText}
             trigger={['hover']}
             arrowPointAtCenter
           >
-            {this.getDecoratedCopyNode()}
+            {getDecoratedCopyNodeHandler()}
           </Tooltip>
         ) : (
-          this.getDecoratedCopyNode()
+          getDecoratedCopyNodeHandler()
         )}
       </>
     );
-  }
-
-  renderNotWrapped() {
-    return this.renderTooltip('pointer');
-  }
-
-  renderLink() {
+  }, []);
+    const renderNotWrappedHandler = useCallback(() => {
+    return renderTooltipHandler('pointer');
+  }, []);
+    const renderLinkHandler = useCallback(() => {
     return (
       <span css={{ display: 'inline-flex', alignItems: 'center' }}>
-        {this.props.shouldShowText && this.props.text && (
+        {props.shouldShowText && props.text && (
           <span className="m-r-5" data-test="short-url">
-            {this.props.text}
+            {props.text}
           </span>
         )}
-        {this.renderTooltip()}
+        {renderTooltipHandler()}
       </span>
     );
-  }
+  }, []);
 
-  render() {
-    const { wrapped } = this.props;
+    const { wrapped } = props;
     if (!wrapped) {
-      return this.renderNotWrapped();
+      return renderNotWrappedHandler();
     }
-    return this.renderLink();
-  }
-}
+    return renderLinkHandler(); 
+};
+
+
+
 
 export default withToasts(CopyToClipboard);
 

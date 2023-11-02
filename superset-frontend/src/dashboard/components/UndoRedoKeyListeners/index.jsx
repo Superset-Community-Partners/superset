@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 
 const propTypes = {
@@ -24,21 +25,20 @@ const propTypes = {
   onRedo: PropTypes.func.isRequired,
 };
 
-class UndoRedoKeyListeners extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.handleKeydown = this.handleKeydown.bind(this);
-  }
+const UndoRedoKeyListeners = (props) => {
 
-  componentDidMount() {
-    document.addEventListener('keydown', this.handleKeydown);
-  }
 
-  componentWillUnmount() {
-    document.removeEventListener('keydown', this.handleKeydown);
-  }
+    
 
-  handleKeydown(event) {
+    useEffect(() => {
+    document.addEventListener('keydown', handleKeydownHandler);
+  }, []);
+    useEffect(() => {
+    return () => {
+    document.removeEventListener('keydown', handleKeydownHandler);
+  };
+}, []);
+    const handleKeydownHandler = useCallback((event) => {
     const controlOrCommand = event.ctrlKey || event.metaKey;
     if (controlOrCommand) {
       const isZChar = event.key === 'z' || event.keyCode === 90;
@@ -50,16 +50,17 @@ class UndoRedoKeyListeners extends React.PureComponent {
 
       if (!isEditingMarkdown && !isEditingTitle && (isZChar || isYChar)) {
         event.preventDefault();
-        const func = isZChar ? this.props.onUndo : this.props.onRedo;
+        const func = isZChar ? props.onUndo : props.onRedo;
         func();
       }
     }
-  }
+  }, []);
 
-  render() {
-    return null;
-  }
-}
+    return null; 
+};
+
+
+
 
 UndoRedoKeyListeners.propTypes = propTypes;
 

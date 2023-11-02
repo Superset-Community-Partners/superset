@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { addAlpha, css, styled, t } from '@superset-ui/core';
 import { EmptyStateBig } from 'src/components/EmptyState';
@@ -106,53 +107,39 @@ const GridColumnGuide = styled.div`
   `};
 `;
 
-class DashboardGrid extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isResizing: false,
-    };
+const DashboardGrid = (props) => {
 
-    this.handleResizeStart = this.handleResizeStart.bind(this);
-    this.handleResizeStop = this.handleResizeStop.bind(this);
-    this.handleTopDropTargetDrop = this.handleTopDropTargetDrop.bind(this);
-    this.getRowGuidePosition = this.getRowGuidePosition.bind(this);
-    this.setGridRef = this.setGridRef.bind(this);
-    this.handleChangeTab = this.handleChangeTab.bind(this);
-  }
 
-  getRowGuidePosition(resizeRef) {
-    if (resizeRef && this.grid) {
+    const [isResizing, setIsResizing] = useState(false);
+
+    const getRowGuidePositionHandler = useCallback((resizeRef) => {
+    if (resizeRef && gridHandler) {
       return (
         resizeRef.getBoundingClientRect().bottom -
-        this.grid.getBoundingClientRect().top -
+        gridHandler.getBoundingClientRect().top -
         2
       );
     }
     return null;
-  }
-
-  setGridRef(ref) {
-    this.grid = ref;
-  }
-
-  handleResizeStart() {
-    this.setState(() => ({
+  }, []);
+    const setGridRefHandler = useCallback((ref) => {
+    gridHandler = ref;
+  }, []);
+    const handleResizeStartHandler = useCallback(() => {
+    setStateHandler(() => ({
       isResizing: true,
     }));
-  }
+  }, []);
+    const handleResizeStopHandler = useCallback(({ id, widthMultiple: width, heightMultiple: height }) => {
+    props.resizeComponent({ id, width, height });
 
-  handleResizeStop({ id, widthMultiple: width, heightMultiple: height }) {
-    this.props.resizeComponent({ id, width, height });
-
-    this.setState(() => ({
+    setStateHandler(() => ({
       isResizing: false,
     }));
-  }
-
-  handleTopDropTargetDrop(dropResult) {
+  }, []);
+    const handleTopDropTargetDropHandler = useCallback((dropResult) => {
     if (dropResult) {
-      this.props.handleComponentDrop({
+      props.handleComponentDrop({
         ...dropResult,
         destination: {
           ...dropResult.destination,
@@ -161,13 +148,11 @@ class DashboardGrid extends React.PureComponent {
         },
       });
     }
-  }
+  }, []);
+    const handleChangeTabHandler = useCallback(({ pathToTabIndex }) => {
+    props.setDirectPathToChild(pathToTabIndex);
+  }, []);
 
-  handleChangeTab({ pathToTabIndex }) {
-    this.props.setDirectPathToChild(pathToTabIndex);
-  }
-
-  render() {
     const {
       gridComponent,
       handleComponentDrop,
@@ -178,12 +163,12 @@ class DashboardGrid extends React.PureComponent {
       canEdit,
       setEditMode,
       dashboardId,
-    } = this.props;
+    } = props;
     const columnPlusGutterWidth =
       (width + GRID_GUTTER_SIZE) / GRID_COLUMN_COUNT;
 
     const columnWidth = columnPlusGutterWidth - GRID_GUTTER_SIZE;
-    const { isResizing } = this.state;
+    
 
     const shouldDisplayEmptyState = gridComponent?.children?.length === 0;
     const shouldDisplayTopLevelTabEmptyState =
@@ -259,7 +244,7 @@ class DashboardGrid extends React.PureComponent {
               : dashboardEmptyState}
           </DashboardEmptyStateContainer>
         )}
-        <div className="dashboard-grid" ref={this.setGridRef}>
+        <div className="dashboard-grid" ref={setGridRefHandler}>
           <GridContent className="grid-content" data-test="grid-content">
             {/* make the area above components droppable */}
             {editMode && (
@@ -269,7 +254,7 @@ class DashboardGrid extends React.PureComponent {
                 parentComponent={null}
                 index={0}
                 orientation="column"
-                onDrop={this.handleTopDropTargetDrop}
+                onDrop={handleTopDropTargetDropHandler}
                 className="empty-droptarget"
                 editMode
               >
@@ -286,10 +271,10 @@ class DashboardGrid extends React.PureComponent {
                 availableColumnCount={GRID_COLUMN_COUNT}
                 columnWidth={columnWidth}
                 isComponentVisible={isComponentVisible}
-                onResizeStart={this.handleResizeStart}
-                onResize={this.handleResize}
-                onResizeStop={this.handleResizeStop}
-                onChangeTab={this.handleChangeTab}
+                onResizeStart={handleResizeStartHandler}
+                onResize={handleResizeHandler}
+                onResizeStop={handleResizeStopHandler}
+                onChangeTab={handleChangeTabHandler}
               />
             ))}
             {/* make the area below components droppable */}
@@ -323,9 +308,11 @@ class DashboardGrid extends React.PureComponent {
           </GridContent>
         </div>
       </>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 DashboardGrid.propTypes = propTypes;
 DashboardGrid.defaultProps = defaultProps;

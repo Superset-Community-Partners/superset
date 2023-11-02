@@ -16,23 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { css, styled, t } from '@superset-ui/core';
-import throttle from 'lodash/throttle';
 import ToastContainer from 'src/components/MessageToasts/ToastContainer';
 import {
-  LOCALSTORAGE_MAX_USAGE_KB,
-  LOCALSTORAGE_WARNING_THRESHOLD,
-  LOCALSTORAGE_WARNING_MESSAGE_THROTTLE_MS,
+    LOCALSTORAGE_MAX_USAGE_KB,
+    LOCALSTORAGE_WARNING_THRESHOLD
 } from 'src/SqlLab/constants';
 import * as Actions from 'src/SqlLab/actions/sqlLab';
 import { logEvent } from 'src/logger/actions';
 import {
-  LOG_ACTIONS_SQLLAB_WARN_LOCAL_STORAGE_USAGE,
-  LOG_ACTIONS_SQLLAB_MONITOR_LOCAL_STORAGE_USAGE,
+    LOG_ACTIONS_SQLLAB_WARN_LOCAL_STORAGE_USAGE,
+    LOG_ACTIONS_SQLLAB_MONITOR_LOCAL_STORAGE_USAGE,
 } from 'src/logger/LogUtils';
 import TabbedSqlEditors from '../TabbedSqlEditors';
 import QueryAutoRefresh from '../QueryAutoRefresh';
@@ -100,42 +99,32 @@ const SqlLabStyles = styled.div`
   `};
 `;
 
-class App extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      hash: window.location.hash,
-    };
+const App = (props) => {
 
-    this.showLocalStorageUsageWarning = throttle(
-      this.showLocalStorageUsageWarning,
-      LOCALSTORAGE_WARNING_MESSAGE_THROTTLE_MS,
-      { trailing: false },
-    );
-  }
 
-  componentDidMount() {
-    window.addEventListener('hashchange', this.onHashChanged.bind(this));
+    const [hash, setHash] = useState(window.location.hash);
+
+    useEffect(() => {
+    window.addEventListener('hashchange', onHashChangedHandler.bind(this));
 
     // Horrible hack to disable side swipe navigation when in SQL Lab. Even though the
     // docs say setting this style on any div will prevent it, turns out it only works
     // when set on the body element.
     document.body.style.overscrollBehaviorX = 'none';
-  }
-
-  componentDidUpdate() {
-    const { localStorageUsageInKilobytes, actions, queries } = this.props;
+  }, []);
+    useEffect(() => {
+    const { localStorageUsageInKilobytes, actions, queries } = props;
     const queryCount = queries?.lenghth || 0;
     if (
       localStorageUsageInKilobytes >=
       LOCALSTORAGE_WARNING_THRESHOLD * LOCALSTORAGE_MAX_USAGE_KB
     ) {
-      this.showLocalStorageUsageWarning(
+      showLocalStorageUsageWarningHandler(
         localStorageUsageInKilobytes,
         queryCount,
       );
     }
-    if (localStorageUsageInKilobytes > 0 && !this.hasLoggedLocalStorageUsage) {
+    if (localStorageUsageInKilobytes > 0 && !hasLoggedLocalStorageUsageHandler) {
       const eventData = {
         current_usage: localStorageUsageInKilobytes,
         query_count: queryCount,
@@ -144,23 +133,22 @@ class App extends React.PureComponent {
         LOG_ACTIONS_SQLLAB_MONITOR_LOCAL_STORAGE_USAGE,
         eventData,
       );
-      this.hasLoggedLocalStorageUsage = true;
+      hasLoggedLocalStorageUsageHandler = true;
     }
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('hashchange', this.onHashChanged.bind(this));
+  }, []);
+    useEffect(() => {
+    return () => {
+    window.removeEventListener('hashchange', onHashChangedHandler.bind(this));
 
     // And now we need to reset the overscroll behavior back to the default.
     document.body.style.overscrollBehaviorX = 'auto';
-  }
-
-  onHashChanged() {
-    this.setState({ hash: window.location.hash });
-  }
-
-  showLocalStorageUsageWarning(currentUsage, queryCount) {
-    this.props.actions.addDangerToast(
+  };
+}, []);
+    const onHashChangedHandler = useCallback(() => {
+    setHash(window.location.hash);
+  }, []);
+    const showLocalStorageUsageWarningHandler = useCallback((currentUsage, queryCount) => {
+    props.actions.addDangerToast(
       t(
         "SQL Lab uses your browser's local storage to store queries and results." +
           '\nCurrently, you are using %(currentUsage)s KB out of %(maxStorage)d KB storage space.' +
@@ -177,15 +165,14 @@ class App extends React.PureComponent {
       current_usage: currentUsage,
       query_count: queryCount,
     };
-    this.props.actions.logEvent(
+    props.actions.logEvent(
       LOG_ACTIONS_SQLLAB_WARN_LOCAL_STORAGE_USAGE,
       eventData,
     );
-  }
+  }, []);
 
-  render() {
-    const { queries, queriesLastUpdate } = this.props;
-    if (this.state.hash && this.state.hash === '#search') {
+    const { queries, queriesLastUpdate } = props;
+    if (hash && hash === '#search') {
       return window.location.replace('/superset/sqllab/history/');
     }
     return (
@@ -197,9 +184,11 @@ class App extends React.PureComponent {
         <TabbedSqlEditors />
         <ToastContainer />
       </SqlLabStyles>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 App.propTypes = {
   actions: PropTypes.object,

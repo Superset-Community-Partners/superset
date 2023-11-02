@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
 import PropTypes from 'prop-types';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
@@ -28,15 +28,15 @@ import { getActiveFilters } from 'src/dashboard/util/activeDashboardFilters';
 import { componentShape } from 'src/dashboard/util/propShapes';
 import { COLUMN_TYPE, ROW_TYPE } from 'src/dashboard/util/componentTypes';
 import {
-  createComponent,
-  deleteComponent,
-  updateComponents,
-  handleComponentDrop,
+    createComponent,
+    deleteComponent,
+    updateComponents,
+    handleComponentDrop,
 } from 'src/dashboard/actions/dashboardLayout';
 import {
-  setDirectPathToChild,
-  setActiveTabs,
-  setFullSizeChartId,
+    setDirectPathToChild,
+    setActiveTabs,
+    setFullSizeChartId,
 } from 'src/dashboard/actions/dashboardState';
 
 const propTypes = {
@@ -116,13 +116,20 @@ function mapDispatchToProps(dispatch) {
   );
 }
 
-class DashboardComponent extends React.PureComponent {
-  render() {
-    const { component } = this.props;
+const DashboardComponent = (props) => {
+
+
+    
+
+    
+
+    const { component } = props;
     const Component = component ? componentLookup[component.type] : null;
-    return Component ? <Component {...this.props} /> : null;
-  }
-}
+    return Component ? <Component {...props} /> : null; 
+};
+
+
+
 
 DashboardComponent.propTypes = propTypes;
 DashboardComponent.defaultProps = defaultProps;

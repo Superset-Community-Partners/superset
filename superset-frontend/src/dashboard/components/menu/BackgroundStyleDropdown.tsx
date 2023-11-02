@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
 import cx from 'classnames';
 import { css, styled, t } from '@superset-ui/core';
 
 import backgroundStyleOptions from 'src/dashboard/util/backgroundStyleOptions';
 import PopoverDropdown, {
-  OptionProps,
-  OnChangeHandler,
+    OptionProps,
+    OnChangeHandler,
 } from 'src/components/PopoverDropdown';
 
 interface BackgroundStyleDropdownProps {
@@ -93,9 +93,14 @@ function renderOption(option: OptionProps) {
   );
 }
 
-export default class BackgroundStyleDropdown extends React.PureComponent<BackgroundStyleDropdownProps> {
-  render() {
-    const { id, value, onChange } = this.props;
+const BackgroundStyleDropdown = (props: BackgroundStyleDropdownProps) => {
+
+
+    
+
+    
+
+    const { id, value, onChange } = props;
     return (
       <PopoverDropdown
         id={id}
@@ -105,6 +110,10 @@ export default class BackgroundStyleDropdown extends React.PureComponent<Backgro
         renderButton={renderButton}
         renderOption={renderOption}
       />
-    );
-  }
-}
+    ); 
+};
+
+export default BackgroundStyleDropdown;
+
+
+

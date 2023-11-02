@@ -17,7 +17,7 @@
  * under the License.
  */
 /* eslint-disable react/jsx-sort-default-props, react/sort-prop-types */
-import React from 'react';
+
 import PropTypes from 'prop-types';
 import { extent as d3Extent } from 'd3-array';
 import { ensureIsArray, styled } from '@superset-ui/core';
@@ -80,8 +80,13 @@ const StyledDiv = styled.div`
   `}
 `;
 
-class HorizonChart extends React.PureComponent {
-  render() {
+const HorizonChart = (props) => {
+
+
+    
+
+    
+
     const {
       className,
       width,
@@ -93,7 +98,7 @@ class HorizonChart extends React.PureComponent {
       colorScale,
       mode,
       offsetX,
-    } = this.props;
+    } = props;
 
     let yDomain;
     if (colorScale === 'overall') {
@@ -127,9 +132,11 @@ class HorizonChart extends React.PureComponent {
           ))}
         </div>
       </StyledDiv>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 HorizonChart.propTypes = propTypes;
 HorizonChart.defaultProps = defaultProps;

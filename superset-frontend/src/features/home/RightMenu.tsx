@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { Fragment, useState, useEffect } from 'react';
+
+import React, { Fragment, useState, useEffect, useCallback } from "react";
 import rison from 'rison';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
@@ -24,13 +25,13 @@ import { useQueryParams, BooleanParam } from 'use-query-params';
 import { isEmpty } from 'lodash';
 
 import {
-  t,
-  styled,
-  css,
-  SupersetTheme,
-  SupersetClient,
-  getExtensionsRegistry,
-  useTheme,
+    t,
+    styled,
+    css,
+    SupersetTheme,
+    SupersetClient,
+    getExtensionsRegistry,
+    useTheme,
 } from '@superset-ui/core';
 import { MainNav as Menu } from 'src/components/Menu';
 import { Tooltip } from 'src/components/Tooltip';
@@ -39,18 +40,18 @@ import Label from 'src/components/Label';
 import { findPermission } from 'src/utils/findPermission';
 import { isUserAdmin } from 'src/dashboard/util/permissionUtils';
 import {
-  MenuObjectProps,
-  UserWithPermissionsAndRoles,
-  MenuObjectChildProps,
+    MenuObjectProps,
+    UserWithPermissionsAndRoles,
+    MenuObjectChildProps,
 } from 'src/types/bootstrapTypes';
 import { RootState } from 'src/dashboard/types';
 import DatabaseModal from 'src/features/databases/DatabaseModal';
 import { uploadUserPerms } from 'src/views/CRUD/utils';
 import LanguagePicker from './LanguagePicker';
 import {
-  ExtensionConfigs,
-  GlobalMenuDataOptions,
-  RightMenuProps,
+    ExtensionConfigs,
+    GlobalMenuDataOptions,
+    RightMenuProps,
 } from './types';
 
 const extensionsRegistry = getExtensionsRegistry();
@@ -580,25 +581,25 @@ const RightMenuWithQueryWrapper: React.FC<RightMenuProps> = props => {
 // Superset still has multiple entry points, and not all of them have
 // the same setup, and critically, not all of them have the QueryParamProvider.
 // This wrapper ensures the RightMenu renders regardless of the provider being present.
-class RightMenuErrorWrapper extends React.PureComponent<RightMenuProps> {
-  state = {
-    hasError: false,
-  };
+const RightMenuErrorWrapper = (props: RightMenuProps) => {
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
 
-  noop = () => {};
+    const [hasError, setHasError] = useState(false);
+    const [hasError, setHasError] = useState();
 
-  render() {
-    if (this.state.hasError) {
-      return <RightMenu setQuery={this.noop} {...this.props} />;
+    const noopHandler = useCallback(() => {}, []);
+
+    if (hasError) {
+      return <RightMenu setQuery={noopHandler} {...props} />;
     }
 
-    return this.props.children;
-  }
-}
+    return props.children; 
+};
+
+RightMenuErrorWrapper.getDerivedStateFromError = () => {
+    return { hasError: true };
+  };
+
 
 const RightMenuWrapper: React.FC<RightMenuProps> = props => (
   <RightMenuErrorWrapper {...props}>

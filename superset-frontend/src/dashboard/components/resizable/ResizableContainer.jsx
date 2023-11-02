@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Resizable } from 're-resizable';
 import cx from 'classnames';
@@ -168,37 +169,27 @@ const StyledResizable = styled(Resizable)`
   }
 `;
 
-class ResizableContainer extends React.PureComponent {
-  constructor(props) {
-    super(props);
+const ResizableContainer = (props) => {
 
-    this.state = {
-      isResizing: false,
-    };
 
-    this.handleResizeStart = this.handleResizeStart.bind(this);
-    this.handleResize = this.handleResize.bind(this);
-    this.handleResizeStop = this.handleResizeStop.bind(this);
-  }
+    const [isResizing, setIsResizing] = useState(false);
 
-  handleResizeStart(event, direction, ref) {
-    const { id, onResizeStart } = this.props;
+    const handleResizeStartHandler = useCallback((event, direction, ref) => {
+    const { id, onResizeStart } = props;
 
     if (onResizeStart) {
       onResizeStart({ id, direction, ref });
     }
 
-    this.setState(() => ({ isResizing: true }));
-  }
-
-  handleResize(event, direction, ref) {
-    const { onResize, id } = this.props;
+    setStateHandler(() => ({ isResizing: true }));
+  }, []);
+    const handleResizeHandler = useCallback((event, direction, ref) => {
+    const { onResize, id } = props;
     if (onResize) {
       onResize({ id, direction, ref });
     }
-  }
-
-  handleResizeStop(event, direction, ref, delta) {
+  }, []);
+    const handleResizeStopHandler = useCallback((event, direction, ref, delta) => {
     const {
       id,
       onResizeStop,
@@ -209,7 +200,7 @@ class ResizableContainer extends React.PureComponent {
       adjustableHeight,
       adjustableWidth,
       gutterWidth,
-    } = this.props;
+    } = props;
 
     if (onResizeStop) {
       const nextWidthMultiple =
@@ -223,11 +214,10 @@ class ResizableContainer extends React.PureComponent {
         heightMultiple: adjustableHeight ? nextHeightMultiple : null,
       });
 
-      this.setState(() => ({ isResizing: false }));
+      setStateHandler(() => ({ isResizing: false }));
     }
-  }
+  }, []);
 
-  render() {
     const {
       children,
       adjustableWidth,
@@ -246,7 +236,7 @@ class ResizableContainer extends React.PureComponent {
       maxHeightMultiple,
       gutterWidth,
       editMode,
-    } = this.props;
+    } = props;
 
     const size = {
       width: adjustableWidth
@@ -271,7 +261,7 @@ class ResizableContainer extends React.PureComponent {
       enableConfig = resizableConfig.heightOnly;
     }
 
-    const { isResizing } = this.state;
+    
 
     return (
       <StyledResizable
@@ -305,9 +295,9 @@ class ResizableContainer extends React.PureComponent {
             : undefined
         }
         size={size}
-        onResizeStart={this.handleResizeStart}
-        onResize={this.handleResize}
-        onResizeStop={this.handleResizeStop}
+        onResizeStart={handleResizeStartHandler}
+        onResize={handleResizeHandler}
+        onResizeStop={handleResizeStopHandler}
         handleComponent={ResizableHandle}
         className={cx(
           'resizable-container',
@@ -317,9 +307,11 @@ class ResizableContainer extends React.PureComponent {
       >
         {children}
       </StyledResizable>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 ResizableContainer.propTypes = propTypes;
 ResizableContainer.defaultProps = defaultProps;

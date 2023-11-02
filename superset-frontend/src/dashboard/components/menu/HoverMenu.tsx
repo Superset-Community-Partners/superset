@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 import React, { RefObject } from 'react';
 import { styled } from '@superset-ui/core';
 import cx from 'classnames';
@@ -63,15 +64,19 @@ const HoverStyleOverrides = styled.div`
   }
 `;
 
-export default class HoverMenu extends React.PureComponent<HoverMenuProps> {
-  static defaultProps = {
+const HoverMenu = (inputProps: HoverMenuProps) => {
+
+
+    
+
+    const props = { 
     position: 'left',
     innerRef: null,
-    children: null,
+    children: null,,
+    ...inputProps,
   };
 
-  render() {
-    const { innerRef, position, children } = this.props;
+    const { innerRef, position, children } = props;
     return (
       <HoverStyleOverrides className="hover-menu-container">
         <div
@@ -85,6 +90,10 @@ export default class HoverMenu extends React.PureComponent<HoverMenuProps> {
           {children}
         </div>
       </HoverStyleOverrides>
-    );
-  }
-}
+    ); 
+};
+
+export default HoverMenu;
+
+
+

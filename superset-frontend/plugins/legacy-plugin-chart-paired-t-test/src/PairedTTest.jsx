@@ -17,8 +17,8 @@
  * under the License.
  */
 /* eslint-disable react/no-array-index-key */
+
 import PropTypes from 'prop-types';
-import React from 'react';
 import { styled } from '@superset-ui/core';
 import TTestTable, { dataPropType } from './TTestTable';
 
@@ -115,10 +115,15 @@ const StyledDiv = styled.div`
   `}
 `;
 
-class PairedTTest extends React.PureComponent {
-  render() {
+const PairedTTest = (props) => {
+
+
+    
+
+    
+
     const { className, metrics, groups, data, alpha, pValPrec, liftValPrec } =
-      this.props;
+      props;
 
     return (
       <StyledDiv>
@@ -140,9 +145,11 @@ class PairedTTest extends React.PureComponent {
           </div>
         </div>
       </StyledDiv>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 PairedTTest.propTypes = propTypes;
 PairedTTest.defaultProps = defaultProps;

@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 import { getEmptyImage } from 'react-dnd-html5-backend';
-import React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { DragSource, DropTarget } from 'react-dnd';
 import cx from 'classnames';
@@ -26,10 +27,10 @@ import { css, styled } from '@superset-ui/core';
 import { componentShape } from '../../util/propShapes';
 import { dragConfig, dropConfig } from './dragDroppableConfig';
 import {
-  DROP_TOP,
-  DROP_RIGHT,
-  DROP_BOTTOM,
-  DROP_LEFT,
+    DROP_TOP,
+    DROP_RIGHT,
+    DROP_BOTTOM,
+    DROP_LEFT,
 } from '../../util/getDropPosition';
 
 const propTypes = {
@@ -133,39 +134,34 @@ const DragDroppableStyles = styled.div`
   `};
 `;
 // export unwrapped component for testing
-export class UnwrappedDragDroppable extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      dropIndicator: null, // this gets set/modified by the react-dnd HOCs
-    };
-    this.setRef = this.setRef.bind(this);
-  }
+export const UnwrappedDragDroppable = (props) => {
 
-  componentDidMount() {
-    this.mounted = true;
-  }
 
-  componentWillUnmount() {
-    this.mounted = false;
-  }
+    const [dropIndicator, setDropIndicator] = useState(null);
 
-  setRef(ref) {
-    this.ref = ref;
+    useEffect(() => {
+    mountedHandler = true;
+  }, []);
+    useEffect(() => {
+    return () => {
+    mountedHandler = false;
+  };
+}, []);
+    const setRefHandler = useCallback((ref) => {
+    refHandler = ref;
     // this is needed for a custom drag preview
-    if (this.props.useEmptyDragPreview) {
-      this.props.dragPreviewRef(getEmptyImage(), {
+    if (props.useEmptyDragPreview) {
+      props.dragPreviewRef(getEmptyImage(), {
         // IE fallback: specify that we'd rather screenshot the node
         // when it already knows it's being dragged so we can hide it with CSS.
         captureDraggingState: true,
       });
     } else {
-      this.props.dragPreviewRef(ref);
+      props.dragPreviewRef(ref);
     }
-    this.props.droppableRef?.(ref);
-  }
+    props.droppableRef?.(ref);
+  }, []);
 
-  render() {
     const {
       children,
       className,
@@ -176,9 +172,9 @@ export class UnwrappedDragDroppable extends React.PureComponent {
       isDraggingOver,
       style,
       editMode,
-    } = this.props;
+    } = props;
 
-    const { dropIndicator } = this.state;
+    
     const dropIndicatorProps =
       isDraggingOver && dropIndicator && !disableDragDrop
         ? {
@@ -202,7 +198,7 @@ export class UnwrappedDragDroppable extends React.PureComponent {
     return (
       <DragDroppableStyles
         style={style}
-        ref={this.setRef}
+        ref={setRefHandler}
         data-test="dragdroppable-object"
         className={cx(
           'dragdroppable',
@@ -214,9 +210,11 @@ export class UnwrappedDragDroppable extends React.PureComponent {
       >
         {children(childProps)}
       </DragDroppableStyles>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 UnwrappedDragDroppable.propTypes = propTypes;
 UnwrappedDragDroppable.defaultProps = defaultProps;

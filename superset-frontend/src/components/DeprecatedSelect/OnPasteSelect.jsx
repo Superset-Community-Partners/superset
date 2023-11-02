@@ -16,18 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Select } from 'src/components/DeprecatedSelect';
 
-export default class OnPasteSelect extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onPaste = this.onPaste.bind(this);
-  }
+const OnPasteSelect = (props) => {
 
-  onPaste(evt) {
-    if (!this.props.isMulti) {
+
+    
+
+    const onPasteHandler = useCallback((evt) => {
+    if (!props.isMulti) {
       return;
     }
     evt.preventDefault();
@@ -35,18 +35,18 @@ export default class OnPasteSelect extends React.Component {
     if (!clipboard) {
       return;
     }
-    const regex = `[${this.props.separator}]+`;
+    const regex = `[${props.separator}]+`;
     const values = clipboard.split(new RegExp(regex)).map(v => v.trim());
-    const validator = this.props.isValidNewOption;
-    const selected = this.props.value || [];
+    const validator = props.isValidNewOption;
+    const selected = props.value || [];
     const existingOptions = {};
     const existing = {};
-    this.props.options.forEach(v => {
-      existingOptions[v[this.props.valueKey]] = 1;
+    props.options.forEach(v => {
+      existingOptions[v[props.valueKey]] = 1;
     });
     let options = [];
     selected.forEach(v => {
-      options.push({ [this.props.labelKey]: v, [this.props.valueKey]: v });
+      options.push({ [props.labelKey]: v, [props.valueKey]: v });
       existing[v] = 1;
     });
     options = options.concat(
@@ -56,29 +56,32 @@ export default class OnPasteSelect extends React.Component {
           existing[v] = 1;
           return (
             notExists &&
-            (validator ? validator({ [this.props.labelKey]: v }) : !!v)
+            (validator ? validator({ [props.labelKey]: v }) : !!v)
           );
         })
         .map(v => {
-          const opt = { [this.props.labelKey]: v, [this.props.valueKey]: v };
+          const opt = { [props.labelKey]: v, [props.valueKey]: v };
           if (!existingOptions[v]) {
-            this.props.options.unshift(opt);
+            props.options.unshift(opt);
           }
           return opt;
         }),
     );
     if (options.length) {
-      if (this.props.onChange) {
-        this.props.onChange(options);
+      if (props.onChange) {
+        props.onChange(options);
       }
     }
-  }
+  }, []);
 
-  render() {
-    const { selectWrap: SelectComponent, ...restProps } = this.props;
-    return <SelectComponent {...restProps} onPaste={this.onPaste} />;
-  }
-}
+    const { selectWrap: SelectComponent, ...restProps } = props;
+    return <SelectComponent {...restProps} onPaste={onPasteHandler} />; 
+};
+
+export default OnPasteSelect;
+
+
+
 
 OnPasteSelect.propTypes = {
   separator: PropTypes.array,

@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 // TODO: refactor this with `import { AsyncSelect } from src/components/Select`
 import { Select } from 'src/components/DeprecatedSelect';
@@ -42,61 +43,56 @@ const defaultProps = {
   onAsyncError: () => {},
 };
 
-class AsyncSelect extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isLoading: false,
-      options: [],
-    };
+const AsyncSelect = (props) => {
 
-    this.onChange = this.onChange.bind(this);
-  }
 
-  componentDidMount() {
-    this.fetchOptions();
-  }
+    const [isLoading, setIsLoading] = useState(false);
+    const [options, setOptions] = useState([]);
 
-  onChange(option) {
-    this.props.onChange(option);
-  }
-
-  fetchOptions() {
-    this.setState({ isLoading: true });
-    const { mutator, dataEndpoint } = this.props;
+    useEffect(() => {
+    fetchOptions();
+  }, []);
+    const onChangeHandler = useCallback((option) => {
+    props.onChange(option);
+  }, []);
+    const fetchOptions = useMemo(() => {
+    setIsLoading(true);
+    const { mutator, dataEndpoint } = props;
 
     return SupersetClient.get({ endpoint: dataEndpoint })
       .then(({ json }) => {
         const options = mutator ? mutator(json) : json;
 
-        this.setState({ options, isLoading: false });
+        setOptions(options)
+    setIsLoading(false);
 
-        if (!this.props.value && this.props.autoSelect && options.length > 0) {
-          this.onChange(options[0]);
+        if (!props.value && props.autoSelect && options.length > 0) {
+          onChangeHandler(options[0]);
         }
       })
       .catch(response =>
         getClientErrorObject(response).then(error => {
-          this.props.onAsyncError(error.error || error.statusText || error);
-          this.setState({ isLoading: false });
+          props.onAsyncError(error.error || error.statusText || error);
+          setIsLoading(false);
         }),
       );
-  }
+  }, [options]);
 
-  render() {
     return (
       <Select
-        placeholder={this.props.placeholder}
-        options={this.state.options}
-        value={this.props.value}
-        isLoading={this.state.isLoading}
-        onChange={this.onChange}
-        valueRenderer={this.props.valueRenderer}
-        {...this.props}
+        placeholder={props.placeholder}
+        options={options}
+        value={props.value}
+        isLoading={isLoading}
+        onChange={onChangeHandler}
+        valueRenderer={props.valueRenderer}
+        {...props}
       />
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 AsyncSelect.propTypes = propTypes;
 AsyncSelect.defaultProps = defaultProps;

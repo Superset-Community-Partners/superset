@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { styled, t } from '@superset-ui/core';
 import { connect } from 'react-redux';
@@ -108,45 +109,32 @@ const StyledTabsContainer = styled.div`
   }
 `;
 
-export class Tabs extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    const { tabIndex, activeKey } = this.getTabInfo(props);
+export const Tabs = (props) => {
+const { tabIndex, activeKey } = getTabInfoHandler(props);
 
-    this.state = {
-      tabIndex,
-      activeKey,
-    };
-    this.handleClickTab = this.handleClickTab.bind(this);
-    this.handleDeleteComponent = this.handleDeleteComponent.bind(this);
-    this.handleDeleteTab = this.handleDeleteTab.bind(this);
-    this.handleDropOnTab = this.handleDropOnTab.bind(this);
-    this.handleDrop = this.handleDrop.bind(this);
-  }
+    const [tabIndex: selectedTabIndex, setTabIndex: selectedTabIndex] = useState();
 
-  componentDidMount() {
-    this.props.setActiveTabs(this.state.activeKey);
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.activeKey !== this.state.activeKey) {
-      this.props.setActiveTabs(this.state.activeKey, prevState.activeKey);
+    useEffect(() => {
+    props.setActiveTabs(activeKey);
+  }, []);
+    useEffect(() => {
+    if (prevState.activeKey !== activeKey) {
+      props.setActiveTabs(activeKey, prevState.activeKey);
     }
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps) {
+  }, []);
+    const UNSAFE_componentWillReceivePropsHandler = useCallback((nextProps) => {
     const maxIndex = Math.max(0, nextProps.component.children.length - 1);
-    const currTabsIds = this.props.component.children;
+    const currTabsIds = props.component.children;
     const nextTabsIds = nextProps.component.children;
 
-    if (this.state.tabIndex > maxIndex) {
-      this.setState(() => ({ tabIndex: maxIndex }));
+    if (tabIndex > maxIndex) {
+      setStateHandler(() => ({ tabIndex: maxIndex }));
     }
 
     // reset tab index if dashboard was changed
-    if (nextProps.dashboardId !== this.props.dashboardId) {
-      const { tabIndex, activeKey } = this.getTabInfo(nextProps);
-      this.setState(() => ({
+    if (nextProps.dashboardId !== props.dashboardId) {
+      const { tabIndex, activeKey } = getTabInfoHandler(nextProps);
+      setStateHandler(() => ({
         tabIndex,
         activeKey,
       }));
@@ -157,7 +145,7 @@ export class Tabs extends React.PureComponent {
         nextProps.directPathToChild,
       );
       const currentFocusComponent = getLeafComponentIdFromPath(
-        this.props.directPathToChild,
+        props.directPathToChild,
       );
 
       // If the currently selected component is different than the new one,
@@ -174,17 +162,16 @@ export class Tabs extends React.PureComponent {
         });
 
         // make sure nextFocusComponent is under this tabs component
-        if (nextTabIndex > -1 && nextTabIndex !== this.state.tabIndex) {
-          this.setState(() => ({
+        if (nextTabIndex > -1 && nextTabIndex !== tabIndex) {
+          setStateHandler(() => ({
             tabIndex: nextTabIndex,
             activeKey: nextTabsIds[nextTabIndex],
           }));
         }
       }
     }
-  }
-
-  getTabInfo = props => {
+  }, []);
+    const getTabInfoHandler = useCallback(props => {
     let tabIndex = Math.max(
       0,
       findTabIndexByComponentId({
@@ -206,10 +193,9 @@ export class Tabs extends React.PureComponent {
       tabIndex,
       activeKey,
     };
-  };
-
-  showDeleteConfirmModal = key => {
-    const { component, deleteComponent } = this.props;
+  }, []);
+    const showDeleteConfirmModalHandler = useCallback(key => {
+    const { component, deleteComponent } = props;
     AntdModal.confirm({
       title: t('Delete dashboard tab?'),
       content: (
@@ -225,17 +211,16 @@ export class Tabs extends React.PureComponent {
       onOk: () => {
         deleteComponent(key, component.id);
         const tabIndex = component.children.indexOf(key);
-        this.handleDeleteTab(tabIndex);
+        handleDeleteTabHandler(tabIndex);
       },
       okType: 'danger',
       okText: t('DELETE'),
       cancelText: t('CANCEL'),
       icon: null,
     });
-  };
-
-  handleEdit = (event, action) => {
-    const { component, createComponent } = this.props;
+  }, []);
+    const handleEditHandler = useCallback((event, action) => {
+    const { component, createComponent } = props;
     if (action === 'add') {
       // Prevent the tab container to be selected
       event?.stopPropagation?.();
@@ -252,42 +237,38 @@ export class Tabs extends React.PureComponent {
         },
       });
     } else if (action === 'remove') {
-      this.showDeleteConfirmModal(event);
+      showDeleteConfirmModalHandler(event);
     }
-  };
-
-  handleClickTab(tabIndex) {
-    const { component } = this.props;
+  }, []);
+    const handleClickTabHandler = useCallback((tabIndex) => {
+    const { component } = props;
     const { children: tabIds } = component;
 
-    if (tabIndex !== this.state.tabIndex) {
+    if (tabIndex !== tabIndex) {
       const pathToTabIndex = getDirectPathToTabIndex(component, tabIndex);
       const targetTabId = pathToTabIndex[pathToTabIndex.length - 1];
-      this.props.logEvent(LOG_ACTIONS_SELECT_DASHBOARD_TAB, {
+      props.logEvent(LOG_ACTIONS_SELECT_DASHBOARD_TAB, {
         target_id: targetTabId,
         index: tabIndex,
       });
 
-      this.props.onChangeTab({ pathToTabIndex });
+      props.onChangeTab({ pathToTabIndex });
     }
-    this.setState(() => ({ activeKey: tabIds[tabIndex] }));
-  }
-
-  handleDeleteComponent() {
-    const { deleteComponent, id, parentId } = this.props;
+    setStateHandler(() => ({ activeKey: tabIds[tabIndex] }));
+  }, []);
+    const handleDeleteComponentHandler = useCallback(() => {
+    const { deleteComponent, id, parentId } = props;
     deleteComponent(id, parentId);
-  }
-
-  handleDeleteTab(tabIndex) {
+  }, []);
+    const handleDeleteTabHandler = useCallback((tabIndex) => {
     // If we're removing the currently selected tab,
     // select the previous one (if any)
-    if (this.state.tabIndex === tabIndex) {
-      this.handleClickTab(Math.max(0, tabIndex - 1));
+    if (tabIndex === tabIndex) {
+      handleClickTabHandler(Math.max(0, tabIndex - 1));
     }
-  }
-
-  handleDropOnTab(dropResult) {
-    const { component } = this.props;
+  }, []);
+    const handleDropOnTabHandler = useCallback((dropResult) => {
+    const { component } = props;
 
     // Ensure dropped tab is visible
     const { destination } = dropResult;
@@ -299,19 +280,17 @@ export class Tabs extends React.PureComponent {
 
       if (dropTabIndex > -1) {
         setTimeout(() => {
-          this.handleClickTab(dropTabIndex);
+          handleClickTabHandler(dropTabIndex);
         }, 30);
       }
     }
-  }
-
-  handleDrop(dropResult) {
+  }, []);
+    const handleDropHandler = useCallback((dropResult) => {
     if (dropResult.dragging.type !== TABS_TYPE) {
-      this.props.handleComponentDrop(dropResult);
+      props.handleComponentDrop(dropResult);
     }
-  }
+  }, []);
 
-  render() {
     const {
       depth,
       component: tabsComponent,
@@ -327,10 +306,10 @@ export class Tabs extends React.PureComponent {
       isComponentVisible: isCurrentTabVisible,
       editMode,
       nativeFilters,
-    } = this.props;
+    } = props;
 
     const { children: tabIds } = tabsComponent;
-    const { tabIndex: selectedTabIndex, activeKey } = this.state;
+     
 
     let tabsToHighlight;
     const highlightedFilterId =
@@ -345,7 +324,7 @@ export class Tabs extends React.PureComponent {
         orientation="row"
         index={index}
         depth={depth}
-        onDrop={this.handleDrop}
+        onDrop={handleDropHandler}
         editMode={editMode}
       >
         {({
@@ -359,7 +338,7 @@ export class Tabs extends React.PureComponent {
             {editMode && renderHoverMenu && (
               <HoverMenu innerRef={tabsDragSourceRef} position="left">
                 <DragHandle position="left" />
-                <DeleteComponentButton onDelete={this.handleDeleteComponent} />
+                <DeleteComponentButton onDelete={handleDeleteComponentHandler} />
               </HoverMenu>
             )}
 
@@ -367,9 +346,9 @@ export class Tabs extends React.PureComponent {
               id={tabsComponent.id}
               activeKey={activeKey}
               onChange={key => {
-                this.handleClickTab(tabIds.indexOf(key));
+                handleClickTabHandler(tabIds.indexOf(key));
               }}
-              onEdit={this.handleEdit}
+              onEdit={handleEditHandler}
               data-test="nav-list"
               type={editMode ? 'editable-card' : 'card'}
             >
@@ -385,8 +364,8 @@ export class Tabs extends React.PureComponent {
                       renderType={RENDER_TAB}
                       availableColumnCount={availableColumnCount}
                       columnWidth={columnWidth}
-                      onDropOnTab={this.handleDropOnTab}
-                      onHoverTab={() => this.handleClickTab(tabIndex)}
+                      onDropOnTab={handleDropOnTabHandler}
+                      onHoverTab={() => handleClickTabHandler(tabIndex)}
                       isFocused={activeKey === tabId}
                       isHighlighted={
                         activeKey !== tabId && tabsToHighlight?.includes(tabId)
@@ -406,7 +385,7 @@ export class Tabs extends React.PureComponent {
                       onResizeStart={onResizeStart}
                       onResize={onResize}
                       onResizeStop={onResizeStop}
-                      onDropOnTab={this.handleDropOnTab}
+                      onDropOnTab={handleDropOnTabHandler}
                       isComponentVisible={
                         selectedTabIndex === tabIndex && isCurrentTabVisible
                       }
@@ -424,9 +403,11 @@ export class Tabs extends React.PureComponent {
           </StyledTabsContainer>
         )}
       </DragDroppable>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 Tabs.propTypes = propTypes;
 Tabs.defaultProps = defaultProps;

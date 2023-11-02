@@ -18,18 +18,17 @@
  */
 
 /* eslint-disable react/jsx-sort-default-props */
-import * as React from 'react';
+
 import { t } from '@superset-ui/core';
 import { createSelector } from 'reselect';
 import getChartComponentRegistry from '../registries/ChartComponentRegistrySingleton';
 import getChartTransformPropsRegistry from '../registries/ChartTransformPropsRegistrySingleton';
 import ChartProps from '../models/ChartProps';
-import createLoadableRenderer from './createLoadableRenderer';
 import { ChartType } from '../models/ChartPlugin';
 import {
-  PreTransformProps,
-  TransformProps,
-  PostTransformProps,
+    PreTransformProps,
+    TransformProps,
+    PostTransformProps,
 } from '../types/TransformFunction';
 import { HandlerFunction } from '../types/Base';
 
@@ -78,13 +77,16 @@ export type Props = {
   onRenderFailure?: HandlerFunction;
 };
 
-export default class SuperChartCore extends React.PureComponent<Props, {}> {
-  /**
+const SuperChartCore = (inputProps: Props) => {
+
+
+    
+
+    /**
    * The HTML element that wraps all chart content
    */
-  container?: HTMLElement | null;
-
-  /**
+    const container = useRef<HTMLElement | null>();
+    /**
    * memoized function so it will not recompute
    * and return previous value
    * unless one of
@@ -94,7 +96,7 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
    * - chartProps
    * is changed.
    */
-  processChartProps = createSelector(
+    const processChartProps = useRef(createSelector(
     [
       (input: {
         chartProps: ChartProps;
@@ -108,9 +110,8 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
     ],
     (chartProps, pre = IDENTITY, transform = IDENTITY, post = IDENTITY) =>
       post(transform(pre(chartProps))),
-  );
-
-  /**
+  ));
+    /**
    * memoized function so it will not recompute
    * and return previous value
    * unless one of
@@ -118,7 +119,7 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
    * - overrideTransformProps
    * is changed.
    */
-  private createLoadableRenderer = createSelector(
+    const createLoadableRenderer = useRef(createSelector(
     [
       (input: { chartType: string; overrideTransformProps?: TransformProps }) =>
         input.chartType,
@@ -134,8 +135,8 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
               : () => getChartTransformPropsRegistry().getAsPromise(chartType),
           },
           loading: (loadingProps: LoadingProps) =>
-            this.renderLoading(loadingProps, chartType),
-          render: this.renderChart,
+            renderLoadingHandler(loadingProps, chartType),
+          render: renderChartHandler,
         });
 
         // Trigger preloading.
@@ -146,17 +147,14 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
 
       return EMPTY;
     },
-  );
-
-  static defaultProps = defaultProps;
-
-  private renderChart = (loaded: LoadedModules, props: RenderProps) => {
+  ));
+    const renderChartHandler = useCallback((loaded: LoadedModules, props: RenderProps) => {
     const { Chart, transformProps } = loaded;
     const { chartProps, preTransformProps, postTransformProps } = props;
 
     return (
       <Chart
-        {...this.processChartProps({
+        {...processChartProps.current({
           chartProps,
           preTransformProps,
           transformProps,
@@ -164,9 +162,8 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
         })}
       />
     );
-  };
-
-  private renderLoading = (loadingProps: LoadingProps, chartType: string) => {
+  }, []);
+    const renderLoadingHandler = useCallback((loadingProps: LoadingProps, chartType: string) => {
     const { error } = loadingProps;
 
     if (error) {
@@ -180,13 +177,11 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
     }
 
     return null;
-  };
+  }, []);
+    const setRefHandler = useCallback((container: HTMLElement | null) => {
+    container.current = container;
+  }, []);
 
-  private setRef = (container: HTMLElement | null) => {
-    this.container = container;
-  };
-
-  render() {
     const {
       id,
       className,
@@ -195,11 +190,11 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
       chartProps = BLANK_CHART_PROPS,
       onRenderSuccess,
       onRenderFailure,
-    } = this.props;
+    } = props;
 
     // Create LoadableRenderer and start preloading
     // the lazy-loaded Chart components
-    const Renderer = this.createLoadableRenderer(this.props);
+    const Renderer = createLoadableRenderer.current(props);
 
     // Do not render if chartProps is set to null.
     // but the pre-loading has been started in this.createLoadableRenderer
@@ -220,7 +215,7 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
     }
 
     return (
-      <div {...containerProps} ref={this.setRef}>
+      <div {...containerProps} ref={setRefHandler}>
         <Renderer
           preTransformProps={preTransformProps}
           postTransformProps={postTransformProps}
@@ -229,6 +224,10 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
           onRenderFailure={onRenderFailure}
         />
       </div>
-    );
-  }
-}
+    ); 
+};
+
+export default SuperChartCore;
+
+SuperChartCore.defaultProps = defaultProps;
+

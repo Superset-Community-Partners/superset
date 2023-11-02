@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { css, styled } from '@superset-ui/core';
 
@@ -62,18 +63,16 @@ const DividerLine = styled.div`
   `}
 `;
 
-class Divider extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.handleDeleteComponent = this.handleDeleteComponent.bind(this);
-  }
+const Divider = (props) => {
 
-  handleDeleteComponent() {
-    const { deleteComponent, id, parentId } = this.props;
+
+    
+
+    const handleDeleteComponentHandler = useCallback(() => {
+    const { deleteComponent, id, parentId } = props;
     deleteComponent(id, parentId);
-  }
+  }, []);
 
-  render() {
     const {
       component,
       depth,
@@ -81,7 +80,7 @@ class Divider extends React.PureComponent {
       index,
       handleComponentDrop,
       editMode,
-    } = this.props;
+    } = props;
 
     return (
       <DragDroppable
@@ -97,7 +96,7 @@ class Divider extends React.PureComponent {
           <div ref={dragSourceRef}>
             {editMode && (
               <HoverMenu position="left">
-                <DeleteComponentButton onDelete={this.handleDeleteComponent} />
+                <DeleteComponentButton onDelete={handleDeleteComponentHandler} />
               </HoverMenu>
             )}
 
@@ -107,9 +106,11 @@ class Divider extends React.PureComponent {
           </div>
         )}
       </DragDroppable>
-    );
-  }
-}
+    ); 
+};
+
+
+
 
 Divider.propTypes = propTypes;
 

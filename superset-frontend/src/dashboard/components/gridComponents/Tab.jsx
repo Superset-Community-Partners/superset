@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
@@ -92,22 +93,16 @@ const renderDraggableContentTop = dropProps =>
     <div className="drop-indicator drop-indicator--top" />
   );
 
-class Tab extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.handleChangeText = this.handleChangeText.bind(this);
-    this.handleDrop = this.handleDrop.bind(this);
-    this.handleOnHover = this.handleOnHover.bind(this);
-    this.handleTopDropTargetDrop = this.handleTopDropTargetDrop.bind(this);
-    this.handleChangeTab = this.handleChangeTab.bind(this);
-  }
+const Tab = (props) => {
 
-  handleChangeTab({ pathToTabIndex }) {
-    this.props.setDirectPathToChild(pathToTabIndex);
-  }
 
-  handleChangeText(nextTabText) {
-    const { updateComponents, component } = this.props;
+    
+
+    const handleChangeTabHandler = useCallback(({ pathToTabIndex }) => {
+    props.setDirectPathToChild(pathToTabIndex);
+  }, []);
+    const handleChangeTextHandler = useCallback((nextTabText) => {
+    const { updateComponents, component } = props;
     if (nextTabText && nextTabText !== component.meta.text) {
       updateComponents({
         [component.id]: {
@@ -119,20 +114,17 @@ class Tab extends React.PureComponent {
         },
       });
     }
-  }
-
-  handleDrop(dropResult) {
-    this.props.handleComponentDrop(dropResult);
-    this.props.onDropOnTab(dropResult);
-  }
-
-  handleOnHover() {
-    this.props.onHoverTab();
-  }
-
-  handleTopDropTargetDrop(dropResult) {
+  }, []);
+    const handleDropHandler = useCallback((dropResult) => {
+    props.handleComponentDrop(dropResult);
+    props.onDropOnTab(dropResult);
+  }, []);
+    const handleOnHoverHandler = useCallback(() => {
+    props.onHoverTab();
+  }, []);
+    const handleTopDropTargetDropHandler = useCallback((dropResult) => {
     if (dropResult) {
-      this.props.handleComponentDrop({
+      props.handleComponentDrop({
         ...dropResult,
         destination: {
           ...dropResult.destination,
@@ -141,9 +133,8 @@ class Tab extends React.PureComponent {
         },
       });
     }
-  }
-
-  renderTabContent() {
+  }, []);
+    const renderTabContentHandler = useCallback(() => {
     const {
       component: tabComponent,
       parentComponent: tabParentComponent,
@@ -158,7 +149,7 @@ class Tab extends React.PureComponent {
       canEdit,
       setEditMode,
       dashboardId,
-    } = this.props;
+    } = props;
 
     const shouldDisplayEmptyState = tabComponent.children.length === 0;
     return (
@@ -171,7 +162,7 @@ class Tab extends React.PureComponent {
             orientation="column"
             index={0}
             depth={depth}
-            onDrop={this.handleTopDropTargetDrop}
+            onDrop={handleTopDropTargetDropHandler}
             editMode
             className="empty-droptarget"
           >
@@ -222,15 +213,15 @@ class Tab extends React.PureComponent {
             parentId={tabComponent.id}
             depth={depth} // see isValidChild.js for why tabs don't increment child depth
             index={componentIndex}
-            onDrop={this.handleDrop}
-            onHover={this.handleOnHover}
+            onDrop={handleDropHandler}
+            onHover={handleOnHoverHandler}
             availableColumnCount={availableColumnCount}
             columnWidth={columnWidth}
             onResizeStart={onResizeStart}
             onResize={onResize}
             onResizeStop={onResizeStop}
             isComponentVisible={isComponentVisible}
-            onChangeTab={this.handleChangeTab}
+            onChangeTab={handleChangeTabHandler}
           />
         ))}
         {/* Make bottom of tab droppable */}
@@ -241,8 +232,8 @@ class Tab extends React.PureComponent {
             orientation="column"
             index={tabComponent.children.length}
             depth={depth}
-            onDrop={this.handleDrop}
-            onHover={this.handleOnHover}
+            onDrop={handleDropHandler}
+            onHover={handleOnHoverHandler}
             editMode
             className="empty-droptarget"
           >
@@ -251,9 +242,8 @@ class Tab extends React.PureComponent {
         )}
       </div>
     );
-  }
-
-  renderTab() {
+  }, []);
+    const renderTabHandler = useCallback(() => {
     const {
       component,
       parentComponent,
@@ -262,7 +252,7 @@ class Tab extends React.PureComponent {
       editMode,
       isFocused,
       isHighlighted,
-    } = this.props;
+    } = props;
 
     return (
       <DragDroppable
@@ -271,8 +261,8 @@ class Tab extends React.PureComponent {
         orientation="column"
         index={index}
         depth={depth}
-        onDrop={this.handleDrop}
-        onHover={this.handleOnHover}
+        onDrop={handleDropHandler}
+        onHover={handleOnHoverHandler}
         editMode={editMode}
       >
         {({ dropIndicatorProps, dragSourceRef }) => (
@@ -286,14 +276,14 @@ class Tab extends React.PureComponent {
               defaultTitle={component.meta.defaultText}
               placeholder={component.meta.placeholder}
               canEdit={editMode && isFocused}
-              onSaveTitle={this.handleChangeText}
+              onSaveTitle={handleChangeTextHandler}
               showTooltip={false}
               editing={editMode && isFocused}
             />
             {!editMode && (
               <AnchorLink
                 id={component.id}
-                dashboardId={this.props.dashboardId}
+                dashboardId={props.dashboardId}
                 placement={index >= 5 ? 'left' : 'right'}
               />
             )}
@@ -303,15 +293,16 @@ class Tab extends React.PureComponent {
         )}
       </DragDroppable>
     );
-  }
+  }, []);
 
-  render() {
-    const { renderType } = this.props;
+    const { renderType } = props;
     return renderType === RENDER_TAB
-      ? this.renderTab()
-      : this.renderTabContent();
-  }
-}
+      ? renderTabHandler()
+      : renderTabContentHandler(); 
+};
+
+
+
 
 Tab.propTypes = propTypes;
 Tab.defaultProps = defaultProps;

@@ -17,7 +17,8 @@
  * under the License.
  */
 /* eslint-env browser */
-import React from 'react';
+
+import { useState, useRef, useCallback } from 'react';
 import { Radio } from 'src/components/Radio';
 import { RadioChangeEvent } from 'src/components';
 import { Input } from 'src/components/Input';
@@ -66,54 +67,39 @@ const defaultProps = {
   shouldPersistRefreshFrequency: false,
 };
 
-class SaveModal extends React.PureComponent<SaveModalProps, SaveModalState> {
-  static defaultProps = defaultProps;
+const SaveModal = (inputProps: SaveModalProps) => {
+  const [saveType, setSaveType] = useState(props.saveType);
+  const [newDashName, setNewDashName] = useState(
+    `${props.dashboardTitle} ${t('[copy]')}`,
+  );
+  const [duplicateSlices, setDuplicateSlices] = useState(false);
 
-  modal: ModalTriggerRef | null;
-
-  onSave: (
-    data: Record<string, any>,
-    dashboardId: number | string,
-    saveType: SaveType,
-  ) => Promise<JsonResponse>;
-
-  constructor(props: SaveModalProps) {
-    super(props);
-    this.state = {
-      saveType: props.saveType,
-      newDashName: `${props.dashboardTitle} ${t('[copy]')}`,
-      duplicateSlices: false,
-    };
-
-    this.handleSaveTypeChange = this.handleSaveTypeChange.bind(this);
-    this.handleNameChange = this.handleNameChange.bind(this);
-    this.saveDashboard = this.saveDashboard.bind(this);
-    this.toggleDuplicateSlices = this.toggleDuplicateSlices.bind(this);
-    this.onSave = this.props.onSave.bind(this);
-    this.modal = React.createRef() as ModalTriggerRef;
-  }
-
-  toggleDuplicateSlices(): void {
-    this.setState(prevState => ({
+  const props = {
+    ...defaultProps,
+    ...inputProps,
+  };
+  const modal = useRef<ModalTriggerRef | null>();
+  const onSave =
+    useRef<
+      (
+        data: Record<string, any>,
+        dashboardId: number | string,
+        saveType: SaveType,
+      ) => Promise<JsonResponse>
+    >();
+  const toggleDuplicateSlicesHandler = useCallback(() => {
+    setStateHandler(prevState => ({
       duplicateSlices: !prevState.duplicateSlices,
     }));
-  }
-
-  handleSaveTypeChange(event: RadioChangeEvent) {
-    this.setState({
-      saveType: (event.target as HTMLInputElement).value as SaveType,
-    });
-  }
-
-  handleNameChange(name: string) {
-    this.setState({
-      newDashName: name,
-      saveType: SAVE_TYPE_NEWDASHBOARD,
-    });
-  }
-
-  saveDashboard() {
-    const { saveType, newDashName } = this.state;
+  }, []);
+  const handleSaveTypeChangeHandler = useCallback((event: RadioChangeEvent) => {
+    setSaveType((event.target as HTMLInputElement).value as SaveType);
+  }, []);
+  const handleNameChangeHandler = useCallback((name: string) => {
+    setNewDashName(name);
+    setSaveType(SAVE_TYPE_NEWDASHBOARD);
+  }, []);
+  const saveDashboardHandler = useCallback(() => {
     const {
       dashboardTitle,
       dashboardInfo,
@@ -123,7 +109,7 @@ class SaveModal extends React.PureComponent<SaveModalProps, SaveModalState> {
       refreshFrequency: currentRefreshFrequency,
       shouldPersistRefreshFrequency,
       lastModifiedTime,
-    } = this.props;
+    } = props;
 
     // check refresh frequency is for current session or persist
     const refreshFrequency = shouldPersistRefreshFrequency
@@ -136,7 +122,7 @@ class SaveModal extends React.PureComponent<SaveModalProps, SaveModalState> {
       css: customCss,
       dashboard_title:
         saveType === SAVE_TYPE_NEWDASHBOARD ? newDashName : dashboardTitle,
-      duplicate_slices: this.state.duplicateSlices,
+      duplicate_slices: duplicateSlices,
       last_modified_time: lastModifiedTime,
       owners: dashboardInfo.owners,
       roles: dashboardInfo.roles,
@@ -148,73 +134,69 @@ class SaveModal extends React.PureComponent<SaveModalProps, SaveModalState> {
     };
 
     if (saveType === SAVE_TYPE_NEWDASHBOARD && !newDashName) {
-      this.props.addDangerToast(
-        t('You must pick a name for the new dashboard'),
-      );
+      props.addDangerToast(t('You must pick a name for the new dashboard'));
     } else {
-      this.onSave(data, dashboardId, saveType).then((resp: JsonResponse) => {
+      onSave.current(data, dashboardId, saveType).then((resp: JsonResponse) => {
         if (saveType === SAVE_TYPE_NEWDASHBOARD && resp.json?.result?.id) {
           window.location.href = `/superset/dashboard/${resp.json.result.id}/`;
         }
       });
-      this.modal?.current?.close?.();
+      modal?.current?.close?.();
     }
-  }
+  }, [saveType, newDashName, duplicateSlices]);
 
-  render() {
-    return (
-      <ModalTrigger
-        ref={this.modal}
-        triggerNode={this.props.triggerNode}
-        modalTitle={t('Save dashboard')}
-        modalBody={
-          <div>
-            <Radio
-              value={SAVE_TYPE_OVERWRITE}
-              onChange={this.handleSaveTypeChange}
-              checked={this.state.saveType === SAVE_TYPE_OVERWRITE}
-              disabled={!this.props.canOverwrite}
-            >
-              {t('Overwrite Dashboard [%s]', this.props.dashboardTitle)}
-            </Radio>
-            <hr />
-            <Radio
-              value={SAVE_TYPE_NEWDASHBOARD}
-              onChange={this.handleSaveTypeChange}
-              checked={this.state.saveType === SAVE_TYPE_NEWDASHBOARD}
-            >
-              {t('Save as:')}
-            </Radio>
-            <Input
-              type="text"
-              placeholder={t('[dashboard name]')}
-              value={this.state.newDashName}
-              onFocus={e => this.handleNameChange(e.target.value)}
-              onChange={e => this.handleNameChange(e.target.value)}
+  return (
+    <ModalTrigger
+      ref={modal.current}
+      triggerNode={props.triggerNode}
+      modalTitle={t('Save dashboard')}
+      modalBody={
+        <div>
+          <Radio
+            value={SAVE_TYPE_OVERWRITE}
+            onChange={handleSaveTypeChangeHandler}
+            checked={saveType === SAVE_TYPE_OVERWRITE}
+            disabled={!props.canOverwrite}
+          >
+            {t('Overwrite Dashboard [%s]', props.dashboardTitle)}
+          </Radio>
+          <hr />
+          <Radio
+            value={SAVE_TYPE_NEWDASHBOARD}
+            onChange={handleSaveTypeChangeHandler}
+            checked={saveType === SAVE_TYPE_NEWDASHBOARD}
+          >
+            {t('Save as:')}
+          </Radio>
+          <Input
+            type="text"
+            placeholder={t('[dashboard name]')}
+            value={newDashName}
+            onFocus={e => handleNameChangeHandler(e.target.value)}
+            onChange={e => handleNameChangeHandler(e.target.value)}
+          />
+          <div className="m-l-25 m-t-5">
+            <Checkbox
+              checked={duplicateSlices}
+              onChange={() => toggleDuplicateSlicesHandler()}
             />
-            <div className="m-l-25 m-t-5">
-              <Checkbox
-                checked={this.state.duplicateSlices}
-                onChange={() => this.toggleDuplicateSlices()}
-              />
-              <span className="m-l-5">{t('also copy (duplicate) charts')}</span>
-            </div>
+            <span className="m-l-5">{t('also copy (duplicate) charts')}</span>
           </div>
-        }
-        modalFooter={
-          <div>
-            <Button
-              data-test="modal-save-dashboard-button"
-              buttonStyle="primary"
-              onClick={this.saveDashboard}
-            >
-              {t('Save')}
-            </Button>
-          </div>
-        }
-      />
-    );
-  }
-}
+        </div>
+      }
+      modalFooter={
+        <div>
+          <Button
+            data-test="modal-save-dashboard-button"
+            buttonStyle="primary"
+            onClick={saveDashboardHandler}
+          >
+            {t('Save')}
+          </Button>
+        </div>
+      }
+    />
+  );
+};
 
 export default SaveModal;

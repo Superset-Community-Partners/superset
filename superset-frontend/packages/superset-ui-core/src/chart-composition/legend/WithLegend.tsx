@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import React, { CSSProperties, ReactNode, PureComponent } from 'react';
+import { CSSProperties, ReactNode, useCallback } from 'react';
 import { ParentSize } from '@vx/responsive';
 
 const defaultProps = {
@@ -52,11 +52,13 @@ const CHART_STYLE_BASE: CSSProperties = {
   position: 'relative',
 };
 
-class WithLegend extends PureComponent<Props, {}> {
-  static defaultProps = defaultProps;
-
-  getContainerDirection(): CSSProperties['flexDirection'] {
-    const { position } = this.props;
+const WithLegend = (inputProps: Props) => {
+  const props = {
+    ...defaultProps,
+    ...inputProps,
+  };
+  const getContainerDirectionHandler = useCallback(() => {
+    const { position } = props;
 
     if (position === 'left') {
       return 'row';
@@ -69,10 +71,9 @@ class WithLegend extends PureComponent<Props, {}> {
     }
 
     return 'column';
-  }
-
-  getLegendJustifyContent() {
-    const { legendJustifyContent, position } = this.props;
+  }, []);
+  const getLegendJustifyContentHandler = useCallback(() => {
+    const { legendJustifyContent, position } = props;
     if (legendJustifyContent) {
       return legendJustifyContent;
     }
@@ -82,65 +83,63 @@ class WithLegend extends PureComponent<Props, {}> {
     }
 
     return 'flex-end';
+  }, []);
+
+  const {
+    className,
+    debounceTime,
+    width,
+    height,
+    position,
+    renderChart,
+    renderLegend,
+  } = props;
+
+  const isHorizontal = position === 'left' || position === 'right';
+
+  const style: CSSProperties = {
+    display: 'flex',
+    flexDirection: getContainerDirectionHandler(),
+    height,
+    width,
+  };
+
+  const chartStyle: CSSProperties = { ...CHART_STYLE_BASE };
+  if (isHorizontal) {
+    chartStyle.width = 0;
+  } else {
+    chartStyle.height = 0;
   }
 
-  render() {
-    const {
-      className,
-      debounceTime,
-      width,
-      height,
-      position,
-      renderChart,
-      renderLegend,
-    } = this.props;
+  const legendDirection = isHorizontal ? 'column' : 'row';
+  const legendStyle: CSSProperties = {
+    ...LEGEND_STYLE_BASE,
+    flexDirection: legendDirection,
+    justifyContent: getLegendJustifyContentHandler(),
+  };
 
-    const isHorizontal = position === 'left' || position === 'right';
-
-    const style: CSSProperties = {
-      display: 'flex',
-      flexDirection: this.getContainerDirection(),
-      height,
-      width,
-    };
-
-    const chartStyle: CSSProperties = { ...CHART_STYLE_BASE };
-    if (isHorizontal) {
-      chartStyle.width = 0;
-    } else {
-      chartStyle.height = 0;
-    }
-
-    const legendDirection = isHorizontal ? 'column' : 'row';
-    const legendStyle: CSSProperties = {
-      ...LEGEND_STYLE_BASE,
-      flexDirection: legendDirection,
-      justifyContent: this.getLegendJustifyContent(),
-    };
-
-    return (
-      <div className={`with-legend ${className}`} style={style}>
-        {renderLegend && (
-          <div className="legend-container" style={legendStyle}>
-            {renderLegend({
-              // Pass flexDirection for @vx/legend to arrange legend items
-              direction: legendDirection,
-            })}
-          </div>
-        )}
-        <div className="main-container" style={chartStyle}>
-          <ParentSize debounceTime={debounceTime}>
-            {(parent: { width: number; height: number }) =>
-              parent.width > 0 && parent.height > 0
-                ? // Only render when necessary
-                  renderChart(parent)
-                : null
-            }
-          </ParentSize>
+  return (
+    <div className={`with-legend ${className}`} style={style}>
+      {renderLegend && (
+        <div className="legend-container" style={legendStyle}>
+          {renderLegend({
+            // Pass flexDirection for @vx/legend to arrange legend items
+            direction: legendDirection,
+          })}
         </div>
+      )}
+      <div className="main-container" style={chartStyle}>
+        <ParentSize debounceTime={debounceTime}>
+          {(parent: { width: number; height: number }) =>
+            parent.width > 0 && parent.height > 0
+              ? // Only render when necessary
+                renderChart(parent)
+              : null
+          }
+        </ParentSize>
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
 export default WithLegend;

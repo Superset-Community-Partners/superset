@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { isFeatureEnabled, t, FeatureFlag } from '@superset-ui/core';
 
@@ -72,33 +73,14 @@ const defaultProps = {
   userId: '',
 };
 
-class Dashboard extends React.PureComponent {
-  static contextType = PluginContext;
-
-  static onBeforeUnload(hasChanged) {
-    if (hasChanged) {
-      window.addEventListener('beforeunload', Dashboard.unload);
-    } else {
-      window.removeEventListener('beforeunload', Dashboard.unload);
-    }
-  }
-
-  static unload() {
-    const message = t('You have unsaved changes.');
-    window.event.returnValue = message; // Gecko + IE
-    return message; // Gecko + Webkit, Safari, Chrome etc.
-  }
-
-  constructor(props) {
-    super(props);
-    this.appliedFilters = props.activeFilters ?? {};
-    this.appliedOwnDataCharts = props.ownDataCharts ?? {};
-    this.onVisibilityChange = this.onVisibilityChange.bind(this);
-  }
-
-  componentDidMount() {
+const Dashboard = props => {
+  const props = {
+    ...PluginContext,
+    ...inputProps,
+  };
+  useEffect(() => {
     const bootstrapData = getBootstrapData();
-    const { dashboardState, layout } = this.props;
+    const { dashboardState, layout } = props;
     const eventData = {
       is_soft_navigation: Logger.timeOriginOffset > 0,
       is_edit_mode: dashboardState.editMode,
@@ -111,28 +93,26 @@ class Dashboard extends React.PureComponent {
     if (directLinkComponentId) {
       eventData.target_id = directLinkComponentId;
     }
-    this.props.actions.logEvent(LOG_ACTIONS_MOUNT_DASHBOARD, eventData);
+    props.actions.logEvent(LOG_ACTIONS_MOUNT_DASHBOARD, eventData);
 
     // Handle browser tab visibility change
     if (document.visibilityState === 'hidden') {
-      this.visibilityEventData = {
+      visibilityEventDataHandler = {
         start_offset: Logger.getTimestamp(),
         ts: new Date().getTime(),
       };
     }
-    window.addEventListener('visibilitychange', this.onVisibilityChange);
-    this.applyCharts();
-  }
-
-  componentDidUpdate() {
-    this.applyCharts();
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    const currentChartIds = getChartIdsFromLayout(this.props.layout);
+    window.addEventListener('visibilitychange', onVisibilityChangeHandler);
+    applyChartsHandler();
+  }, []);
+  useEffect(() => {
+    applyChartsHandler();
+  }, []);
+  const UNSAFE_componentWillReceivePropsHandler = useCallback(nextProps => {
+    const currentChartIds = getChartIdsFromLayout(props.layout);
     const nextChartIds = getChartIdsFromLayout(nextProps.layout);
 
-    if (this.props.dashboardInfo.id !== nextProps.dashboardInfo.id) {
+    if (props.dashboardInfo.id !== nextProps.dashboardInfo.id) {
       // single-page-app navigation check
       return;
     }
@@ -142,7 +122,7 @@ class Dashboard extends React.PureComponent {
         key => currentChartIds.indexOf(key) === -1,
       );
       newChartIds.forEach(newChartId =>
-        this.props.actions.addSliceToDashboard(
+        props.actions.addSliceToDashboard(
           newChartId,
           getLayoutComponentFromChartId(nextProps.layout, newChartId),
         ),
@@ -153,16 +133,14 @@ class Dashboard extends React.PureComponent {
         key => nextChartIds.indexOf(key) === -1,
       );
       removedChartIds.forEach(removedChartId =>
-        this.props.actions.removeSliceFromDashboard(removedChartId),
+        props.actions.removeSliceFromDashboard(removedChartId),
       );
     }
-  }
+  }, []);
+  const applyChartsHandler = useCallback(() => {
+    const { hasUnsavedChanges, editMode } = props.dashboardState;
 
-  applyCharts() {
-    const { hasUnsavedChanges, editMode } = this.props.dashboardState;
-
-    const { appliedFilters, appliedOwnDataCharts } = this;
-    const { activeFilters, ownDataCharts, chartConfiguration } = this.props;
+    const { activeFilters, ownDataCharts, chartConfiguration } = props;
     if (
       isFeatureEnabled(FeatureFlag.DASHBOARD_CROSS_FILTERS) &&
       !chartConfiguration
@@ -181,7 +159,7 @@ class Dashboard extends React.PureComponent {
           ignoreUndefined: true,
         }))
     ) {
-      this.applyFilters();
+      applyFiltersHandler();
     }
 
     if (hasUnsavedChanges) {
@@ -189,38 +167,35 @@ class Dashboard extends React.PureComponent {
     } else {
       Dashboard.onBeforeUnload(false);
     }
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('visibilitychange', this.onVisibilityChange);
-    this.props.actions.clearDataMaskState();
-  }
-
-  onVisibilityChange() {
+  }, []);
+  useEffect(() => {
+    return () => {
+      window.removeEventListener('visibilitychange', onVisibilityChangeHandler);
+      props.actions.clearDataMaskState();
+    };
+  }, []);
+  const onVisibilityChangeHandler = useCallback(() => {
     if (document.visibilityState === 'hidden') {
       // from visible to hidden
-      this.visibilityEventData = {
+      visibilityEventDataHandler = {
         start_offset: Logger.getTimestamp(),
         ts: new Date().getTime(),
       };
     } else if (document.visibilityState === 'visible') {
       // from hidden to visible
-      const logStart = this.visibilityEventData.start_offset;
-      this.props.actions.logEvent(LOG_ACTIONS_HIDE_BROWSER_TAB, {
-        ...this.visibilityEventData,
+      const logStart = visibilityEventDataHandler.start_offset;
+      props.actions.logEvent(LOG_ACTIONS_HIDE_BROWSER_TAB, {
+        ...visibilityEventDataHandler,
         duration: Logger.getTimestamp() - logStart,
       });
     }
-  }
-
+  }, []);
   // return charts in array
-  getAllCharts() {
-    return Object.values(this.props.charts);
-  }
-
-  applyFilters() {
-    const { appliedFilters } = this;
-    const { activeFilters, ownDataCharts } = this.props;
+  const getAllChartsHandler = useCallback(() => {
+    return Object.values(props.charts);
+  }, []);
+  const applyFiltersHandler = useCallback(() => {
+    const { activeFilters, ownDataCharts } = props;
 
     // refresh charts if a filter was removed, added, or changed
     const currFilterKeys = Object.keys(activeFilters);
@@ -229,7 +204,7 @@ class Dashboard extends React.PureComponent {
     const allKeys = new Set(currFilterKeys.concat(appliedFilterKeys));
     const affectedChartIds = getAffectedOwnDataCharts(
       ownDataCharts,
-      this.appliedOwnDataCharts,
+      appliedOwnDataChartsHandler,
     );
     [...allKeys].forEach(filterKey => {
       if (
@@ -273,28 +248,38 @@ class Dashboard extends React.PureComponent {
     });
 
     // remove dup in affectedChartIds
-    this.refreshCharts([...new Set(affectedChartIds)]);
-    this.appliedFilters = activeFilters;
-    this.appliedOwnDataCharts = ownDataCharts;
-  }
-
-  refreshCharts(ids) {
+    refreshChartsHandler([...new Set(affectedChartIds)]);
+    appliedFiltersHandler = activeFilters;
+    appliedOwnDataChartsHandler = ownDataCharts;
+  }, []);
+  const refreshChartsHandler = useCallback(ids => {
     ids.forEach(id => {
-      this.props.actions.triggerQuery(true, id);
+      props.actions.triggerQuery(true, id);
     });
-  }
+  }, []);
 
-  render() {
-    if (this.context.loading) {
-      return <Loading />;
-    }
-    return (
-      <>
-        <DashboardBuilder />
-      </>
-    );
+  if (contextHandler.loading) {
+    return <Loading />;
   }
-}
+  return (
+    <>
+      <DashboardBuilder />
+    </>
+  );
+};
+
+Dashboard.onBeforeUnload = hasChanged => {
+  if (hasChanged) {
+    window.addEventListener('beforeunload', Dashboard.unload);
+  } else {
+    window.removeEventListener('beforeunload', Dashboard.unload);
+  }
+};
+Dashboard.unload = () => {
+  const message = t('You have unsaved changes.');
+  window.event.returnValue = message; // Gecko + IE
+  return message; // Gecko + Webkit, Safari, Chrome etc.
+};
 
 Dashboard.propTypes = propTypes;
 Dashboard.defaultProps = defaultProps;

@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import React, { useCallback } from 'react';
 import { Form } from 'src/components/Form';
 
 import { recurseReactClone } from './utils';
@@ -32,36 +33,31 @@ interface FieldsetProps {
 
 type fieldKeyType = string | number;
 
-export default class Fieldset extends React.PureComponent<FieldsetProps> {
-  static defaultProps = {
+const Fieldset = (inputProps: FieldsetProps) => {
+  const props = {
     compact: false,
     title: null,
+    ...inputProps,
   };
-
-  constructor(props: FieldsetProps) {
-    super(props);
-    this.onChange = this.onChange.bind(this);
-  }
-
-  onChange(fieldKey: fieldKeyType, val: any) {
-    return this.props.onChange({
-      ...this.props.item,
+  const onChangeHandler = useCallback((fieldKey: fieldKeyType, val: any) => {
+    return props.onChange({
+      ...props.item,
       [fieldKey]: val,
     });
-  }
+  }, []);
 
-  render() {
-    const { title } = this.props;
-    const propExtender = (field: { props: { fieldKey: fieldKeyType } }) => ({
-      onChange: this.onChange,
-      value: this.props.item[field.props.fieldKey],
-      compact: this.props.compact,
-    });
-    return (
-      <Form className="CRUD" layout="vertical">
-        {title && <legend>{title}</legend>}
-        {recurseReactClone(this.props.children, Field, propExtender)}
-      </Form>
-    );
-  }
-}
+  const { title } = props;
+  const propExtender = (field: { props: { fieldKey: fieldKeyType } }) => ({
+    onChange: onChangeHandler,
+    value: props.item[field.props.fieldKey],
+    compact: props.compact,
+  });
+  return (
+    <Form className="CRUD" layout="vertical">
+      {title && <legend>{title}</legend>}
+      {recurseReactClone(props.children, Field, propExtender)}
+    </Form>
+  );
+};
+
+export default Fieldset;

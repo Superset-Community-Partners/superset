@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { AntdDropdown } from 'src/components';
 import { Menu } from 'src/components/Menu';
@@ -55,35 +56,28 @@ const defaultProps = {
   onChange: () => {},
 };
 
-class CssEditor extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      css: props.initialCss,
-    };
-    this.changeCss = this.changeCss.bind(this);
-    this.changeCssTemplate = this.changeCssTemplate.bind(this);
-  }
+const CssEditor = props => {
+  const [css, setCss] = useState(props.initialCss);
 
-  componentDidMount() {
+  useEffect(() => {
     AceCssEditor.preload();
-  }
-
-  changeCss(css) {
-    this.setState({ css }, () => {
-      this.props.onChange(css);
-    });
-  }
-
-  changeCssTemplate({ key }) {
-    this.changeCss(key);
-  }
-
-  renderTemplateSelector() {
-    if (this.props.templates) {
+  }, []);
+  const changeCssHandler = useCallback(
+    css => {
+      setStateHandler({ css }, () => {
+        props.onChange(css);
+      });
+    },
+    [css],
+  );
+  const changeCssTemplateHandler = useCallback(({ key }) => {
+    changeCssHandler(key);
+  }, []);
+  const renderTemplateSelectorHandler = useCallback(() => {
+    if (props.templates) {
       const menu = (
-        <Menu onClick={this.changeCssTemplate}>
-          {this.props.templates.map(template => (
+        <Menu onClick={changeCssTemplateHandler}>
+          {props.templates.map(template => (
             <Menu.Item key={template.css}>{template.label}</Menu.Item>
           ))}
         </Menu>
@@ -96,36 +90,34 @@ class CssEditor extends React.PureComponent {
       );
     }
     return null;
-  }
+  }, []);
 
-  render() {
-    return (
-      <ModalTrigger
-        triggerNode={this.props.triggerNode}
-        modalTitle={t('CSS')}
-        modalBody={
-          <StyledWrapper>
-            <div className="css-editor-header">
-              <h5>{t('Live CSS editor')}</h5>
-              {this.renderTemplateSelector()}
-            </div>
-            <AceCssEditor
-              className="css-editor"
-              minLines={12}
-              maxLines={30}
-              onChange={this.changeCss}
-              height="200px"
-              width="100%"
-              editorProps={{ $blockScrolling: true }}
-              enableLiveAutocompletion
-              value={this.state.css || ''}
-            />
-          </StyledWrapper>
-        }
-      />
-    );
-  }
-}
+  return (
+    <ModalTrigger
+      triggerNode={props.triggerNode}
+      modalTitle={t('CSS')}
+      modalBody={
+        <StyledWrapper>
+          <div className="css-editor-header">
+            <h5>{t('Live CSS editor')}</h5>
+            {renderTemplateSelectorHandler()}
+          </div>
+          <AceCssEditor
+            className="css-editor"
+            minLines={12}
+            maxLines={30}
+            onChange={changeCssHandler}
+            height="200px"
+            width="100%"
+            editorProps={{ $blockScrolling: true }}
+            enableLiveAutocompletion
+            value={css || ''}
+          />
+        </StyledWrapper>
+      }
+    />
+  );
+};
 
 CssEditor.propTypes = propTypes;
 CssEditor.defaultProps = defaultProps;

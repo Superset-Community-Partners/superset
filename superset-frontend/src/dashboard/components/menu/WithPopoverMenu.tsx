@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import cx from 'classnames';
 import { addAlpha, css, styled } from '@superset-ui/core';
 
@@ -103,13 +104,11 @@ const PopoverMenuStyles = styled.div`
   `}
 `;
 
-export default class WithPopoverMenu extends React.PureComponent<
-  WithPopoverMenuProps,
-  WithPopoverMenuState
-> {
-  container: ShouldFocusContainer;
+const WithPopoverMenu = (inputProps: WithPopoverMenuProps) => {
+  const [isFocused, setIsFocused] = useState(props.isFocused!);
 
-  static defaultProps = {
+  const container = useRef<ShouldFocusContainer>();
+  const props = {
     children: null,
     disableClick: false,
     onChangeFocus: null,
@@ -120,95 +119,90 @@ export default class WithPopoverMenu extends React.PureComponent<
       event.target.id === 'menu-item' ||
       event.target.parentNode?.id === 'menu-item',
     style: null,
+    ...inputProps,
   };
-
-  constructor(props: WithPopoverMenuProps) {
-    super(props);
-    this.state = {
-      isFocused: props.isFocused!,
+  const UNSAFE_componentWillReceivePropsHandler = useCallback(
+    (nextProps: WithPopoverMenuProps) => {
+      if (nextProps.editMode && nextProps.isFocused && !isFocused) {
+        document.addEventListener('click', handleClickHandler);
+        document.addEventListener('drag', handleClickHandler);
+        setIsFocused(true);
+      } else if (isFocused && !nextProps.editMode) {
+        document.removeEventListener('click', handleClickHandler);
+        document.removeEventListener('drag', handleClickHandler);
+        setIsFocused(false);
+      }
+    },
+    [isFocused],
+  );
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('click', handleClickHandler);
+      document.removeEventListener('drag', handleClickHandler);
     };
-    this.setRef = this.setRef.bind(this);
-    this.handleClick = this.handleClick.bind(this);
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps: WithPopoverMenuProps) {
-    if (nextProps.editMode && nextProps.isFocused && !this.state.isFocused) {
-      document.addEventListener('click', this.handleClick);
-      document.addEventListener('drag', this.handleClick);
-      this.setState({ isFocused: true });
-    } else if (this.state.isFocused && !nextProps.editMode) {
-      document.removeEventListener('click', this.handleClick);
-      document.removeEventListener('drag', this.handleClick);
-      this.setState({ isFocused: false });
-    }
-  }
-
-  componentWillUnmount() {
-    document.removeEventListener('click', this.handleClick);
-    document.removeEventListener('drag', this.handleClick);
-  }
-
-  setRef(ref: ShouldFocusContainer) {
-    this.container = ref;
-  }
-
-  handleClick(event: any) {
-    if (!this.props.editMode) {
-      return;
-    }
-    const {
-      onChangeFocus,
-      shouldFocus: shouldFocusFunc,
-      disableClick,
-    } = this.props;
-
-    const shouldFocus = shouldFocusFunc(event, this.container);
-
-    if (!disableClick && shouldFocus && !this.state.isFocused) {
-      // if not focused, set focus and add a window event listener to capture outside clicks
-      // this enables us to not set a click listener for ever item on a dashboard
-      document.addEventListener('click', this.handleClick);
-      document.addEventListener('drag', this.handleClick);
-      this.setState(() => ({ isFocused: true }));
-      if (onChangeFocus) {
-        onChangeFocus(true);
+  }, []);
+  const setRefHandler = useCallback((ref: ShouldFocusContainer) => {
+    container.current = ref;
+  }, []);
+  const handleClickHandler = useCallback(
+    (event: any) => {
+      if (!props.editMode) {
+        return;
       }
-    } else if (!shouldFocus && this.state.isFocused) {
-      document.removeEventListener('click', this.handleClick);
-      document.removeEventListener('drag', this.handleClick);
-      this.setState(() => ({ isFocused: false }));
-      if (onChangeFocus) {
-        onChangeFocus(false);
+      const {
+        onChangeFocus,
+        shouldFocus: shouldFocusFunc,
+        disableClick,
+      } = props;
+
+      const shouldFocus = shouldFocusFunc(event, container.current);
+
+      if (!disableClick && shouldFocus && !isFocused) {
+        // if not focused, set focus and add a window event listener to capture outside clicks
+        // this enables us to not set a click listener for ever item on a dashboard
+        document.addEventListener('click', handleClickHandler);
+        document.addEventListener('drag', handleClickHandler);
+        setStateHandler(() => ({ isFocused: true }));
+        if (onChangeFocus) {
+          onChangeFocus(true);
+        }
+      } else if (!shouldFocus && isFocused) {
+        document.removeEventListener('click', handleClickHandler);
+        document.removeEventListener('drag', handleClickHandler);
+        setStateHandler(() => ({ isFocused: false }));
+        if (onChangeFocus) {
+          onChangeFocus(false);
+        }
       }
-    }
-  }
+    },
+    [isFocused],
+  );
 
-  render() {
-    const { children, menuItems, editMode, style } = this.props;
-    const { isFocused } = this.state;
+  const { children, menuItems, editMode, style } = props;
 
-    return (
-      <WithPopoverMenuStyles
-        ref={this.setRef}
-        onClick={this.handleClick}
-        role="none"
-        className={cx(
-          'with-popover-menu',
-          editMode && isFocused && 'with-popover-menu--focused',
-        )}
-        style={style}
-      >
-        {children}
-        {editMode && isFocused && (menuItems?.length ?? 0) > 0 && (
-          <PopoverMenuStyles>
-            {menuItems.map((node: React.ReactNode, i: Number) => (
-              <div className="menu-item" key={`menu-item-${i}`}>
-                {node}
-              </div>
-            ))}
-          </PopoverMenuStyles>
-        )}
-      </WithPopoverMenuStyles>
-    );
-  }
-}
+  return (
+    <WithPopoverMenuStyles
+      ref={setRefHandler}
+      onClick={handleClickHandler}
+      role="none"
+      className={cx(
+        'with-popover-menu',
+        editMode && isFocused && 'with-popover-menu--focused',
+      )}
+      style={style}
+    >
+      {children}
+      {editMode && isFocused && (menuItems?.length ?? 0) > 0 && (
+        <PopoverMenuStyles>
+          {menuItems.map((node: React.ReactNode, i: Number) => (
+            <div className="menu-item" key={`menu-item-${i}`}>
+              {node}
+            </div>
+          ))}
+        </PopoverMenuStyles>
+      )}
+    </WithPopoverMenuStyles>
+  );
+};
+
+export default WithPopoverMenu;

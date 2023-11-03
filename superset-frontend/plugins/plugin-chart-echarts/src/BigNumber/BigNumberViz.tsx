@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { MouseEvent } from 'react';
+
+import { MouseEvent, useCallback } from 'react';
 import {
   t,
   getNumberFormatter,
@@ -41,8 +42,8 @@ const PROPORTION = {
   TRENDLINE: 0.3,
 };
 
-class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
-  static defaultProps = {
+const BigNumberVis = (inputProps: BigNumberVizProps) => {
+  const props = {
     className: '',
     headerFormatter: defaultNumberFormatter,
     formatTime: smartDateVerboseFormatter,
@@ -55,27 +56,25 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
     subheader: '',
     subheaderFontSize: PROPORTION.SUBHEADER,
     timeRangeFixed: false,
+    ...inputProps,
   };
-
-  getClassName() {
-    const { className, showTrendLine, bigNumberFallback } = this.props;
+  const getClassNameHandler = useCallback(() => {
+    const { className, showTrendLine, bigNumberFallback } = props;
     const names = `superset-legacy-chart-big-number ${className} ${
       bigNumberFallback ? 'is-fallback-value' : ''
     }`;
     if (showTrendLine) return names;
     return `${names} no-trendline`;
-  }
-
-  createTemporaryContainer() {
+  }, []);
+  const createTemporaryContainerHandler = useCallback(() => {
     const container = document.createElement('div');
-    container.className = this.getClassName();
+    container.className = getClassNameHandler();
     container.style.position = 'absolute'; // so it won't disrupt page layout
     container.style.opacity = '0'; // and not visible
     return container;
-  }
-
-  renderFallbackWarning() {
-    const { bigNumberFallback, formatTime, showTimestamp } = this.props;
+  }, []);
+  const renderFallbackWarningHandler = useCallback(() => {
+    const { bigNumberFallback, formatTime, showTimestamp } = props;
     if (!formatTime || !bigNumberFallback || showTimestamp) return null;
     return (
       <span
@@ -89,10 +88,9 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
         {t('Not up to date')}
       </span>
     );
-  }
-
-  renderKicker(maxHeight: number) {
-    const { timestamp, showTimestamp, formatTime, width } = this.props;
+  }, []);
+  const renderKickerHandler = useCallback((maxHeight: number) => {
+    const { timestamp, showTimestamp, formatTime, width } = props;
     if (
       !formatTime ||
       !showTimestamp ||
@@ -103,7 +101,7 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
 
     const text = timestamp === null ? '' : formatTime(timestamp);
 
-    const container = this.createTemporaryContainer();
+    const container = createTemporaryContainerHandler();
     document.body.append(container);
     const fontSize = computeMaxFontSize({
       text,
@@ -125,11 +123,10 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
         {text}
       </div>
     );
-  }
-
-  renderHeader(maxHeight: number) {
+  }, []);
+  const renderHeaderHandler = useCallback((maxHeight: number) => {
     const { bigNumber, headerFormatter, width, colorThresholdFormatters } =
-      this.props;
+      props;
     // @ts-ignore
     const text = bigNumber === null ? t('No data') : headerFormatter(bigNumber);
 
@@ -151,7 +148,7 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
       numberColor = 'black';
     }
 
-    const container = this.createTemporaryContainer();
+    const container = createTemporaryContainerHandler();
     document.body.append(container);
     const fontSize = computeMaxFontSize({
       text,
@@ -163,9 +160,9 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
     container.remove();
 
     const onContextMenu = (e: MouseEvent<HTMLDivElement>) => {
-      if (this.props.onContextMenu) {
+      if (props.onContextMenu) {
         e.preventDefault();
-        this.props.onContextMenu(e.nativeEvent.clientX, e.nativeEvent.clientY);
+        props.onContextMenu(e.nativeEvent.clientX, e.nativeEvent.clientY);
       }
     };
 
@@ -182,10 +179,9 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
         {text}
       </div>
     );
-  }
-
-  renderSubheader(maxHeight: number) {
-    const { bigNumber, subheader, width, bigNumberFallback } = this.props;
+  }, []);
+  const renderSubheaderHandler = useCallback((maxHeight: number) => {
+    const { bigNumber, subheader, width, bigNumberFallback } = props;
     let fontSize = 0;
 
     const NO_DATA_OR_HASNT_LANDED = t(
@@ -199,7 +195,7 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
       text = bigNumberFallback ? NO_DATA : NO_DATA_OR_HASNT_LANDED;
     }
     if (text) {
-      const container = this.createTemporaryContainer();
+      const container = createTemporaryContainerHandler();
       document.body.append(container);
       fontSize = computeMaxFontSize({
         text,
@@ -223,10 +219,9 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
       );
     }
     return null;
-  }
-
-  renderTrendline(maxHeight: number) {
-    const { width, trendLineData, echartOptions, refs } = this.props;
+  }, []);
+  const renderTrendlineHandler = useCallback((maxHeight: number) => {
+    const { width, trendLineData, echartOptions, refs } = props;
 
     // if can't find any non-null values, no point rendering the trendline
     if (!trendLineData?.some(d => d[1] !== null)) {
@@ -235,24 +230,22 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
 
     const eventHandlers: EventHandlers = {
       contextmenu: eventParams => {
-        if (this.props.onContextMenu) {
+        if (props.onContextMenu) {
           eventParams.event.stop();
           const { data } = eventParams;
           if (data) {
             const pointerEvent = eventParams.event.event;
             const drillToDetailFilters: BinaryQueryObjectFilterClause[] = [];
             drillToDetailFilters.push({
-              col: this.props.formData?.granularitySqla,
-              grain: this.props.formData?.timeGrainSqla,
+              col: props.formData?.granularitySqla,
+              grain: props.formData?.timeGrainSqla,
               op: '==',
               val: data[0],
-              formattedVal: this.props.xValueFormatter?.(data[0]),
+              formattedVal: props.xValueFormatter?.(data[0]),
             });
-            this.props.onContextMenu(
-              pointerEvent.clientX,
-              pointerEvent.clientY,
-              { drillToDetail: drillToDetailFilters },
-            );
+            props.onContextMenu(pointerEvent.clientX, pointerEvent.clientY, {
+              drillToDetail: drillToDetailFilters,
+            });
           }
         }
       },
@@ -269,55 +262,51 @@ class BigNumberVis extends React.PureComponent<BigNumberVizProps> {
         />
       )
     );
-  }
+  }, []);
 
-  render() {
-    const {
-      showTrendLine,
-      height,
-      kickerFontSize,
-      headerFontSize,
-      subheaderFontSize,
-    } = this.props;
-    const className = this.getClassName();
+  const {
+    showTrendLine,
+    height,
+    kickerFontSize,
+    headerFontSize,
+    subheaderFontSize,
+  } = props;
+  const className = getClassNameHandler();
 
-    if (showTrendLine) {
-      const chartHeight = Math.floor(PROPORTION.TRENDLINE * height);
-      const allTextHeight = height - chartHeight;
-
-      return (
-        <div className={className}>
-          <div className="text-container" style={{ height: allTextHeight }}>
-            {this.renderFallbackWarning()}
-            {this.renderKicker(
-              Math.ceil(
-                (kickerFontSize || 0) * (1 - PROPORTION.TRENDLINE) * height,
-              ),
-            )}
-            {this.renderHeader(
-              Math.ceil(headerFontSize * (1 - PROPORTION.TRENDLINE) * height),
-            )}
-            {this.renderSubheader(
-              Math.ceil(
-                subheaderFontSize * (1 - PROPORTION.TRENDLINE) * height,
-              ),
-            )}
-          </div>
-          {this.renderTrendline(chartHeight)}
-        </div>
-      );
-    }
+  if (showTrendLine) {
+    const chartHeight = Math.floor(PROPORTION.TRENDLINE * height);
+    const allTextHeight = height - chartHeight;
 
     return (
-      <div className={className} style={{ height }}>
-        {this.renderFallbackWarning()}
-        {this.renderKicker((kickerFontSize || 0) * height)}
-        {this.renderHeader(Math.ceil(headerFontSize * height))}
-        {this.renderSubheader(Math.ceil(subheaderFontSize * height))}
+      <div className={className}>
+        <div className="text-container" style={{ height: allTextHeight }}>
+          {renderFallbackWarningHandler()}
+          {renderKickerHandler(
+            Math.ceil(
+              (kickerFontSize || 0) * (1 - PROPORTION.TRENDLINE) * height,
+            ),
+          )}
+          {renderHeaderHandler(
+            Math.ceil(headerFontSize * (1 - PROPORTION.TRENDLINE) * height),
+          )}
+          {renderSubheaderHandler(
+            Math.ceil(subheaderFontSize * (1 - PROPORTION.TRENDLINE) * height),
+          )}
+        </div>
+        {renderTrendlineHandler(chartHeight)}
       </div>
     );
   }
-}
+
+  return (
+    <div className={className} style={{ height }}>
+      {renderFallbackWarningHandler()}
+      {renderKickerHandler((kickerFontSize || 0) * height)}
+      {renderHeaderHandler(Math.ceil(headerFontSize * height))}
+      {renderSubheaderHandler(Math.ceil(subheaderFontSize * height))}
+    </div>
+  );
+};
 
 export default styled(BigNumberVis)`
   ${({ theme }) => `

@@ -17,8 +17,8 @@
  * under the License.
  */
 /* eslint-disable react/no-array-index-key */
+
 import PropTypes from 'prop-types';
-import React from 'react';
 import { styled } from '@superset-ui/core';
 import TTestTable, { dataPropType } from './TTestTable';
 
@@ -115,34 +115,32 @@ const StyledDiv = styled.div`
   `}
 `;
 
-class PairedTTest extends React.PureComponent {
-  render() {
-    const { className, metrics, groups, data, alpha, pValPrec, liftValPrec } =
-      this.props;
+const PairedTTest = props => {
+  const { className, metrics, groups, data, alpha, pValPrec, liftValPrec } =
+    props;
 
-    return (
-      <StyledDiv>
-        <div className={`superset-legacy-chart-paired-t-test ${className}`}>
-          <div className="paired-ttest-table">
-            <div className="scrollbar-content">
-              {metrics.map((metric, i) => (
-                <TTestTable
-                  key={i}
-                  metric={metric}
-                  groups={groups}
-                  data={data[metric]}
-                  alpha={alpha}
-                  pValPrec={Math.min(pValPrec, 32)}
-                  liftValPrec={Math.min(liftValPrec, 32)}
-                />
-              ))}
-            </div>
+  return (
+    <StyledDiv>
+      <div className={`superset-legacy-chart-paired-t-test ${className}`}>
+        <div className="paired-ttest-table">
+          <div className="scrollbar-content">
+            {metrics.map((metric, i) => (
+              <TTestTable
+                key={i}
+                metric={metric}
+                groups={groups}
+                data={data[metric]}
+                alpha={alpha}
+                pValPrec={Math.min(pValPrec, 32)}
+                liftValPrec={Math.min(liftValPrec, 32)}
+              />
+            ))}
           </div>
         </div>
-      </StyledDiv>
-    );
-  }
-}
+      </div>
+    </StyledDiv>
+  );
+};
 
 PairedTTest.propTypes = propTypes;
 PairedTTest.defaultProps = defaultProps;

@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { Fragment, useState, useEffect } from 'react';
+
+import React, { Fragment, useState, useEffect, useCallback } from 'react';
 import rison from 'rison';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
@@ -580,25 +581,22 @@ const RightMenuWithQueryWrapper: React.FC<RightMenuProps> = props => {
 // Superset still has multiple entry points, and not all of them have
 // the same setup, and critically, not all of them have the QueryParamProvider.
 // This wrapper ensures the RightMenu renders regardless of the provider being present.
-class RightMenuErrorWrapper extends React.PureComponent<RightMenuProps> {
-  state = {
-    hasError: false,
-  };
+const RightMenuErrorWrapper = (props: RightMenuProps) => {
+  const [hasError, setHasError] = useState(false);
+  const [hasError, setHasError] = useState();
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  const noopHandler = useCallback(() => {}, []);
+
+  if (hasError) {
+    return <RightMenu setQuery={noopHandler} {...props} />;
   }
 
-  noop = () => {};
+  return props.children;
+};
 
-  render() {
-    if (this.state.hasError) {
-      return <RightMenu setQuery={this.noop} {...this.props} />;
-    }
-
-    return this.props.children;
-  }
-}
+RightMenuErrorWrapper.getDerivedStateFromError = () => {
+  return { hasError: true };
+};
 
 const RightMenuWrapper: React.FC<RightMenuProps> = props => (
   <RightMenuErrorWrapper {...props}>

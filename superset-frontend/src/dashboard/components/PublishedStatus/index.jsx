@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { t } from '@superset-ui/core';
 import { Tooltip } from 'src/components/Tooltip';
@@ -44,69 +45,67 @@ const publishedTooltip = t(
   'This dashboard is published. Click to make it a draft.',
 );
 
-export default class PublishedStatus extends React.Component {
-  componentDidMount() {
-    this.togglePublished = this.togglePublished.bind(this);
-  }
+const PublishedStatus = props => {
+  useEffect(() => {
+    togglePublishedHandler = togglePublishedHandler.bind(this);
+  }, []);
+  const togglePublishedHandler = useCallback(() => {
+    props.savePublished(props.dashboardId, !props.isPublished);
+  }, []);
 
-  togglePublished() {
-    this.props.savePublished(this.props.dashboardId, !this.props.isPublished);
-  }
-
-  render() {
-    // Show everybody the draft badge
-    if (!this.props.isPublished) {
-      // if they can edit the dash, make the badge a button
-      if (this.props.canEdit && this.props.canSave) {
-        return (
-          <Tooltip
-            id="unpublished-dashboard-tooltip"
-            placement="bottom"
-            title={draftButtonTooltip}
-          >
-            <Label
-              onClick={() => {
-                this.togglePublished();
-              }}
-            >
-              {t('Draft')}
-            </Label>
-          </Tooltip>
-        );
-      }
+  if (!props.isPublished) {
+    // if they can edit the dash, make the badge a button
+    if (props.canEdit && props.canSave) {
       return (
         <Tooltip
           id="unpublished-dashboard-tooltip"
           placement="bottom"
-          title={draftDivTooltip}
-        >
-          <Label>{t('Draft')}</Label>
-        </Tooltip>
-      );
-    }
-
-    // Show the published badge for the owner of the dashboard to toggle
-    if (this.props.canEdit && this.props.canSave) {
-      return (
-        <Tooltip
-          id="published-dashboard-tooltip"
-          placement="bottom"
-          title={publishedTooltip}
+          title={draftButtonTooltip}
         >
           <Label
             onClick={() => {
-              this.togglePublished();
+              togglePublishedHandler();
             }}
           >
-            {t('Published')}
+            {t('Draft')}
           </Label>
         </Tooltip>
       );
     }
-
-    // Don't show anything if one doesn't own the dashboard and it is published
-    return null;
+    return (
+      <Tooltip
+        id="unpublished-dashboard-tooltip"
+        placement="bottom"
+        title={draftDivTooltip}
+      >
+        <Label>{t('Draft')}</Label>
+      </Tooltip>
+    );
   }
-}
+
+  // Show the published badge for the owner of the dashboard to toggle
+  if (props.canEdit && props.canSave) {
+    return (
+      <Tooltip
+        id="published-dashboard-tooltip"
+        placement="bottom"
+        title={publishedTooltip}
+      >
+        <Label
+          onClick={() => {
+            togglePublishedHandler();
+          }}
+        >
+          {t('Published')}
+        </Label>
+      </Tooltip>
+    );
+  }
+
+  // Don't show anything if one doesn't own the dashboard and it is published
+  return null;
+};
+
+export default PublishedStatus;
 
 PublishedStatus.propTypes = propTypes;

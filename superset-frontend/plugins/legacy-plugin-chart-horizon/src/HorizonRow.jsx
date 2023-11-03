@@ -19,7 +19,8 @@
 /* eslint-disable no-continue, no-bitwise */
 /* eslint-disable react/jsx-sort-default-props */
 /* eslint-disable react/sort-prop-types */
-import React from 'react';
+
+import { useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { extent as d3Extent } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
@@ -66,21 +67,20 @@ const defaultProps = {
   yDomain: undefined,
 };
 
-class HorizonRow extends React.PureComponent {
-  componentDidMount() {
-    this.drawChart();
-  }
-
-  componentDidUpdate() {
-    this.drawChart();
-  }
-
-  componentWillUnmount() {
-    this.canvas = null;
-  }
-
-  drawChart() {
-    if (this.canvas) {
+const HorizonRow = props => {
+  useEffect(() => {
+    drawChartHandler();
+  }, []);
+  useEffect(() => {
+    drawChartHandler();
+  }, []);
+  useEffect(() => {
+    return () => {
+      canvasHandler = null;
+    };
+  }, []);
+  const drawChartHandler = useCallback(() => {
+    if (canvasHandler) {
       const {
         data: rawData,
         yDomain,
@@ -91,14 +91,14 @@ class HorizonRow extends React.PureComponent {
         colorScale,
         offsetX,
         mode,
-      } = this.props;
+      } = props;
 
       const data =
         colorScale === 'change'
           ? rawData.map(d => ({ ...d, y: d.y - rawData[0].y }))
           : rawData;
 
-      const context = this.canvas.getContext('2d');
+      const context = canvasHandler.getContext('2d');
       context.imageSmoothingEnabled = false;
       context.clearRect(0, 0, width, height);
       // Reset transform
@@ -185,25 +185,23 @@ class HorizonRow extends React.PureComponent {
         }
       }
     }
-  }
+  }, []);
 
-  render() {
-    const { className, title, width, height } = this.props;
+  const { className, title, width, height } = props;
 
-    return (
-      <div className={`horizon-row ${className}`}>
-        <span className="title">{title}</span>
-        <canvas
-          ref={c => {
-            this.canvas = c;
-          }}
-          width={width}
-          height={height}
-        />
-      </div>
-    );
-  }
-}
+  return (
+    <div className={`horizon-row ${className}`}>
+      <span className="title">{title}</span>
+      <canvas
+        ref={c => {
+          canvasHandler = c;
+        }}
+        width={width}
+        height={height}
+      />
+    </div>
+  );
+};
 
 HorizonRow.propTypes = propTypes;
 HorizonRow.defaultProps = defaultProps;

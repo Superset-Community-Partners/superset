@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { ReactNode } from 'react';
+
+import { ReactNode, useState, useEffect, useCallback } from 'react';
 import rison from 'rison';
 import querystring from 'query-string';
 import {
@@ -224,76 +225,59 @@ const StyledStepDescription = styled.div`
   `}
 `;
 
-export class ChartCreation extends React.PureComponent<
-  ChartCreationProps,
-  ChartCreationState
-> {
-  constructor(props: ChartCreationProps) {
-    super(props);
-    this.state = {
-      vizType: null,
-      canCreateDataset: findPermission(
-        'can_write',
-        'Dataset',
-        props.user.roles,
-      ),
-    };
+export const ChartCreation = (props: ChartCreationProps) => {
+  const [vizType, setVizType] = useState(null);
+  const [canCreateDataset, setCanCreateDataset] = useState(
+    findPermission('can_write', 'Dataset', props.user.roles),
+  );
+  const [datasource, setDatasource] = useState();
 
-    this.changeDatasource = this.changeDatasource.bind(this);
-    this.changeVizType = this.changeVizType.bind(this);
-    this.gotoSlice = this.gotoSlice.bind(this);
-    this.newLabel = this.newLabel.bind(this);
-    this.loadDatasources = this.loadDatasources.bind(this);
-    this.onVizTypeDoubleClick = this.onVizTypeDoubleClick.bind(this);
-  }
-
-  componentDidMount() {
+  useEffect(() => {
     const params = querystring.parse(window.location.search)?.dataset as string;
     if (params) {
-      this.loadDatasources(params, 0, 1).then(r => {
+      loadDatasources(params, 0, 1).then(r => {
         const datasource = r.data[0];
         // override here to force styling of option label
         // which expects a reactnode instead of string
         // @ts-expect-error
         datasource.label = datasource.customLabel;
-        this.setState({ datasource });
+        setDatasource(datasource);
       });
-      this.props.addSuccessToast(t('The dataset has been saved'));
+      props.addSuccessToast(t('The dataset has been saved'));
     }
-  }
-
-  exploreUrl() {
+  }, [datasource]);
+  const exploreUrlHandler = useCallback(() => {
     const dashboardId = getUrlParam(URL_PARAMS.dashboardId);
-    let url = `/explore/?viz_type=${this.state.vizType}&datasource=${this.state.datasource?.value}`;
+    let url = `/explore/?viz_type=${vizType}&datasource=${datasource?.value}`;
     if (isDefined(dashboardId)) {
       url += `&dashboard_id=${dashboardId}`;
     }
     return url;
-  }
-
-  gotoSlice() {
-    this.props.history.push(this.exploreUrl());
-  }
-
-  changeDatasource(datasource: { label: string; value: string }) {
-    this.setState({ datasource });
-  }
-
-  changeVizType(vizType: string | null) {
-    this.setState({ vizType });
-  }
-
-  isBtnDisabled() {
-    return !(this.state.datasource?.value && this.state.vizType);
-  }
-
-  onVizTypeDoubleClick() {
-    if (!this.isBtnDisabled()) {
-      this.gotoSlice();
+  }, [vizType, datasource]);
+  const gotoSliceHandler = useCallback(() => {
+    props.history.push(exploreUrlHandler());
+  }, []);
+  const changeDatasourceHandler = useCallback(
+    (datasource: { label: string; value: string }) => {
+      setDatasource(datasource);
+    },
+    [datasource],
+  );
+  const changeVizTypeHandler = useCallback(
+    (vizType: string | null) => {
+      setVizType(vizType);
+    },
+    [vizType],
+  );
+  const isBtnDisabledHandler = useCallback(() => {
+    return !(datasource?.value && vizType);
+  }, [datasource, vizType]);
+  const onVizTypeDoubleClickHandler = useCallback(() => {
+    if (!isBtnDisabledHandler()) {
+      gotoSliceHandler();
     }
-  }
-
-  newLabel(item: Dataset) {
+  }, []);
+  const newLabelHandler = useCallback((item: Dataset) => {
     return (
       <Tooltip
         mouseEnterDelay={1}
@@ -310,9 +294,8 @@ export class ChartCreation extends React.PureComponent<
         <StyledLabel>{item.table_name}</StyledLabel>
       </Tooltip>
     );
-  }
-
-  loadDatasources(search: string, page: number, pageSize: number) {
+  }, []);
+  const loadDatasources = useMemo(() => {
     const query = rison.encode({
       columns: ['id', 'table_name', 'description', 'datasource_type'],
       filters: [{ col: 'table_name', opr: 'ct', value: search }],
@@ -332,7 +315,7 @@ export class ChartCreation extends React.PureComponent<
       }[] = response.json.result.map((item: Dataset) => ({
         id: item.id,
         value: `${item.id}__${item.datasource_type}`,
-        customLabel: this.newLabel(item),
+        customLabel: newLabelHandler(item),
         label: item.table_name,
       }));
       return {
@@ -340,99 +323,97 @@ export class ChartCreation extends React.PureComponent<
         totalCount: response.json.count,
       };
     });
-  }
+  }, []);
 
-  render() {
-    const isButtonDisabled = this.isBtnDisabled();
-    const VIEW_INSTRUCTIONS_TEXT = t('view instructions');
-    const datasetHelpText = this.state.canCreateDataset ? (
-      <span data-test="dataset-write">
-        <Link to="/dataset/add/" data-test="add-chart-new-dataset">
-          {t('Add a dataset')}{' '}
-        </Link>
-        {t('or')}{' '}
-        <a
-          href="https://superset.apache.org/docs/creating-charts-dashboards/creating-your-first-dashboard/#registering-a-new-table"
-          rel="noopener noreferrer"
-          target="_blank"
-          data-test="add-chart-new-dataset-instructions"
-        >
-          {`${VIEW_INSTRUCTIONS_TEXT} `}
-          <i className="fa fa-external-link" />
-        </a>
-        .
-      </span>
-    ) : (
-      <span data-test="no-dataset-write">
-        <a
-          href="https://superset.apache.org/docs/creating-charts-dashboards/creating-your-first-dashboard/#registering-a-new-table"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          {`${VIEW_INSTRUCTIONS_TEXT} `}
-          <i className="fa fa-external-link" />
-        </a>
-        .
-      </span>
-    );
+  const isButtonDisabled = isBtnDisabledHandler();
+  const VIEW_INSTRUCTIONS_TEXT = t('view instructions');
+  const datasetHelpText = canCreateDataset ? (
+    <span data-test="dataset-write">
+      <Link to="/dataset/add/" data-test="add-chart-new-dataset">
+        {t('Add a dataset')}{' '}
+      </Link>
+      {t('or')}{' '}
+      <a
+        href="https://superset.apache.org/docs/creating-charts-dashboards/creating-your-first-dashboard/#registering-a-new-table"
+        rel="noopener noreferrer"
+        target="_blank"
+        data-test="add-chart-new-dataset-instructions"
+      >
+        {`${VIEW_INSTRUCTIONS_TEXT} `}
+        <i className="fa fa-external-link" />
+      </a>
+      .
+    </span>
+  ) : (
+    <span data-test="no-dataset-write">
+      <a
+        href="https://superset.apache.org/docs/creating-charts-dashboards/creating-your-first-dashboard/#registering-a-new-table"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        {`${VIEW_INSTRUCTIONS_TEXT} `}
+        <i className="fa fa-external-link" />
+      </a>
+      .
+    </span>
+  );
 
-    return (
-      <StyledContainer>
-        <h3>{t('Create a new chart')}</h3>
-        <Steps direction="vertical" size="small">
-          <Steps.Step
-            title={<StyledStepTitle>{t('Choose a dataset')}</StyledStepTitle>}
-            status={this.state.datasource?.value ? 'finish' : 'process'}
-            description={
-              <StyledStepDescription className="dataset">
-                <AsyncSelect
-                  autoFocus
-                  ariaLabel={t('Dataset')}
-                  name="select-datasource"
-                  onChange={this.changeDatasource}
-                  options={this.loadDatasources}
-                  optionFilterProps={['id', 'label']}
-                  placeholder={t('Choose a dataset')}
-                  showSearch
-                  value={this.state.datasource}
-                />
-                {datasetHelpText}
-              </StyledStepDescription>
-            }
-          />
-          <Steps.Step
-            title={<StyledStepTitle>{t('Choose chart type')}</StyledStepTitle>}
-            status={this.state.vizType ? 'finish' : 'process'}
-            description={
-              <StyledStepDescription>
-                <VizTypeGallery
-                  denyList={denyList}
-                  className="viz-gallery"
-                  onChange={this.changeVizType}
-                  onDoubleClick={this.onVizTypeDoubleClick}
-                  selectedViz={this.state.vizType}
-                />
-              </StyledStepDescription>
-            }
-          />
-        </Steps>
-        <div className="footer">
-          {isButtonDisabled && (
-            <span>
-              {t('Please select both a Dataset and a Chart type to proceed')}
-            </span>
-          )}
-          <Button
-            buttonStyle="primary"
-            disabled={isButtonDisabled}
-            onClick={this.gotoSlice}
-          >
-            {t('Create new chart')}
-          </Button>
-        </div>
-      </StyledContainer>
-    );
-  }
-}
+  return (
+    <StyledContainer>
+      <h3>{t('Create a new chart')}</h3>
+      <Steps direction="vertical" size="small">
+        <Steps.Step
+          title={<StyledStepTitle>{t('Choose a dataset')}</StyledStepTitle>}
+          status={datasource?.value ? 'finish' : 'process'}
+          description={
+            <StyledStepDescription className="dataset">
+              <AsyncSelect
+                autoFocus
+                ariaLabel={t('Dataset')}
+                name="select-datasource"
+                onChange={changeDatasourceHandler}
+                options={loadDatasources}
+                optionFilterProps={['id', 'label']}
+                placeholder={t('Choose a dataset')}
+                showSearch
+                value={datasource}
+              />
+              {datasetHelpText}
+            </StyledStepDescription>
+          }
+        />
+        <Steps.Step
+          title={<StyledStepTitle>{t('Choose chart type')}</StyledStepTitle>}
+          status={vizType ? 'finish' : 'process'}
+          description={
+            <StyledStepDescription>
+              <VizTypeGallery
+                denyList={denyList}
+                className="viz-gallery"
+                onChange={changeVizTypeHandler}
+                onDoubleClick={onVizTypeDoubleClickHandler}
+                selectedViz={vizType}
+              />
+            </StyledStepDescription>
+          }
+        />
+      </Steps>
+      <div className="footer">
+        {isButtonDisabled && (
+          <span>
+            {t('Please select both a Dataset and a Chart type to proceed')}
+          </span>
+        )}
+        <Button
+          buttonStyle="primary"
+          disabled={isButtonDisabled}
+          onClick={gotoSliceHandler}
+        >
+          {t('Create new chart')}
+        </Button>
+      </div>
+    </StyledContainer>
+  );
+};
 
 export default withRouter(withToasts(ChartCreation));

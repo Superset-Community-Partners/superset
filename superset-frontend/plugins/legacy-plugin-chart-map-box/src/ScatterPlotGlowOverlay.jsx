@@ -17,8 +17,9 @@
  * under the License.
  */
 /* eslint-disable react/require-default-props */
+
 import PropTypes from 'prop-types';
-import React from 'react';
+import { useCallback } from 'react';
 import { CanvasOverlay } from 'react-map-gl';
 import { kmToPixels, MILES_PER_KM } from './utils/geo';
 import roundDecimal from './utils/roundDecimal';
@@ -73,13 +74,8 @@ const computeClusterLabel = (properties, aggregation) => {
   return count;
 };
 
-class ScatterPlotGlowOverlay extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.redraw = this.redraw.bind(this);
-  }
-
-  drawText(ctx, pixel, options = {}) {
+const ScatterPlotGlowOverlay = props => {
+  const drawTextHandler = useCallback((ctx, pixel, options = {}) => {
     const IS_DARK_THRESHOLD = 110;
     const {
       fontHeight = 0,
@@ -107,172 +103,174 @@ class ScatterPlotGlowOverlay extends React.PureComponent {
       ctx.font = `${scale * maxWidth}px sans-serif`;
     }
 
-    const { compositeOperation } = this.props;
+    const { compositeOperation } = props;
 
     ctx.fillText(label, pixel[0], pixel[1]);
     ctx.globalCompositeOperation = compositeOperation;
     ctx.shadowBlur = 0;
     ctx.shadowColor = '';
-  }
-
+  }, []);
   // Modified: https://github.com/uber/react-map-gl/blob/master/overlays/scatterplot.react.js
-  redraw({ width, height, ctx, isDragging, project }) {
-    const {
-      aggregation,
-      compositeOperation,
-      dotRadius,
-      lngLatAccessor,
-      locations,
-      pointRadiusUnit,
-      renderWhileDragging,
-      rgb,
-      zoom,
-    } = this.props;
+  const redrawHandler = useCallback(
+    ({ width, height, ctx, isDragging, project }) => {
+      const {
+        aggregation,
+        compositeOperation,
+        dotRadius,
+        lngLatAccessor,
+        locations,
+        pointRadiusUnit,
+        renderWhileDragging,
+        rgb,
+        zoom,
+      } = props;
 
-    const radius = dotRadius;
-    const clusterLabelMap = [];
+      const radius = dotRadius;
+      const clusterLabelMap = [];
 
-    locations.forEach((location, i) => {
-      if (location.properties.cluster) {
-        clusterLabelMap[i] = computeClusterLabel(
-          location.properties,
-          aggregation,
-        );
-      }
-    }, this);
-
-    const maxLabel = Math.max(...clusterLabelMap.filter(v => !Number.isNaN(v)));
-
-    ctx.clearRect(0, 0, width, height);
-    ctx.globalCompositeOperation = compositeOperation;
-
-    if ((renderWhileDragging || !isDragging) && locations) {
-      locations.forEach(function _forEach(location, i) {
-        const pixel = project(lngLatAccessor(location));
-        const pixelRounded = [
-          roundDecimal(pixel[0], 1),
-          roundDecimal(pixel[1], 1),
-        ];
-
-        if (
-          pixelRounded[0] + radius >= 0 &&
-          pixelRounded[0] - radius < width &&
-          pixelRounded[1] + radius >= 0 &&
-          pixelRounded[1] - radius < height
-        ) {
-          ctx.beginPath();
-          if (location.properties.cluster) {
-            let clusterLabel = clusterLabelMap[i];
-            const scaledRadius = roundDecimal(
-              (clusterLabel / maxLabel) ** 0.5 * radius,
-              1,
-            );
-            const fontHeight = roundDecimal(scaledRadius * 0.5, 1);
-            const [x, y] = pixelRounded;
-            const gradient = ctx.createRadialGradient(
-              x,
-              y,
-              scaledRadius,
-              x,
-              y,
-              0,
-            );
-
-            gradient.addColorStop(
-              1,
-              `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, 0.8)`,
-            );
-            gradient.addColorStop(
-              0,
-              `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, 0)`,
-            );
-            ctx.arc(
-              pixelRounded[0],
-              pixelRounded[1],
-              scaledRadius,
-              0,
-              Math.PI * 2,
-            );
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            if (Number.isFinite(parseFloat(clusterLabel))) {
-              if (clusterLabel >= 10000) {
-                clusterLabel = `${Math.round(clusterLabel / 1000)}k`;
-              } else if (clusterLabel >= 1000) {
-                clusterLabel = `${Math.round(clusterLabel / 100) / 10}k`;
-              }
-              this.drawText(ctx, pixelRounded, {
-                fontHeight,
-                label: clusterLabel,
-                radius: scaledRadius,
-                rgb,
-                shadow: true,
-              });
-            }
-          } else {
-            const defaultRadius = radius / 6;
-            const radiusProperty = location.properties.radius;
-            const pointMetric = location.properties.metric;
-            let pointRadius =
-              radiusProperty === null ? defaultRadius : radiusProperty;
-            let pointLabel;
-
-            if (radiusProperty !== null) {
-              const pointLatitude = lngLatAccessor(location)[1];
-              if (pointRadiusUnit === 'Kilometers') {
-                pointLabel = `${roundDecimal(pointRadius, 2)}km`;
-                pointRadius = kmToPixels(pointRadius, pointLatitude, zoom);
-              } else if (pointRadiusUnit === 'Miles') {
-                pointLabel = `${roundDecimal(pointRadius, 2)}mi`;
-                pointRadius = kmToPixels(
-                  pointRadius * MILES_PER_KM,
-                  pointLatitude,
-                  zoom,
-                );
-              }
-            }
-
-            if (pointMetric !== null) {
-              pointLabel = Number.isFinite(parseFloat(pointMetric))
-                ? roundDecimal(pointMetric, 2)
-                : pointMetric;
-            }
-
-            // Fall back to default points if pointRadius wasn't a numerical column
-            if (!pointRadius) {
-              pointRadius = defaultRadius;
-            }
-
-            ctx.arc(
-              pixelRounded[0],
-              pixelRounded[1],
-              roundDecimal(pointRadius, 1),
-              0,
-              Math.PI * 2,
-            );
-            ctx.fillStyle = `rgb(${rgb[1]}, ${rgb[2]}, ${rgb[3]})`;
-            ctx.fill();
-
-            if (pointLabel !== undefined) {
-              this.drawText(ctx, pixelRounded, {
-                fontHeight: roundDecimal(pointRadius, 1),
-                label: pointLabel,
-                radius: pointRadius,
-                rgb,
-                shadow: false,
-              });
-            }
-          }
+      locations.forEach((location, i) => {
+        if (location.properties.cluster) {
+          clusterLabelMap[i] = computeClusterLabel(
+            location.properties,
+            aggregation,
+          );
         }
       }, this);
-    }
-  }
 
-  render() {
-    return <CanvasOverlay redraw={this.redraw} />;
-  }
-}
+      const maxLabel = Math.max(
+        ...clusterLabelMap.filter(v => !Number.isNaN(v)),
+      );
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.globalCompositeOperation = compositeOperation;
+
+      if ((renderWhileDragging || !isDragging) && locations) {
+        locations.forEach(function _forEach(location, i) {
+          const pixel = project(lngLatAccessor(location));
+          const pixelRounded = [
+            roundDecimal(pixel[0], 1),
+            roundDecimal(pixel[1], 1),
+          ];
+
+          if (
+            pixelRounded[0] + radius >= 0 &&
+            pixelRounded[0] - radius < width &&
+            pixelRounded[1] + radius >= 0 &&
+            pixelRounded[1] - radius < height
+          ) {
+            ctx.beginPath();
+            if (location.properties.cluster) {
+              let clusterLabel = clusterLabelMap[i];
+              const scaledRadius = roundDecimal(
+                (clusterLabel / maxLabel) ** 0.5 * radius,
+                1,
+              );
+              const fontHeight = roundDecimal(scaledRadius * 0.5, 1);
+              const [x, y] = pixelRounded;
+              const gradient = ctx.createRadialGradient(
+                x,
+                y,
+                scaledRadius,
+                x,
+                y,
+                0,
+              );
+
+              gradient.addColorStop(
+                1,
+                `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, 0.8)`,
+              );
+              gradient.addColorStop(
+                0,
+                `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, 0)`,
+              );
+              ctx.arc(
+                pixelRounded[0],
+                pixelRounded[1],
+                scaledRadius,
+                0,
+                Math.PI * 2,
+              );
+              ctx.fillStyle = gradient;
+              ctx.fill();
+
+              if (Number.isFinite(parseFloat(clusterLabel))) {
+                if (clusterLabel >= 10000) {
+                  clusterLabel = `${Math.round(clusterLabel / 1000)}k`;
+                } else if (clusterLabel >= 1000) {
+                  clusterLabel = `${Math.round(clusterLabel / 100) / 10}k`;
+                }
+                drawTextHandler(ctx, pixelRounded, {
+                  fontHeight,
+                  label: clusterLabel,
+                  radius: scaledRadius,
+                  rgb,
+                  shadow: true,
+                });
+              }
+            } else {
+              const defaultRadius = radius / 6;
+              const radiusProperty = location.properties.radius;
+              const pointMetric = location.properties.metric;
+              let pointRadius =
+                radiusProperty === null ? defaultRadius : radiusProperty;
+              let pointLabel;
+
+              if (radiusProperty !== null) {
+                const pointLatitude = lngLatAccessor(location)[1];
+                if (pointRadiusUnit === 'Kilometers') {
+                  pointLabel = `${roundDecimal(pointRadius, 2)}km`;
+                  pointRadius = kmToPixels(pointRadius, pointLatitude, zoom);
+                } else if (pointRadiusUnit === 'Miles') {
+                  pointLabel = `${roundDecimal(pointRadius, 2)}mi`;
+                  pointRadius = kmToPixels(
+                    pointRadius * MILES_PER_KM,
+                    pointLatitude,
+                    zoom,
+                  );
+                }
+              }
+
+              if (pointMetric !== null) {
+                pointLabel = Number.isFinite(parseFloat(pointMetric))
+                  ? roundDecimal(pointMetric, 2)
+                  : pointMetric;
+              }
+
+              // Fall back to default points if pointRadius wasn't a numerical column
+              if (!pointRadius) {
+                pointRadius = defaultRadius;
+              }
+
+              ctx.arc(
+                pixelRounded[0],
+                pixelRounded[1],
+                roundDecimal(pointRadius, 1),
+                0,
+                Math.PI * 2,
+              );
+              ctx.fillStyle = `rgb(${rgb[1]}, ${rgb[2]}, ${rgb[3]})`;
+              ctx.fill();
+
+              if (pointLabel !== undefined) {
+                drawTextHandler(ctx, pixelRounded, {
+                  fontHeight: roundDecimal(pointRadius, 1),
+                  label: pointLabel,
+                  radius: pointRadius,
+                  rgb,
+                  shadow: false,
+                });
+              }
+            }
+          }
+        }, this);
+      }
+    },
+    [],
+  );
+
+  return <CanvasOverlay redraw={redrawHandler} />;
+};
 
 ScatterPlotGlowOverlay.propTypes = propTypes;
 ScatterPlotGlowOverlay.defaultProps = defaultProps;

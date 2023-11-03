@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 import { getEmptyImage } from 'react-dnd-html5-backend';
-import React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { DragSource, DropTarget } from 'react-dnd';
 import cx from 'classnames';
@@ -133,90 +134,81 @@ const DragDroppableStyles = styled.div`
   `};
 `;
 // export unwrapped component for testing
-export class UnwrappedDragDroppable extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      dropIndicator: null, // this gets set/modified by the react-dnd HOCs
+export const UnwrappedDragDroppable = props => {
+  const [dropIndicator, setDropIndicator] = useState(null);
+
+  useEffect(() => {
+    mountedHandler = true;
+  }, []);
+  useEffect(() => {
+    return () => {
+      mountedHandler = false;
     };
-    this.setRef = this.setRef.bind(this);
-  }
-
-  componentDidMount() {
-    this.mounted = true;
-  }
-
-  componentWillUnmount() {
-    this.mounted = false;
-  }
-
-  setRef(ref) {
-    this.ref = ref;
+  }, []);
+  const setRefHandler = useCallback(ref => {
+    refHandler = ref;
     // this is needed for a custom drag preview
-    if (this.props.useEmptyDragPreview) {
-      this.props.dragPreviewRef(getEmptyImage(), {
+    if (props.useEmptyDragPreview) {
+      props.dragPreviewRef(getEmptyImage(), {
         // IE fallback: specify that we'd rather screenshot the node
         // when it already knows it's being dragged so we can hide it with CSS.
         captureDraggingState: true,
       });
     } else {
-      this.props.dragPreviewRef(ref);
+      props.dragPreviewRef(ref);
     }
-    this.props.droppableRef?.(ref);
-  }
+    props.droppableRef?.(ref);
+  }, []);
 
-  render() {
-    const {
-      children,
-      className,
-      orientation,
-      dragSourceRef,
-      disableDragDrop,
-      isDragging,
-      isDraggingOver,
-      style,
-      editMode,
-    } = this.props;
+  const {
+    children,
+    className,
+    orientation,
+    dragSourceRef,
+    disableDragDrop,
+    isDragging,
+    isDraggingOver,
+    style,
+    editMode,
+  } = props;
 
-    const { dropIndicator } = this.state;
-    const dropIndicatorProps =
-      isDraggingOver && dropIndicator && !disableDragDrop
-        ? {
-            className: cx(
-              'drop-indicator',
-              dropIndicator === DROP_TOP && 'drop-indicator--top',
-              dropIndicator === DROP_BOTTOM && 'drop-indicator--bottom',
-              dropIndicator === DROP_LEFT && 'drop-indicator--left',
-              dropIndicator === DROP_RIGHT && 'drop-indicator--right',
-            ),
-          }
-        : null;
-
-    const childProps = editMode
+  const dropIndicatorProps =
+    isDraggingOver && dropIndicator && !disableDragDrop
       ? {
-          dragSourceRef,
-          dropIndicatorProps,
+          className: cx(
+            'drop-indicator',
+            dropIndicator === DROP_TOP && 'drop-indicator--top',
+            dropIndicator === DROP_BOTTOM && 'drop-indicator--bottom',
+            dropIndicator === DROP_LEFT && 'drop-indicator--left',
+            dropIndicator === DROP_RIGHT && 'drop-indicator--right',
+          ),
         }
-      : {};
+      : null;
 
-    return (
-      <DragDroppableStyles
-        style={style}
-        ref={this.setRef}
-        data-test="dragdroppable-object"
-        className={cx(
-          'dragdroppable',
-          orientation === 'row' && 'dragdroppable-row',
-          orientation === 'column' && 'dragdroppable-column',
-          isDragging && 'dragdroppable--dragging',
-          className,
-        )}
-      >
-        {children(childProps)}
-      </DragDroppableStyles>
-    );
-  }
-}
+  const childProps = editMode
+    ? {
+        dragSourceRef,
+        dropIndicatorProps,
+      }
+    : {};
+
+  return (
+    <DragDroppableStyles
+      style={style}
+      ref={setRefHandler}
+      data-test="dragdroppable-object"
+      className={cx(
+        'dragdroppable',
+        orientation === 'row' && 'dragdroppable-row',
+        orientation === 'column' && 'dragdroppable-column',
+        isDragging && 'dragdroppable--dragging',
+        className,
+      )}
+    >
+      {children(childProps)}
+    </DragDroppableStyles>
+  );
+};
 
 UnwrappedDragDroppable.propTypes = propTypes;
 UnwrappedDragDroppable.defaultProps = defaultProps;

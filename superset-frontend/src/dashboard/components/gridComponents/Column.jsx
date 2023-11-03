@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { css, styled, t } from '@superset-ui/core';
@@ -99,31 +100,18 @@ const emptyColumnContentStyles = theme => css`
   color: ${theme.colors.text.label};
 `;
 
-class Column extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isFocused: false,
-    };
-    this.handleChangeBackground = this.handleUpdateMeta.bind(
-      this,
-      'background',
-    );
-    this.handleChangeFocus = this.handleChangeFocus.bind(this);
-    this.handleDeleteComponent = this.handleDeleteComponent.bind(this);
-  }
+const Column = props => {
+  const [isFocused, setIsFocused] = useState(false);
 
-  handleDeleteComponent() {
-    const { deleteComponent, id, parentId } = this.props;
+  const handleDeleteComponentHandler = useCallback(() => {
+    const { deleteComponent, id, parentId } = props;
     deleteComponent(id, parentId);
-  }
-
-  handleChangeFocus(nextFocus) {
-    this.setState(() => ({ isFocused: Boolean(nextFocus) }));
-  }
-
-  handleUpdateMeta(metaKey, nextValue) {
-    const { updateComponents, component } = this.props;
+  }, []);
+  const handleChangeFocusHandler = useCallback(nextFocus => {
+    setStateHandler(() => ({ isFocused: Boolean(nextFocus) }));
+  }, []);
+  const handleUpdateMetaHandler = useCallback((metaKey, nextValue) => {
+    const { updateComponents, component } = props;
     if (nextValue && component.meta[metaKey] !== nextValue) {
       updateComponents({
         [component.id]: {
@@ -135,117 +123,114 @@ class Column extends React.PureComponent {
         },
       });
     }
-  }
+  }, []);
 
-  render() {
-    const {
-      component: columnComponent,
-      parentComponent,
-      index,
-      availableColumnCount,
-      columnWidth,
-      minColumnWidth,
-      depth,
-      onResizeStart,
-      onResize,
-      onResizeStop,
-      handleComponentDrop,
-      editMode,
-      onChangeTab,
-      isComponentVisible,
-    } = this.props;
+  const {
+    component: columnComponent,
+    parentComponent,
+    index,
+    availableColumnCount,
+    columnWidth,
+    minColumnWidth,
+    depth,
+    onResizeStart,
+    onResize,
+    onResizeStop,
+    handleComponentDrop,
+    editMode,
+    onChangeTab,
+    isComponentVisible,
+  } = props;
 
-    const columnItems = columnComponent.children || [];
-    const backgroundStyle = backgroundStyleOptions.find(
-      opt =>
-        opt.value ===
-        (columnComponent.meta.background || BACKGROUND_TRANSPARENT),
-    );
+  const columnItems = columnComponent.children || [];
+  const backgroundStyle = backgroundStyleOptions.find(
+    opt =>
+      opt.value === (columnComponent.meta.background || BACKGROUND_TRANSPARENT),
+  );
 
-    return (
-      <DragDroppable
-        component={columnComponent}
-        parentComponent={parentComponent}
-        orientation="column"
-        index={index}
-        depth={depth}
-        onDrop={handleComponentDrop}
-        editMode={editMode}
-      >
-        {({ dropIndicatorProps, dragSourceRef }) => (
-          <ResizableContainer
-            id={columnComponent.id}
-            adjustableWidth
-            adjustableHeight={false}
-            widthStep={columnWidth}
-            widthMultiple={columnComponent.meta.width}
-            minWidthMultiple={minColumnWidth}
-            maxWidthMultiple={
-              availableColumnCount + (columnComponent.meta.width || 0)
-            }
-            onResizeStart={onResizeStart}
-            onResize={onResize}
-            onResizeStop={onResizeStop}
+  return (
+    <DragDroppable
+      component={columnComponent}
+      parentComponent={parentComponent}
+      orientation="column"
+      index={index}
+      depth={depth}
+      onDrop={handleComponentDrop}
+      editMode={editMode}
+    >
+      {({ dropIndicatorProps, dragSourceRef }) => (
+        <ResizableContainer
+          id={columnComponent.id}
+          adjustableWidth
+          adjustableHeight={false}
+          widthStep={columnWidth}
+          widthMultiple={columnComponent.meta.width}
+          minWidthMultiple={minColumnWidth}
+          maxWidthMultiple={
+            availableColumnCount + (columnComponent.meta.width || 0)
+          }
+          onResizeStart={onResizeStart}
+          onResize={onResize}
+          onResizeStop={onResizeStop}
+          editMode={editMode}
+        >
+          <WithPopoverMenu
+            isFocused={isFocused}
+            onChangeFocus={handleChangeFocusHandler}
+            disableClick
+            menuItems={[
+              <BackgroundStyleDropdown
+                id={`${columnComponent.id}-background`}
+                value={columnComponent.meta.background}
+                onChange={handleChangeBackgroundHandler}
+              />,
+            ]}
             editMode={editMode}
           >
-            <WithPopoverMenu
-              isFocused={this.state.isFocused}
-              onChangeFocus={this.handleChangeFocus}
-              disableClick
-              menuItems={[
-                <BackgroundStyleDropdown
-                  id={`${columnComponent.id}-background`}
-                  value={columnComponent.meta.background}
-                  onChange={this.handleChangeBackground}
-                />,
-              ]}
-              editMode={editMode}
+            {editMode && (
+              <HoverMenu innerRef={dragSourceRef} position="top">
+                <DragHandle position="top" />
+                <DeleteComponentButton
+                  onDelete={handleDeleteComponentHandler}
+                />
+                <IconButton
+                  onClick={handleChangeFocusHandler}
+                  icon={<Icons.Cog iconSize="xl" />}
+                />
+              </HoverMenu>
+            )}
+            <ColumnStyles
+              className={cx('grid-column', backgroundStyle.className)}
             >
-              {editMode && (
-                <HoverMenu innerRef={dragSourceRef} position="top">
-                  <DragHandle position="top" />
-                  <DeleteComponentButton
-                    onDelete={this.handleDeleteComponent}
+              {columnItems.length === 0 ? (
+                <div css={emptyColumnContentStyles}>{t('Empty column')}</div>
+              ) : (
+                columnItems.map((componentId, itemIndex) => (
+                  <DashboardComponent
+                    key={componentId}
+                    id={componentId}
+                    parentId={columnComponent.id}
+                    depth={depth + 1}
+                    index={itemIndex}
+                    availableColumnCount={columnComponent.meta.width}
+                    columnWidth={columnWidth}
+                    onResizeStart={onResizeStart}
+                    onResize={onResize}
+                    onResizeStop={onResizeStop}
+                    isComponentVisible={isComponentVisible}
+                    onChangeTab={onChangeTab}
                   />
-                  <IconButton
-                    onClick={this.handleChangeFocus}
-                    icon={<Icons.Cog iconSize="xl" />}
-                  />
-                </HoverMenu>
+                ))
               )}
-              <ColumnStyles
-                className={cx('grid-column', backgroundStyle.className)}
-              >
-                {columnItems.length === 0 ? (
-                  <div css={emptyColumnContentStyles}>{t('Empty column')}</div>
-                ) : (
-                  columnItems.map((componentId, itemIndex) => (
-                    <DashboardComponent
-                      key={componentId}
-                      id={componentId}
-                      parentId={columnComponent.id}
-                      depth={depth + 1}
-                      index={itemIndex}
-                      availableColumnCount={columnComponent.meta.width}
-                      columnWidth={columnWidth}
-                      onResizeStart={onResizeStart}
-                      onResize={onResize}
-                      onResizeStop={onResizeStop}
-                      isComponentVisible={isComponentVisible}
-                      onChangeTab={onChangeTab}
-                    />
-                  ))
-                )}
 
-                {dropIndicatorProps && <div {...dropIndicatorProps} />}
-              </ColumnStyles>
-            </WithPopoverMenu>
-          </ResizableContainer>
-        )}
-      </DragDroppable>
-    );
-  }
-}
+              {dropIndicatorProps && <div {...dropIndicatorProps} />}
+            </ColumnStyles>
+          </WithPopoverMenu>
+        </ResizableContainer>
+      )}
+    </DragDroppable>
+  );
+};
 
 Column.propTypes = propTypes;
 Column.defaultProps = defaultProps;

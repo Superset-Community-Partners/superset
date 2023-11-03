@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState, useEffect, useCallback } from 'react';
 import {
   SupersetClient,
   Method,
@@ -53,29 +53,27 @@ export const renderError = (error: Error) => (
   </div>
 );
 
-export default class VerifyCORS extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { didVerify: false };
-    this.handleVerify = this.handleVerify.bind(this);
-  }
+const VerifyCORS = (props: Props) => {
+  const [didVerify, setDidVerify] = useState(false);
+  const [error, setError] = useState();
+  const [payload, setPayload] = useState();
 
-  componentDidUpdate(prevProps: Props) {
-    const { endpoint, host, postPayload, method } = this.props;
+  useEffect(() => {
+    const { endpoint, host, postPayload, method } = props;
     if (
-      (this.state.didVerify || this.state.error) &&
+      (didVerify || error) &&
       (prevProps.endpoint !== endpoint ||
         prevProps.host !== host ||
         prevProps.postPayload !== postPayload ||
         prevProps.method !== method)
     ) {
       // eslint-disable-next-line react/no-did-update-set-state
-      this.setState({ didVerify: false, error: undefined });
+      setDidVerify(false);
+      setError(undefined);
     }
-  }
-
-  handleVerify() {
-    const { endpoint, host, postPayload, method } = this.props;
+  }, [didVerify, error]);
+  const handleVerifyHandler = useCallback(() => {
+    const { endpoint, host, postPayload, method } = props;
     SupersetClient.reset();
     SupersetClient.configure({
       credentials: 'include',
@@ -93,47 +91,50 @@ export default class VerifyCORS extends React.Component<Props, State> {
         }
         return { error: 'Must provide valid endpoint and payload.' };
       })
-      .then(result =>
-        this.setState({ didVerify: true, error: undefined, payload: result }),
-      )
-      .catch(error => this.setState({ error }));
-  }
+      .then(result => {
+        setDidVerify(true);
+        setError(undefined);
+        setPayload(result);
+      })
+      .catch(error => {
+        setError(error);
+      });
+  }, [error]);
 
-  render() {
-    const { didVerify, error, payload } = this.state;
-    const { children } = this.props;
+  const { children } = props;
 
-    return didVerify ? (
-      children({ payload })
-    ) : (
-      <div className="row">
-        <div className="col-md-10">
-          This example requires CORS requests from this domain. <br />
-          <br />
-          1) enable CORS requests in your Superset App from{' '}
-          {`${window.location.origin}`}
-          <br />
-          2) configure your Superset App host name below <br />
-          3) click below to verify authentication. You may debug CORS further
-          using the `@superset-ui/connection` story. <br />
-          <br />
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={this.handleVerify}
-          >
-            {t('Verify')}
-          </button>
-          <br />
-          <br />
-        </div>
-
-        {error && (
-          <div className="col-md-8">
-            <ErrorMessage error={error} />
-          </div>
-        )}
+  return didVerify ? (
+    children({ payload })
+  ) : (
+    <div className="row">
+      <div className="col-md-10">
+        This example requires CORS requests from this domain. <br />
+        <br />
+        1) enable CORS requests in your Superset App from{' '}
+        {`${window.location.origin}`}
+        <br />
+        2) configure your Superset App host name below <br />
+        3) click below to verify authentication. You may debug CORS further
+        using the `@superset-ui/connection` story. <br />
+        <br />
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={handleVerifyHandler}
+        >
+          {t('Verify')}
+        </button>
+        <br />
+        <br />
       </div>
-    );
-  }
-}
+
+      {error && (
+        <div className="col-md-8">
+          <ErrorMessage error={error} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default VerifyCORS;

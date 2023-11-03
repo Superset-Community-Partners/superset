@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { css, styled } from '@superset-ui/core';
@@ -83,32 +83,32 @@ const NewComponentPlaceholder = styled.div`
   `}
 `;
 
-export default class DraggableNewComponent extends React.PureComponent {
-  render() {
-    const { label, id, type, className, meta } = this.props;
-    return (
-      <DragDroppable
-        component={{ type, id, meta }}
-        parentComponent={{
-          id: NEW_COMPONENTS_SOURCE_ID,
-          type: NEW_COMPONENT_SOURCE_TYPE,
-        }}
-        index={0}
-        depth={0}
-        editMode
-      >
-        {({ dragSourceRef }) => (
-          <NewComponent ref={dragSourceRef} data-test="new-component">
-            <NewComponentPlaceholder
-              className={cx('new-component-placeholder', className)}
-            />
-            {label}
-          </NewComponent>
-        )}
-      </DragDroppable>
-    );
-  }
-}
+const DraggableNewComponent = props => {
+  const { label, id, type, className, meta } = props;
+  return (
+    <DragDroppable
+      component={{ type, id, meta }}
+      parentComponent={{
+        id: NEW_COMPONENTS_SOURCE_ID,
+        type: NEW_COMPONENT_SOURCE_TYPE,
+      }}
+      index={0}
+      depth={0}
+      editMode
+    >
+      {({ dragSourceRef }) => (
+        <NewComponent ref={dragSourceRef} data-test="new-component">
+          <NewComponentPlaceholder
+            className={cx('new-component-placeholder', className)}
+          />
+          {label}
+        </NewComponent>
+      )}
+    </DragDroppable>
+  );
+};
+
+export default DraggableNewComponent;
 
 DraggableNewComponent.propTypes = propTypes;
 DraggableNewComponent.defaultProps = defaultProps;

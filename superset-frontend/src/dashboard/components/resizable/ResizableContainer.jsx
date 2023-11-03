@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Resizable } from 're-resizable';
 import cx from 'classnames';
@@ -168,158 +169,143 @@ const StyledResizable = styled(Resizable)`
   }
 `;
 
-class ResizableContainer extends React.PureComponent {
-  constructor(props) {
-    super(props);
+const ResizableContainer = props => {
+  const [isResizing, setIsResizing] = useState(false);
 
-    this.state = {
-      isResizing: false,
-    };
-
-    this.handleResizeStart = this.handleResizeStart.bind(this);
-    this.handleResize = this.handleResize.bind(this);
-    this.handleResizeStop = this.handleResizeStop.bind(this);
-  }
-
-  handleResizeStart(event, direction, ref) {
-    const { id, onResizeStart } = this.props;
+  const handleResizeStartHandler = useCallback((event, direction, ref) => {
+    const { id, onResizeStart } = props;
 
     if (onResizeStart) {
       onResizeStart({ id, direction, ref });
     }
 
-    this.setState(() => ({ isResizing: true }));
-  }
-
-  handleResize(event, direction, ref) {
-    const { onResize, id } = this.props;
+    setStateHandler(() => ({ isResizing: true }));
+  }, []);
+  const handleResizeHandler = useCallback((event, direction, ref) => {
+    const { onResize, id } = props;
     if (onResize) {
       onResize({ id, direction, ref });
     }
-  }
-
-  handleResizeStop(event, direction, ref, delta) {
-    const {
-      id,
-      onResizeStop,
-      widthStep,
-      heightStep,
-      widthMultiple,
-      heightMultiple,
-      adjustableHeight,
-      adjustableWidth,
-      gutterWidth,
-    } = this.props;
-
-    if (onResizeStop) {
-      const nextWidthMultiple =
-        widthMultiple + Math.round(delta.width / (widthStep + gutterWidth));
-      const nextHeightMultiple =
-        heightMultiple + Math.round(delta.height / heightStep);
-
-      onResizeStop({
+  }, []);
+  const handleResizeStopHandler = useCallback(
+    (event, direction, ref, delta) => {
+      const {
         id,
-        widthMultiple: adjustableWidth ? nextWidthMultiple : null,
-        heightMultiple: adjustableHeight ? nextHeightMultiple : null,
-      });
+        onResizeStop,
+        widthStep,
+        heightStep,
+        widthMultiple,
+        heightMultiple,
+        adjustableHeight,
+        adjustableWidth,
+        gutterWidth,
+      } = props;
 
-      this.setState(() => ({ isResizing: false }));
-    }
+      if (onResizeStop) {
+        const nextWidthMultiple =
+          widthMultiple + Math.round(delta.width / (widthStep + gutterWidth));
+        const nextHeightMultiple =
+          heightMultiple + Math.round(delta.height / heightStep);
+
+        onResizeStop({
+          id,
+          widthMultiple: adjustableWidth ? nextWidthMultiple : null,
+          heightMultiple: adjustableHeight ? nextHeightMultiple : null,
+        });
+
+        setStateHandler(() => ({ isResizing: false }));
+      }
+    },
+    [],
+  );
+
+  const {
+    children,
+    adjustableWidth,
+    adjustableHeight,
+    widthStep,
+    heightStep,
+    widthMultiple,
+    heightMultiple,
+    staticHeight,
+    staticHeightMultiple,
+    staticWidth,
+    staticWidthMultiple,
+    minWidthMultiple,
+    maxWidthMultiple,
+    minHeightMultiple,
+    maxHeightMultiple,
+    gutterWidth,
+    editMode,
+  } = props;
+
+  const size = {
+    width: adjustableWidth
+      ? (widthStep + gutterWidth) * widthMultiple - gutterWidth
+      : (staticWidthMultiple && staticWidthMultiple * widthStep) ||
+        staticWidth ||
+        undefined,
+    height: adjustableHeight
+      ? heightStep * heightMultiple
+      : (staticHeightMultiple && staticHeightMultiple * heightStep) ||
+        staticHeight ||
+        undefined,
+  };
+
+  let enableConfig = resizableConfig.notAdjustable;
+
+  if (editMode && adjustableWidth && adjustableHeight) {
+    enableConfig = resizableConfig.widthAndHeight;
+  } else if (editMode && adjustableWidth) {
+    enableConfig = resizableConfig.widthOnly;
+  } else if (editMode && adjustableHeight) {
+    enableConfig = resizableConfig.heightOnly;
   }
 
-  render() {
-    const {
-      children,
-      adjustableWidth,
-      adjustableHeight,
-      widthStep,
-      heightStep,
-      widthMultiple,
-      heightMultiple,
-      staticHeight,
-      staticHeightMultiple,
-      staticWidth,
-      staticWidthMultiple,
-      minWidthMultiple,
-      maxWidthMultiple,
-      minHeightMultiple,
-      maxHeightMultiple,
-      gutterWidth,
-      editMode,
-    } = this.props;
-
-    const size = {
-      width: adjustableWidth
-        ? (widthStep + gutterWidth) * widthMultiple - gutterWidth
-        : (staticWidthMultiple && staticWidthMultiple * widthStep) ||
-          staticWidth ||
-          undefined,
-      height: adjustableHeight
-        ? heightStep * heightMultiple
-        : (staticHeightMultiple && staticHeightMultiple * heightStep) ||
-          staticHeight ||
-          undefined,
-    };
-
-    let enableConfig = resizableConfig.notAdjustable;
-
-    if (editMode && adjustableWidth && adjustableHeight) {
-      enableConfig = resizableConfig.widthAndHeight;
-    } else if (editMode && adjustableWidth) {
-      enableConfig = resizableConfig.widthOnly;
-    } else if (editMode && adjustableHeight) {
-      enableConfig = resizableConfig.heightOnly;
-    }
-
-    const { isResizing } = this.state;
-
-    return (
-      <StyledResizable
-        enable={enableConfig}
-        grid={SNAP_TO_GRID}
-        minWidth={
-          adjustableWidth
-            ? minWidthMultiple * (widthStep + gutterWidth) - gutterWidth
-            : undefined
-        }
-        minHeight={
-          adjustableHeight ? minHeightMultiple * heightStep : undefined
-        }
-        maxWidth={
-          adjustableWidth
-            ? Math.max(
-                size.width,
-                Math.min(
-                  proxyToInfinity,
-                  maxWidthMultiple * (widthStep + gutterWidth) - gutterWidth,
-                ),
-              )
-            : undefined
-        }
-        maxHeight={
-          adjustableHeight
-            ? Math.max(
-                size.height,
-                Math.min(proxyToInfinity, maxHeightMultiple * heightStep),
-              )
-            : undefined
-        }
-        size={size}
-        onResizeStart={this.handleResizeStart}
-        onResize={this.handleResize}
-        onResizeStop={this.handleResizeStop}
-        handleComponent={ResizableHandle}
-        className={cx(
-          'resizable-container',
-          isResizing && 'resizable-container--resizing',
-        )}
-        handleClasses={HANDLE_CLASSES}
-      >
-        {children}
-      </StyledResizable>
-    );
-  }
-}
+  return (
+    <StyledResizable
+      enable={enableConfig}
+      grid={SNAP_TO_GRID}
+      minWidth={
+        adjustableWidth
+          ? minWidthMultiple * (widthStep + gutterWidth) - gutterWidth
+          : undefined
+      }
+      minHeight={adjustableHeight ? minHeightMultiple * heightStep : undefined}
+      maxWidth={
+        adjustableWidth
+          ? Math.max(
+              size.width,
+              Math.min(
+                proxyToInfinity,
+                maxWidthMultiple * (widthStep + gutterWidth) - gutterWidth,
+              ),
+            )
+          : undefined
+      }
+      maxHeight={
+        adjustableHeight
+          ? Math.max(
+              size.height,
+              Math.min(proxyToInfinity, maxHeightMultiple * heightStep),
+            )
+          : undefined
+      }
+      size={size}
+      onResizeStart={handleResizeStartHandler}
+      onResize={handleResizeHandler}
+      onResizeStop={handleResizeStopHandler}
+      handleComponent={ResizableHandle}
+      className={cx(
+        'resizable-container',
+        isResizing && 'resizable-container--resizing',
+      )}
+      handleClasses={HANDLE_CLASSES}
+    >
+      {children}
+    </StyledResizable>
+  );
+};
 
 ResizableContainer.propTypes = propTypes;
 ResizableContainer.defaultProps = defaultProps;

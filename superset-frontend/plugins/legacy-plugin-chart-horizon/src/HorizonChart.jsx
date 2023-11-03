@@ -17,7 +17,7 @@
  * under the License.
  */
 /* eslint-disable react/jsx-sort-default-props, react/sort-prop-types */
-import React from 'react';
+
 import PropTypes from 'prop-types';
 import { extent as d3Extent } from 'd3-array';
 import { ensureIsArray, styled } from '@superset-ui/core';
@@ -80,56 +80,54 @@ const StyledDiv = styled.div`
   `}
 `;
 
-class HorizonChart extends React.PureComponent {
-  render() {
-    const {
-      className,
-      width,
-      height,
-      data,
-      seriesHeight,
-      bands,
-      colors,
-      colorScale,
-      mode,
-      offsetX,
-    } = this.props;
+const HorizonChart = props => {
+  const {
+    className,
+    width,
+    height,
+    data,
+    seriesHeight,
+    bands,
+    colors,
+    colorScale,
+    mode,
+    offsetX,
+  } = props;
 
-    let yDomain;
-    if (colorScale === 'overall') {
-      const allValues = data.reduce(
-        (acc, current) => acc.concat(current.values),
-        [],
-      );
-      yDomain = d3Extent(allValues, d => d.y);
-    }
-
-    return (
-      <StyledDiv>
-        <div
-          className={`superset-legacy-chart-horizon ${className}`}
-          style={{ height }}
-        >
-          {data.map(row => (
-            <HorizonRow
-              key={row.key}
-              width={width}
-              height={seriesHeight}
-              title={ensureIsArray(row.key).join(', ')}
-              data={row.values}
-              bands={bands}
-              colors={colors}
-              colorScale={colorScale}
-              mode={mode}
-              offsetX={offsetX}
-              yDomain={yDomain}
-            />
-          ))}
-        </div>
-      </StyledDiv>
+  let yDomain;
+  if (colorScale === 'overall') {
+    const allValues = data.reduce(
+      (acc, current) => acc.concat(current.values),
+      [],
     );
+    yDomain = d3Extent(allValues, d => d.y);
   }
-}
+
+  return (
+    <StyledDiv>
+      <div
+        className={`superset-legacy-chart-horizon ${className}`}
+        style={{ height }}
+      >
+        {data.map(row => (
+          <HorizonRow
+            key={row.key}
+            width={width}
+            height={seriesHeight}
+            title={ensureIsArray(row.key).join(', ')}
+            data={row.values}
+            bands={bands}
+            colors={colors}
+            colorScale={colorScale}
+            mode={mode}
+            offsetX={offsetX}
+            yDomain={yDomain}
+          />
+        ))}
+      </div>
+    </StyledDiv>
+  );
+};
 
 HorizonChart.propTypes = propTypes;
 HorizonChart.defaultProps = defaultProps;

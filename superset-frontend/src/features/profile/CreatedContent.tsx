@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 import rison from 'rison';
-import React from 'react';
+import { useCallback } from 'react';
 import { t } from '@superset-ui/core';
 
 import TableLoader from 'src/components/TableLoader';
@@ -31,8 +32,8 @@ interface CreatedContentProps {
   user: BootstrapUser;
 }
 
-class CreatedContent extends React.PureComponent<CreatedContentProps> {
-  renderSliceTable() {
+const CreatedContent = () => {
+  const renderSliceTableHandler = useCallback(() => {
     const search = [
       { col: 'created_by', opr: 'chart_created_by_me', value: 'me' },
     ];
@@ -62,9 +63,8 @@ class CreatedContent extends React.PureComponent<CreatedContentProps> {
         sortable
       />
     );
-  }
-
-  renderDashboardTable() {
+  }, []);
+  const renderDashboardTableHandler = useCallback(() => {
     const search = [
       { col: 'created_by', opr: 'dashboard_created_by_me', value: 'me' },
     ];
@@ -93,19 +93,17 @@ class CreatedContent extends React.PureComponent<CreatedContentProps> {
         sortable
       />
     );
-  }
+  }, []);
 
-  render() {
-    return (
-      <div>
-        <h3>{t('Dashboards')}</h3>
-        {this.renderDashboardTable()}
-        <hr />
-        <h3>{t('Charts')}</h3>
-        {this.renderSliceTable()}
-      </div>
-    );
-  }
-}
+  return (
+    <div>
+      <h3>{t('Dashboards')}</h3>
+      {renderDashboardTableHandler()}
+      <hr />
+      <h3>{t('Charts')}</h3>
+      {renderSliceTableHandler()}
+    </div>
+  );
+};
 
 export default CreatedContent;

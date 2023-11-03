@@ -18,13 +18,12 @@
  */
 
 /* eslint-disable react/jsx-sort-default-props */
-import * as React from 'react';
+
 import { t } from '@superset-ui/core';
 import { createSelector } from 'reselect';
 import getChartComponentRegistry from '../registries/ChartComponentRegistrySingleton';
 import getChartTransformPropsRegistry from '../registries/ChartTransformPropsRegistrySingleton';
 import ChartProps from '../models/ChartProps';
-import createLoadableRenderer from './createLoadableRenderer';
 import { ChartType } from '../models/ChartPlugin';
 import {
   PreTransformProps,
@@ -78,12 +77,11 @@ export type Props = {
   onRenderFailure?: HandlerFunction;
 };
 
-export default class SuperChartCore extends React.PureComponent<Props, {}> {
+const SuperChartCore = (inputProps: Props) => {
   /**
    * The HTML element that wraps all chart content
    */
-  container?: HTMLElement | null;
-
+  const container = useRef<HTMLElement | null>();
   /**
    * memoized function so it will not recompute
    * and return previous value
@@ -94,22 +92,23 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
    * - chartProps
    * is changed.
    */
-  processChartProps = createSelector(
-    [
-      (input: {
-        chartProps: ChartProps;
-        preTransformProps?: PreTransformProps;
-        transformProps?: TransformProps;
-        postTransformProps?: PostTransformProps;
-      }) => input.chartProps,
-      input => input.preTransformProps,
-      input => input.transformProps,
-      input => input.postTransformProps,
-    ],
-    (chartProps, pre = IDENTITY, transform = IDENTITY, post = IDENTITY) =>
-      post(transform(pre(chartProps))),
+  const processChartProps = useRef(
+    createSelector(
+      [
+        (input: {
+          chartProps: ChartProps;
+          preTransformProps?: PreTransformProps;
+          transformProps?: TransformProps;
+          postTransformProps?: PostTransformProps;
+        }) => input.chartProps,
+        input => input.preTransformProps,
+        input => input.transformProps,
+        input => input.postTransformProps,
+      ],
+      (chartProps, pre = IDENTITY, transform = IDENTITY, post = IDENTITY) =>
+        post(transform(pre(chartProps))),
+    ),
   );
-
   /**
    * memoized function so it will not recompute
    * and return previous value
@@ -118,117 +117,125 @@ export default class SuperChartCore extends React.PureComponent<Props, {}> {
    * - overrideTransformProps
    * is changed.
    */
-  private createLoadableRenderer = createSelector(
-    [
-      (input: { chartType: string; overrideTransformProps?: TransformProps }) =>
-        input.chartType,
-      input => input.overrideTransformProps,
-    ],
-    (chartType, overrideTransformProps) => {
-      if (chartType) {
-        const Renderer = createLoadableRenderer({
-          loader: {
-            Chart: () => getChartComponentRegistry().getAsPromise(chartType),
-            transformProps: overrideTransformProps
-              ? () => Promise.resolve(overrideTransformProps)
-              : () => getChartTransformPropsRegistry().getAsPromise(chartType),
-          },
-          loading: (loadingProps: LoadingProps) =>
-            this.renderLoading(loadingProps, chartType),
-          render: this.renderChart,
-        });
+  const createLoadableRenderer = useRef(
+    createSelector(
+      [
+        (input: {
+          chartType: string;
+          overrideTransformProps?: TransformProps;
+        }) => input.chartType,
+        input => input.overrideTransformProps,
+      ],
+      (chartType, overrideTransformProps) => {
+        if (chartType) {
+          const Renderer = createLoadableRenderer({
+            loader: {
+              Chart: () => getChartComponentRegistry().getAsPromise(chartType),
+              transformProps: overrideTransformProps
+                ? () => Promise.resolve(overrideTransformProps)
+                : () =>
+                    getChartTransformPropsRegistry().getAsPromise(chartType),
+            },
+            loading: (loadingProps: LoadingProps) =>
+              renderLoadingHandler(loadingProps, chartType),
+            render: renderChartHandler,
+          });
 
-        // Trigger preloading.
-        Renderer.preload();
+          // Trigger preloading.
+          Renderer.preload();
 
-        return Renderer;
+          return Renderer;
+        }
+
+        return EMPTY;
+      },
+    ),
+  );
+  const renderChartHandler = useCallback(
+    (loaded: LoadedModules, props: RenderProps) => {
+      const { Chart, transformProps } = loaded;
+      const { chartProps, preTransformProps, postTransformProps } = props;
+
+      return (
+        <Chart
+          {...processChartProps.current({
+            chartProps,
+            preTransformProps,
+            transformProps,
+            postTransformProps,
+          })}
+        />
+      );
+    },
+    [],
+  );
+  const renderLoadingHandler = useCallback(
+    (loadingProps: LoadingProps, chartType: string) => {
+      const { error } = loadingProps;
+
+      if (error) {
+        return (
+          <div className="alert alert-warning" role="alert">
+            <strong>{t('ERROR')}</strong>&nbsp;
+            <code>chartType=&quot;{chartType}&quot;</code> &mdash;
+            {error.toString()}
+          </div>
+        );
       }
 
-      return EMPTY;
-    },
-  );
-
-  static defaultProps = defaultProps;
-
-  private renderChart = (loaded: LoadedModules, props: RenderProps) => {
-    const { Chart, transformProps } = loaded;
-    const { chartProps, preTransformProps, postTransformProps } = props;
-
-    return (
-      <Chart
-        {...this.processChartProps({
-          chartProps,
-          preTransformProps,
-          transformProps,
-          postTransformProps,
-        })}
-      />
-    );
-  };
-
-  private renderLoading = (loadingProps: LoadingProps, chartType: string) => {
-    const { error } = loadingProps;
-
-    if (error) {
-      return (
-        <div className="alert alert-warning" role="alert">
-          <strong>{t('ERROR')}</strong>&nbsp;
-          <code>chartType=&quot;{chartType}&quot;</code> &mdash;
-          {error.toString()}
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  private setRef = (container: HTMLElement | null) => {
-    this.container = container;
-  };
-
-  render() {
-    const {
-      id,
-      className,
-      preTransformProps,
-      postTransformProps,
-      chartProps = BLANK_CHART_PROPS,
-      onRenderSuccess,
-      onRenderFailure,
-    } = this.props;
-
-    // Create LoadableRenderer and start preloading
-    // the lazy-loaded Chart components
-    const Renderer = this.createLoadableRenderer(this.props);
-
-    // Do not render if chartProps is set to null.
-    // but the pre-loading has been started in this.createLoadableRenderer
-    // to prepare for rendering once chartProps becomes available.
-    if (chartProps === null) {
       return null;
-    }
+    },
+    [],
+  );
+  const setRefHandler = useCallback((container: HTMLElement | null) => {
+    container.current = container;
+  }, []);
 
-    const containerProps: {
-      id?: string;
-      className?: string;
-    } = {};
-    if (id) {
-      containerProps.id = id;
-    }
-    if (className) {
-      containerProps.className = className;
-    }
+  const {
+    id,
+    className,
+    preTransformProps,
+    postTransformProps,
+    chartProps = BLANK_CHART_PROPS,
+    onRenderSuccess,
+    onRenderFailure,
+  } = props;
 
-    return (
-      <div {...containerProps} ref={this.setRef}>
-        <Renderer
-          preTransformProps={preTransformProps}
-          postTransformProps={postTransformProps}
-          chartProps={chartProps}
-          onRenderSuccess={onRenderSuccess}
-          onRenderFailure={onRenderFailure}
-        />
-      </div>
-    );
+  // Create LoadableRenderer and start preloading
+  // the lazy-loaded Chart components
+  const Renderer = createLoadableRenderer.current(props);
+
+  // Do not render if chartProps is set to null.
+  // but the pre-loading has been started in this.createLoadableRenderer
+  // to prepare for rendering once chartProps becomes available.
+  if (chartProps === null) {
+    return null;
   }
-}
+
+  const containerProps: {
+    id?: string;
+    className?: string;
+  } = {};
+  if (id) {
+    containerProps.id = id;
+  }
+  if (className) {
+    containerProps.className = className;
+  }
+
+  return (
+    <div {...containerProps} ref={setRefHandler}>
+      <Renderer
+        preTransformProps={preTransformProps}
+        postTransformProps={postTransformProps}
+        chartProps={chartProps}
+        onRenderSuccess={onRenderSuccess}
+        onRenderFailure={onRenderFailure}
+      />
+    </div>
+  );
+};
+
+export default SuperChartCore;
+
+SuperChartCore.defaultProps = defaultProps;

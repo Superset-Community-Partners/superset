@@ -18,7 +18,8 @@
  */
 /* eslint-disable react/jsx-sort-default-props, react/sort-prop-types */
 /* eslint-disable react/forbid-prop-types, react/require-default-props */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import MapGL from 'react-map-gl';
 import ViewportMercator from 'viewport-mercator-project';
@@ -55,101 +56,92 @@ const defaultProps = {
   pointRadiusUnit: 'Pixels',
 };
 
-class MapBox extends React.Component {
-  constructor(props) {
-    super(props);
+const MapBox = props => {
+  const { width, height, bounds } = props;
+  const mercator = new ViewportMercator({
+    width,
+    height,
+  }).fitBounds(bounds);
+  const { latitude, longitude, zoom } = mercator;
 
-    const { width, height, bounds } = this.props;
-    // Get a viewport that fits the given bounds, which all marks to be clustered.
-    // Derive lat, lon and zoom from this viewport. This is only done on initial
-    // render as the bounds don't update as we pan/zoom in the current design.
-    const mercator = new ViewportMercator({
-      width,
-      height,
-    }).fitBounds(bounds);
-    const { latitude, longitude, zoom } = mercator;
+  const [viewport, setViewport] = useState({
+    longitude,
+    latitude,
+    zoom,
+  });
 
-    this.state = {
-      viewport: {
-        longitude,
-        latitude,
-        zoom,
-      },
-    };
-    this.handleViewportChange = this.handleViewportChange.bind(this);
-  }
+  const handleViewportChangeHandler = useCallback(
+    viewport => {
+      setViewport(viewport);
+      const { onViewportChange } = props;
+      onViewportChange(viewport);
+    },
+    [viewport],
+  );
 
-  handleViewportChange(viewport) {
-    this.setState({ viewport });
-    const { onViewportChange } = this.props;
-    onViewportChange(viewport);
-  }
+  const {
+    width,
+    height,
+    aggregatorName,
+    clusterer,
+    globalOpacity,
+    mapStyle,
+    mapboxApiKey,
+    pointRadius,
+    pointRadiusUnit,
+    renderWhileDragging,
+    rgb,
+    hasCustomMetric,
+    bounds,
+  } = props;
 
-  render() {
-    const {
-      width,
-      height,
-      aggregatorName,
-      clusterer,
-      globalOpacity,
-      mapStyle,
-      mapboxApiKey,
-      pointRadius,
-      pointRadiusUnit,
-      renderWhileDragging,
-      rgb,
-      hasCustomMetric,
-      bounds,
-    } = this.props;
-    const { viewport } = this.state;
-    const isDragging =
-      viewport.isDragging === undefined ? false : viewport.isDragging;
+  const isDragging =
+    viewport.isDragging === undefined ? false : viewport.isDragging;
 
-    // Compute the clusters based on the original bounds and current zoom level. Note when zoom/pan
-    // to an area outside of the original bounds, no additional queries are made to the backend to
-    // retrieve additional data.
-    // add this variable to widen the visible area
-    const offsetHorizontal = (width * 0.5) / 100;
-    const offsetVertical = (height * 0.5) / 100;
-    const bbox = [
-      bounds[0][0] - offsetHorizontal,
-      bounds[0][1] - offsetVertical,
-      bounds[1][0] + offsetHorizontal,
-      bounds[1][1] + offsetVertical,
-    ];
-    const clusters = clusterer.getClusters(bbox, Math.round(viewport.zoom));
+  // Compute the clusters based on the original bounds and current zoom level. Note when zoom/pan
+  // to an area outside of the original bounds, no additional queries are made to the backend to
+  // retrieve additional data.
+  // add this variable to widen the visible area
+  const offsetHorizontal = (width * 0.5) / 100;
+  const offsetVertical = (height * 0.5) / 100;
+  const bbox = [
+    bounds[0][0] - offsetHorizontal,
+    bounds[0][1] - offsetVertical,
+    bounds[1][0] + offsetHorizontal,
+    bounds[1][1] + offsetVertical,
+  ];
+  const clusters = clusterer.getClusters(bbox, Math.round(viewport.zoom));
 
-    return (
-      <MapGL
+  return (
+    <MapGL
+      {...viewport}
+      mapStyle={mapStyle}
+      width={width}
+      height={height}
+      mapboxApiAccessToken={mapboxApiKey}
+      onViewportChange={handleViewportChangeHandler}
+      preserveDrawingBuffer
+    >
+      <ScatterPlotGlowOverlay
         {...viewport}
-        mapStyle={mapStyle}
-        width={width}
-        height={height}
-        mapboxApiAccessToken={mapboxApiKey}
-        onViewportChange={this.handleViewportChange}
-        preserveDrawingBuffer
-      >
-        <ScatterPlotGlowOverlay
-          {...viewport}
-          isDragging={isDragging}
-          locations={clusters}
-          dotRadius={pointRadius}
-          pointRadiusUnit={pointRadiusUnit}
-          rgb={rgb}
-          globalOpacity={globalOpacity}
-          compositeOperation="screen"
-          renderWhileDragging={renderWhileDragging}
-          aggregation={hasCustomMetric ? aggregatorName : null}
-          lngLatAccessor={location => {
-            const { coordinates } = location.geometry;
+        isDragging={isDragging}
+        locations={clusters}
+        dotRadius={pointRadius}
+        pointRadiusUnit={pointRadiusUnit}
+        rgb={rgb}
+        globalOpacity={globalOpacity}
+        compositeOperation="screen"
+        renderWhileDragging={renderWhileDragging}
+        aggregation={hasCustomMetric ? aggregatorName : null}
+        lngLatAccessor={location => {
+          const { coordinates } = location.geometry;
 
-            return [coordinates[0], coordinates[1]];
-          }}
-        />
-      </MapGL>
-    );
-  }
-}
+          return [coordinates[0], coordinates[1]];
+        }}
+      />
+    </MapGL>
+  );
+};
 
 MapBox.propTypes = propTypes;
 MapBox.defaultProps = defaultProps;

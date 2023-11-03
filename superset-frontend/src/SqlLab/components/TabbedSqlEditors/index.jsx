@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useEffect, useCallback } from 'react';
 import pick from 'lodash/pick';
 import PropTypes from 'prop-types';
 import { EditableTabs } from 'src/components/Tabs';
@@ -72,29 +73,19 @@ const TabTitle = styled.span`
 // Get the user's OS
 const userOS = detectOS();
 
-class TabbedSqlEditors extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    const sqlLabUrl = '/superset/sqllab';
-    this.state = {
-      sqlLabUrl,
-    };
-    this.removeQueryEditor = this.removeQueryEditor.bind(this);
-    this.duplicateQueryEditor = this.duplicateQueryEditor.bind(this);
-    this.handleSelect = this.handleSelect.bind(this);
-    this.handleEdit = this.handleEdit.bind(this);
-  }
+const TabbedSqlEditors = props => {
+  const sqlLabUrl = '/superset/sqllab';
 
-  componentDidMount() {
+  useEffect(() => {
     // migrate query editor and associated tables state to server
     if (isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)) {
-      const localStorageTables = this.props.tables.filter(
+      const localStorageTables = props.tables.filter(
         table => table.inLocalStorage,
       );
-      const localStorageQueries = Object.values(this.props.queries).filter(
+      const localStorageQueries = Object.values(props.queries).filter(
         query => query.inLocalStorage,
       );
-      this.props.queryEditors
+      props.queryEditors
         .filter(qe => qe.inLocalStorage)
         .forEach(qe => {
           // get all queries associated with the query editor
@@ -104,11 +95,7 @@ class TabbedSqlEditors extends React.PureComponent {
           const tables = localStorageTables.filter(
             table => table.queryEditorId === qe.id,
           );
-          this.props.actions.migrateQueryEditorFromLocalStorage(
-            qe,
-            tables,
-            queries,
-          );
+          props.actions.migrateQueryEditorFromLocalStorage(qe, tables, queries);
         });
     }
 
@@ -139,19 +126,19 @@ class TabbedSqlEditors extends React.PureComponent {
     // Popping a new tab based on the querystring
     if (id || sql || savedQueryId || datasourceKey || queryId) {
       if (id) {
-        this.props.actions.popStoredQuery(id);
+        props.actions.popStoredQuery(id);
       } else if (savedQueryId) {
-        this.props.actions.popSavedQuery(savedQueryId);
+        props.actions.popSavedQuery(savedQueryId);
       } else if (queryId) {
-        this.props.actions.popQuery(queryId);
+        props.actions.popQuery(queryId);
       } else if (datasourceKey) {
-        this.props.actions.popDatasourceQuery(datasourceKey, sql);
+        props.actions.popDatasourceQuery(datasourceKey, sql);
       } else if (sql) {
         let databaseId = dbid;
         if (databaseId) {
           databaseId = parseInt(databaseId, 10);
         } else {
-          const { databases } = this.props;
+          const { databases } = props;
           const databaseName = dbname;
           if (databaseName) {
             Object.keys(databases).forEach(db => {
@@ -168,18 +155,18 @@ class TabbedSqlEditors extends React.PureComponent {
           autorun,
           sql,
         };
-        this.props.actions.addQueryEditor(newQueryEditor);
+        props.actions.addQueryEditor(newQueryEditor);
       }
-      this.popNewTab(pick(urlParams, Object.keys(queryParameters)));
-    } else if (isNewQuery || this.props.queryEditors.length === 0) {
-      this.newQueryEditor();
+      popNewTabHandler(pick(urlParams, Object.keys(queryParameters)));
+    } else if (isNewQuery || props.queryEditors.length === 0) {
+      newQueryEditorHandler();
 
       if (isNewQuery) {
-        window.history.replaceState({}, document.title, this.state.sqlLabUrl);
+        window.history.replaceState({}, document.title, sqlLabUrl);
       }
     } else {
-      const qe = this.activeQueryEditor();
-      const latestQuery = this.props.queries[qe.latestQueryId];
+      const qe = activeQueryEditorHandler();
+      const latestQuery = props.queries[qe.latestQueryId];
       if (
         isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE) &&
         latestQuery &&
@@ -187,88 +174,111 @@ class TabbedSqlEditors extends React.PureComponent {
       ) {
         // when results are not stored in localStorage they need to be
         // fetched from the results backend (if configured)
-        this.props.actions.fetchQueryResults(
-          latestQuery,
-          this.props.displayLimit,
-        );
+        props.actions.fetchQueryResults(latestQuery, props.displayLimit);
       }
     }
-  }
-
-  popNewTab(urlParams) {
+  }, []);
+  const popNewTabHandler = useCallback(urlParams => {
     // Clean the url in browser history
-    const updatedUrl = `${URI(this.state.sqlLabUrl).query(urlParams)}`;
+    const updatedUrl = `${URI(sqlLabUrl).query(urlParams)}`;
     window.history.replaceState({}, document.title, updatedUrl);
-  }
-
-  activeQueryEditor() {
-    if (this.props.tabHistory.length === 0) {
-      return this.props.queryEditors[0];
+  }, []);
+  const activeQueryEditorHandler = useCallback(() => {
+    if (props.tabHistory.length === 0) {
+      return props.queryEditors[0];
     }
-    const qeid = this.props.tabHistory[this.props.tabHistory.length - 1];
-    return this.props.queryEditors.find(qe => qe.id === qeid) || null;
-  }
-
-  newQueryEditor() {
-    this.props.actions.addNewQueryEditor();
-  }
-
-  handleSelect(key) {
-    const qeid = this.props.tabHistory[this.props.tabHistory.length - 1];
+    const qeid = props.tabHistory[props.tabHistory.length - 1];
+    return props.queryEditors.find(qe => qe.id === qeid) || null;
+  }, []);
+  const newQueryEditorHandler = useCallback(() => {
+    props.actions.addNewQueryEditor();
+  }, []);
+  const handleSelectHandler = useCallback(key => {
+    const qeid = props.tabHistory[props.tabHistory.length - 1];
     if (key !== qeid) {
-      const queryEditor = this.props.queryEditors.find(qe => qe.id === key);
+      const queryEditor = props.queryEditors.find(qe => qe.id === key);
       if (!queryEditor) {
         return;
       }
-      this.props.actions.switchQueryEditor(
-        queryEditor,
-        this.props.displayLimit,
-      );
+      props.actions.switchQueryEditor(queryEditor, props.displayLimit);
     }
-  }
-
-  handleEdit(key, action) {
+  }, []);
+  const handleEditHandler = useCallback((key, action) => {
     if (action === 'remove') {
-      const qe = this.props.queryEditors.find(qe => qe.id === key);
-      this.removeQueryEditor(qe);
+      const qe = props.queryEditors.find(qe => qe.id === key);
+      removeQueryEditorHandler(qe);
     }
     if (action === 'add') {
-      this.newQueryEditor();
+      newQueryEditorHandler();
     }
-  }
+  }, []);
+  const removeQueryEditorHandler = useCallback(qe => {
+    props.actions.removeQueryEditor(qe);
+  }, []);
+  const duplicateQueryEditorHandler = useCallback(qe => {
+    props.actions.cloneQueryToNewTab(qe, false);
+  }, []);
 
-  removeQueryEditor(qe) {
-    this.props.actions.removeQueryEditor(qe);
-  }
+  const noQueryEditors = props.queryEditors?.length === 0;
+  const editors = props.queryEditors?.map(qe => (
+    <EditableTabs.TabPane
+      key={qe.id}
+      tab={<SqlEditorTabHeader queryEditor={qe} />}
+      // for tests - key prop isn't handled by enzyme well bcs it's a react keyword
+      data-key={qe.id}
+    >
+      <SqlEditor
+        tables={props.tables.filter(xt => xt.queryEditorId === qe.id)}
+        queryEditor={qe}
+        defaultQueryLimit={props.defaultQueryLimit}
+        maxRow={props.maxRow}
+        displayLimit={props.displayLimit}
+        saveQueryWarning={props.saveQueryWarning}
+        scheduleQueryWarning={props.scheduleQueryWarning}
+      />
+    </EditableTabs.TabPane>
+  ));
 
-  duplicateQueryEditor(qe) {
-    this.props.actions.cloneQueryToNewTab(qe, false);
-  }
-
-  render() {
-    const noQueryEditors = this.props.queryEditors?.length === 0;
-    const editors = this.props.queryEditors?.map(qe => (
-      <EditableTabs.TabPane
-        key={qe.id}
-        tab={<SqlEditorTabHeader queryEditor={qe} />}
-        // for tests - key prop isn't handled by enzyme well bcs it's a react keyword
-        data-key={qe.id}
+  const emptyTab = (
+    <StyledTab>
+      <TabTitle>{t('Add a new tab')}</TabTitle>
+      <Tooltip
+        id="add-tab"
+        placement="bottom"
+        title={
+          userOS === 'Windows'
+            ? t('New tab (Ctrl + q)')
+            : t('New tab (Ctrl + t)')
+        }
       >
-        <SqlEditor
-          tables={this.props.tables.filter(xt => xt.queryEditorId === qe.id)}
-          queryEditor={qe}
-          defaultQueryLimit={this.props.defaultQueryLimit}
-          maxRow={this.props.maxRow}
-          displayLimit={this.props.displayLimit}
-          saveQueryWarning={this.props.saveQueryWarning}
-          scheduleQueryWarning={this.props.scheduleQueryWarning}
-        />
-      </EditableTabs.TabPane>
-    ));
+        <i data-test="add-tab-icon" className="fa fa-plus-circle" />
+      </Tooltip>
+    </StyledTab>
+  );
 
-    const emptyTab = (
-      <StyledTab>
-        <TabTitle>{t('Add a new tab')}</TabTitle>
+  const emptyTabState = (
+    <EditableTabs.TabPane key={0} data-key={0} tab={emptyTab} closable={false}>
+      <EmptyStateBig
+        image="empty_sql_chart.svg"
+        description={t('Add a new tab to create SQL Query')}
+      />
+    </EditableTabs.TabPane>
+  );
+
+  return (
+    <StyledEditableTabs
+      destroyInactiveTabPane
+      activeKey={props.tabHistory[props.tabHistory.length - 1]}
+      id="a11y-query-editor-tabs"
+      className="SqlEditorTabs"
+      data-test="sql-editor-tabs"
+      onChange={handleSelectHandler}
+      fullWidth={false}
+      hideAdd={props.offline}
+      onTabClick={() => noQueryEditors && newQueryEditorHandler()}
+      onEdit={handleEditHandler}
+      type={noQueryEditors ? 'card' : 'editable-card'}
+      addIcon={
         <Tooltip
           id="add-tab"
           placement="bottom"
@@ -280,56 +290,14 @@ class TabbedSqlEditors extends React.PureComponent {
         >
           <i data-test="add-tab-icon" className="fa fa-plus-circle" />
         </Tooltip>
-      </StyledTab>
-    );
+      }
+    >
+      {editors}
+      {noQueryEditors && emptyTabState}
+    </StyledEditableTabs>
+  );
+};
 
-    const emptyTabState = (
-      <EditableTabs.TabPane
-        key={0}
-        data-key={0}
-        tab={emptyTab}
-        closable={false}
-      >
-        <EmptyStateBig
-          image="empty_sql_chart.svg"
-          description={t('Add a new tab to create SQL Query')}
-        />
-      </EditableTabs.TabPane>
-    );
-
-    return (
-      <StyledEditableTabs
-        destroyInactiveTabPane
-        activeKey={this.props.tabHistory[this.props.tabHistory.length - 1]}
-        id="a11y-query-editor-tabs"
-        className="SqlEditorTabs"
-        data-test="sql-editor-tabs"
-        onChange={this.handleSelect}
-        fullWidth={false}
-        hideAdd={this.props.offline}
-        onTabClick={() => noQueryEditors && this.newQueryEditor()}
-        onEdit={this.handleEdit}
-        type={noQueryEditors ? 'card' : 'editable-card'}
-        addIcon={
-          <Tooltip
-            id="add-tab"
-            placement="bottom"
-            title={
-              userOS === 'Windows'
-                ? t('New tab (Ctrl + q)')
-                : t('New tab (Ctrl + t)')
-            }
-          >
-            <i data-test="add-tab-icon" className="fa fa-plus-circle" />
-          </Tooltip>
-        }
-      >
-        {editors}
-        {noQueryEditors && emptyTabState}
-      </StyledEditableTabs>
-    );
-  }
-}
 TabbedSqlEditors.propTypes = propTypes;
 TabbedSqlEditors.defaultProps = defaultProps;
 

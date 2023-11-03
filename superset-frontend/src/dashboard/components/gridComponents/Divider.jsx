@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { css, styled } from '@superset-ui/core';
 
@@ -62,54 +63,47 @@ const DividerLine = styled.div`
   `}
 `;
 
-class Divider extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.handleDeleteComponent = this.handleDeleteComponent.bind(this);
-  }
-
-  handleDeleteComponent() {
-    const { deleteComponent, id, parentId } = this.props;
+const Divider = props => {
+  const handleDeleteComponentHandler = useCallback(() => {
+    const { deleteComponent, id, parentId } = props;
     deleteComponent(id, parentId);
-  }
+  }, []);
 
-  render() {
-    const {
-      component,
-      depth,
-      parentComponent,
-      index,
-      handleComponentDrop,
-      editMode,
-    } = this.props;
+  const {
+    component,
+    depth,
+    parentComponent,
+    index,
+    handleComponentDrop,
+    editMode,
+  } = props;
 
-    return (
-      <DragDroppable
-        component={component}
-        parentComponent={parentComponent}
-        orientation="row"
-        index={index}
-        depth={depth}
-        onDrop={handleComponentDrop}
-        editMode={editMode}
-      >
-        {({ dropIndicatorProps, dragSourceRef }) => (
-          <div ref={dragSourceRef}>
-            {editMode && (
-              <HoverMenu position="left">
-                <DeleteComponentButton onDelete={this.handleDeleteComponent} />
-              </HoverMenu>
-            )}
+  return (
+    <DragDroppable
+      component={component}
+      parentComponent={parentComponent}
+      orientation="row"
+      index={index}
+      depth={depth}
+      onDrop={handleComponentDrop}
+      editMode={editMode}
+    >
+      {({ dropIndicatorProps, dragSourceRef }) => (
+        <div ref={dragSourceRef}>
+          {editMode && (
+            <HoverMenu position="left">
+              <DeleteComponentButton onDelete={handleDeleteComponentHandler} />
+            </HoverMenu>
+          )}
 
-            <DividerLine className="dashboard-component dashboard-component-divider" />
+          <DividerLine className="dashboard-component dashboard-component-divider" />
 
-            {dropIndicatorProps && <div {...dropIndicatorProps} />}
-          </div>
-        )}
-      </DragDroppable>
-    );
-  }
-}
+          {dropIndicatorProps && <div {...dropIndicatorProps} />}
+        </div>
+      )}
+    </DragDroppable>
+  );
+};
 
 Divider.propTypes = propTypes;
 

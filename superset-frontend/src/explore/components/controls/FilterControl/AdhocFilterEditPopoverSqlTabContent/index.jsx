@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Select } from 'src/components';
 import { styled, t } from '@superset-ui/core';
@@ -49,108 +50,94 @@ const StyledSelect = styled(Select)`
   `}
 `;
 
-export default class AdhocFilterEditPopoverSqlTabContent extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onSqlExpressionChange = this.onSqlExpressionChange.bind(this);
-    this.onSqlExpressionClauseChange =
-      this.onSqlExpressionClauseChange.bind(this);
-    this.handleAceEditorRef = this.handleAceEditorRef.bind(this);
-
-    this.selectProps = {
-      ariaLabel: t('Select column'),
-    };
-  }
-
-  componentDidUpdate() {
-    if (this.aceEditorRef) {
-      this.aceEditorRef.editor.resize();
+const AdhocFilterEditPopoverSqlTabContent = props => {
+  useEffect(() => {
+    if (aceEditorRefHandler) {
+      aceEditorRefHandler.editor.resize();
     }
-  }
-
-  onSqlExpressionClauseChange(clause) {
-    this.props.onChange(
-      this.props.adhocFilter.duplicateWith({
+  }, []);
+  const onSqlExpressionClauseChangeHandler = useCallback(clause => {
+    props.onChange(
+      props.adhocFilter.duplicateWith({
         clause,
         expressionType: EXPRESSION_TYPES.SQL,
       }),
     );
-  }
-
-  onSqlExpressionChange(sqlExpression) {
-    this.props.onChange(
-      this.props.adhocFilter.duplicateWith({
+  }, []);
+  const onSqlExpressionChangeHandler = useCallback(sqlExpression => {
+    props.onChange(
+      props.adhocFilter.duplicateWith({
         sqlExpression,
         expressionType: EXPRESSION_TYPES.SQL,
       }),
     );
-  }
-
-  handleAceEditorRef(ref) {
+  }, []);
+  const handleAceEditorRefHandler = useCallback(ref => {
     if (ref) {
-      this.aceEditorRef = ref;
+      aceEditorRefHandler = ref;
     }
-  }
+  }, []);
 
-  render() {
-    const { adhocFilter, height, options } = this.props;
+  const { adhocFilter, height, options } = props;
 
-    const clauseSelectProps = {
-      placeholder: t('choose WHERE or HAVING...'),
-      value: adhocFilter.clause,
-      onChange: this.onSqlExpressionClauseChange,
-    };
-    const keywords = sqlKeywords.concat(
-      options
-        .map(option => {
-          if (option.column_name) {
-            return {
-              name: option.column_name,
-              value: option.column_name,
-              score: 50,
-              meta: 'option',
-            };
-          }
-          return null;
-        })
-        .filter(Boolean),
-    );
-    const selectOptions = Object.keys(CLAUSES).map(clause => ({
-      label: clause,
-      value: clause,
-    }));
+  const clauseSelectProps = {
+    placeholder: t('choose WHERE or HAVING...'),
+    value: adhocFilter.clause,
+    onChange: onSqlExpressionClauseChangeHandler,
+  };
+  const keywords = sqlKeywords.concat(
+    options
+      .map(option => {
+        if (option.column_name) {
+          return {
+            name: option.column_name,
+            value: option.column_name,
+            score: 50,
+            meta: 'option',
+          };
+        }
+        return null;
+      })
+      .filter(Boolean),
+  );
+  const selectOptions = Object.keys(CLAUSES).map(clause => ({
+    label: clause,
+    value: clause,
+  }));
 
-    return (
-      <span>
-        <div className="filter-edit-clause-section">
-          <StyledSelect
-            options={selectOptions}
-            {...this.selectProps}
-            {...clauseSelectProps}
-          />
-          <span className="filter-edit-clause-info">
-            <strong>WHERE</strong> {t('Filters by columns')}
-            <br />
-            <strong>HAVING</strong> {t('Filters by metrics')}
-          </span>
-        </div>
-        <div css={theme => ({ marginTop: theme.gridUnit * 4 })}>
-          <SQLEditor
-            ref={this.handleAceEditorRef}
-            keywords={keywords}
-            height={`${height - 130}px`}
-            onChange={this.onSqlExpressionChange}
-            width="100%"
-            showGutter={false}
-            value={adhocFilter.sqlExpression || adhocFilter.translateToSql()}
-            editorProps={{ $blockScrolling: true }}
-            enableLiveAutocompletion
-            className="filter-sql-editor"
-            wrapEnabled
-          />
-        </div>
-      </span>
-    );
-  }
-}
+  return (
+    <span>
+      <div className="filter-edit-clause-section">
+        <StyledSelect
+          options={selectOptions}
+          {...selectPropsHandler}
+          {...clauseSelectProps}
+        />
+        <span className="filter-edit-clause-info">
+          <strong>WHERE</strong> {t('Filters by columns')}
+          <br />
+          <strong>HAVING</strong> {t('Filters by metrics')}
+        </span>
+      </div>
+      <div css={theme => ({ marginTop: theme.gridUnit * 4 })}>
+        <SQLEditor
+          ref={handleAceEditorRefHandler}
+          keywords={keywords}
+          height={`${height - 130}px`}
+          onChange={onSqlExpressionChangeHandler}
+          width="100%"
+          showGutter={false}
+          value={adhocFilter.sqlExpression || adhocFilter.translateToSql()}
+          editorProps={{ $blockScrolling: true }}
+          enableLiveAutocompletion
+          className="filter-sql-editor"
+          wrapEnabled
+        />
+      </div>
+    </span>
+  );
+};
+
+export default AdhocFilterEditPopoverSqlTabContent;
+
 AdhocFilterEditPopoverSqlTabContent.propTypes = propTypes;

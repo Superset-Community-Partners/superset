@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 import React, { RefObject } from 'react';
 import { styled } from '@superset-ui/core';
 import cx from 'classnames';
@@ -63,28 +64,29 @@ const HoverStyleOverrides = styled.div`
   }
 `;
 
-export default class HoverMenu extends React.PureComponent<HoverMenuProps> {
-  static defaultProps = {
+const HoverMenu = (inputProps: HoverMenuProps) => {
+  const props = {
     position: 'left',
     innerRef: null,
     children: null,
+    ...inputProps,
   };
 
-  render() {
-    const { innerRef, position, children } = this.props;
-    return (
-      <HoverStyleOverrides className="hover-menu-container">
-        <div
-          ref={innerRef}
-          className={cx(
-            'hover-menu',
-            position === 'left' && 'hover-menu--left',
-            position === 'top' && 'hover-menu--top',
-          )}
-        >
-          {children}
-        </div>
-      </HoverStyleOverrides>
-    );
-  }
-}
+  const { innerRef, position, children } = props;
+  return (
+    <HoverStyleOverrides className="hover-menu-container">
+      <div
+        ref={innerRef}
+        className={cx(
+          'hover-menu',
+          position === 'left' && 'hover-menu--left',
+          position === 'top' && 'hover-menu--top',
+        )}
+      >
+        {children}
+      </div>
+    </HoverStyleOverrides>
+  );
+};
+
+export default HoverMenu;

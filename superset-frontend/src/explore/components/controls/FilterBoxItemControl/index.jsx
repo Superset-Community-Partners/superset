@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { t } from '@superset-ui/core';
 import { InfoTooltipWithTrigger } from '@superset-ui/chart-controls';
@@ -68,44 +69,28 @@ const defaultProps = {
 
 const STYLE_WIDTH = { width: 350 };
 
-export default class FilterBoxItemControl extends React.Component {
-  constructor(props) {
-    super(props);
-    const {
-      column,
-      metric,
-      asc,
-      clearable,
-      multiple,
-      searchAllOptions,
-      label,
-      defaultValue,
-    } = props;
-    this.state = {
-      column,
-      metric,
-      label,
-      asc,
-      clearable,
-      multiple,
-      searchAllOptions,
-      defaultValue,
-    };
-    this.onChange = this.onChange.bind(this);
-    this.onControlChange = this.onControlChange.bind(this);
-  }
+const FilterBoxItemControl = props => {
+  const {
+    column,
+    metric,
+    asc,
+    clearable,
+    multiple,
+    searchAllOptions,
+    label,
+    defaultValue,
+  } = props;
 
-  onChange() {
-    this.props.onChange(this.state);
-  }
-
-  onControlChange(attr, value) {
+  const onChangeHandler = useCallback(() => {
+    props.onChange(stateHandler);
+  }, []);
+  const onControlChangeHandler = useCallback((attr, value) => {
     let typedValue = value;
-    const { column: selectedColumnName, multiple } = this.state;
+
     if (value && !multiple && attr === FILTER_CONFIG_ATTRIBUTES.DEFAULT_VALUE) {
       // if single value filter_box,
       // convert input value string to the column's data type
-      const { datasource } = this.props;
+      const { datasource } = props;
       const selectedColumn = datasource.columns.find(
         col => col.column_name === selectedColumnName,
       );
@@ -121,16 +106,13 @@ export default class FilterBoxItemControl extends React.Component {
         }
       }
     }
-    this.setState({ [attr]: typedValue }, this.onChange);
-  }
-
-  setType() {}
-
-  textSummary() {
-    return this.state.column || 'N/A';
-  }
-
-  renderForm() {
+    setStateHandler({ [attr]: typedValue }, onChangeHandler);
+  }, []);
+  const setTypeHandler = useCallback(() => {}, []);
+  const textSummaryHandler = useCallback(() => {
+    return column || 'N/A';
+  }, []);
+  const renderFormHandler = useCallback(() => {
     return (
       <div>
         <FormRow
@@ -138,18 +120,16 @@ export default class FilterBoxItemControl extends React.Component {
           control={
             <Select
               ariaLabel={t('Column')}
-              value={this.state.column}
+              value={column}
               name="column"
-              options={this.props.datasource.columns
-                .filter(col => col.column_name !== this.state.column)
+              options={props.datasource.columns
+                .filter(col => col.column_name !== column)
                 .map(col => ({
                   value: col.column_name,
                   label: col.column_name,
                 }))
-                .concat([
-                  { value: this.state.column, label: this.state.column },
-                ])}
-              onChange={v => this.onControlChange('column', v)}
+                .concat([{ value: column, label: column }])}
+              onChange={v => onControlChangeHandler('column', v)}
             />
           }
         />
@@ -157,9 +137,9 @@ export default class FilterBoxItemControl extends React.Component {
           label={t('Label')}
           control={
             <TextControl
-              value={this.state.label}
+              value={label}
               name="label"
-              onChange={v => this.onControlChange('label', v)}
+              onChange={v => onControlChangeHandler('label', v)}
             />
           }
         />
@@ -172,10 +152,13 @@ export default class FilterBoxItemControl extends React.Component {
           )}
           control={
             <TextControl
-              value={this.state.defaultValue}
+              value={defaultValue}
               name="defaultValue"
               onChange={v =>
-                this.onControlChange(FILTER_CONFIG_ATTRIBUTES.DEFAULT_VALUE, v)
+                onControlChangeHandler(
+                  FILTER_CONFIG_ATTRIBUTES.DEFAULT_VALUE,
+                  v,
+                )
               }
             />
           }
@@ -186,18 +169,16 @@ export default class FilterBoxItemControl extends React.Component {
           control={
             <Select
               ariaLabel={t('Sort metric')}
-              value={this.state.metric}
+              value={metric}
               name="column"
-              options={this.props.datasource.metrics
-                .filter(m => m.metric_name !== this.state.metric)
+              options={props.datasource.metrics
+                .filter(m => m.metric_name !== metric)
                 .map(m => ({
                   value: m.metric_name,
                   label: m.metric_name,
                 }))
-                .concat([
-                  { value: this.state.metric, label: this.state.metric },
-                ])}
-              onChange={v => this.onControlChange('metric', v)}
+                .concat([{ value: metric, label: metric }])}
+              onChange={v => onControlChangeHandler('metric', v)}
             />
           }
         />
@@ -207,8 +188,8 @@ export default class FilterBoxItemControl extends React.Component {
           isCheckbox
           control={
             <CheckboxControl
-              value={this.state.asc}
-              onChange={v => this.onControlChange('asc', v)}
+              value={asc}
+              onChange={v => onControlChangeHandler('asc', v)}
             />
           }
         />
@@ -221,9 +202,9 @@ export default class FilterBoxItemControl extends React.Component {
           )}
           control={
             <CheckboxControl
-              value={this.state.multiple}
+              value={multiple}
               onChange={v =>
-                this.onControlChange(FILTER_CONFIG_ATTRIBUTES.MULTIPLE, v)
+                onControlChangeHandler(FILTER_CONFIG_ATTRIBUTES.MULTIPLE, v)
               }
             />
           }
@@ -238,9 +219,9 @@ export default class FilterBoxItemControl extends React.Component {
           isCheckbox
           control={
             <CheckboxControl
-              value={this.state.searchAllOptions}
+              value={searchAllOptions}
               onChange={v =>
-                this.onControlChange(
+                onControlChangeHandler(
                   FILTER_CONFIG_ATTRIBUTES.SEARCH_ALL_OPTIONS,
                   v,
                 )
@@ -254,42 +235,41 @@ export default class FilterBoxItemControl extends React.Component {
           isCheckbox
           control={
             <CheckboxControl
-              value={!this.state.clearable}
-              onChange={v => this.onControlChange('clearable', !v)}
+              value={!clearable}
+              onChange={v => onControlChangeHandler('clearable', !v)}
             />
           }
         />
       </div>
     );
-  }
-
-  renderPopover() {
+  }, []);
+  const renderPopoverHandler = useCallback(() => {
     return (
       <div id="ts-col-popo" style={STYLE_WIDTH}>
-        {this.renderForm()}
+        {renderFormHandler()}
       </div>
     );
-  }
+  }, []);
 
-  render() {
-    return (
-      <span data-test="FilterBoxItemControl">
-        {this.textSummary()}{' '}
-        <ControlPopover
-          trigger="click"
-          content={this.renderPopover()}
-          title={t('Filter configuration')}
-        >
-          <InfoTooltipWithTrigger
-            icon="edit"
-            className="text-primary"
-            label="edit-ts-column"
-          />
-        </ControlPopover>
-      </span>
-    );
-  }
-}
+  return (
+    <span data-test="FilterBoxItemControl">
+      {textSummaryHandler()}{' '}
+      <ControlPopover
+        trigger="click"
+        content={renderPopoverHandler()}
+        title={t('Filter configuration')}
+      >
+        <InfoTooltipWithTrigger
+          icon="edit"
+          className="text-primary"
+          label="edit-ts-column"
+        />
+      </ControlPopover>
+    </span>
+  );
+};
+
+export default FilterBoxItemControl;
 
 FilterBoxItemControl.propTypes = propTypes;
 FilterBoxItemControl.defaultProps = defaultProps;

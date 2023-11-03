@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useRef, useCallback } from 'react';
 import Select from 'src/components/Select/Select';
 import { t, styled } from '@superset-ui/core';
 import Alert from 'src/components/Alert';
@@ -51,110 +52,92 @@ type RefreshIntervalModalState = {
   refreshFrequency: number;
 };
 
-class RefreshIntervalModal extends React.PureComponent<
-  RefreshIntervalModalProps,
-  RefreshIntervalModalState
-> {
-  static defaultProps = {
+const RefreshIntervalModal = (inputProps: RefreshIntervalModalProps) => {
+  const [refreshFrequency, setRefreshFrequency] = useState(
+    props.refreshFrequency,
+  );
+  const [refreshFrequency = 0, setRefreshFrequency = 0] = useState();
+
+  const props = {
     refreshLimit: 0,
     refreshWarning: null,
+    ...inputProps,
   };
+  const modalRef = useRef<ModalTriggerRef | null>();
+  const onSaveHandler = useCallback(() => {
+    props.onChange(refreshFrequency, props.editMode);
+    modalRef?.current?.close();
+    props.addSuccessToast(t('Refresh interval saved'));
+  }, [refreshFrequency]);
+  const onCancelHandler = useCallback(() => {
+    setRefreshFrequency(props.refreshFrequency);
+    modalRef?.current?.close();
+  }, []);
+  const handleFrequencyChangeHandler = useCallback((value: number) => {
+    const { refreshIntervalOptions } = props;
+    setRefreshFrequency(value || refreshIntervalOptions[0][0]);
+  }, []);
 
-  modalRef: ModalTriggerRef | null;
+  const {
+    refreshLimit = 0,
+    refreshWarning,
+    editMode,
+    refreshIntervalOptions,
+  } = props;
 
-  constructor(props: RefreshIntervalModalProps) {
-    super(props);
-    this.modalRef = React.createRef() as ModalTriggerRef;
-    this.state = {
-      refreshFrequency: props.refreshFrequency,
-    };
-    this.handleFrequencyChange = this.handleFrequencyChange.bind(this);
-    this.onSave = this.onSave.bind(this);
-    this.onCancel = this.onCancel.bind(this);
-  }
+  const showRefreshWarning =
+    !!refreshFrequency && !!refreshWarning && refreshFrequency < refreshLimit;
 
-  onSave() {
-    this.props.onChange(this.state.refreshFrequency, this.props.editMode);
-    this.modalRef?.current?.close();
-    this.props.addSuccessToast(t('Refresh interval saved'));
-  }
-
-  onCancel() {
-    this.setState({
-      refreshFrequency: this.props.refreshFrequency,
-    });
-    this.modalRef?.current?.close();
-  }
-
-  handleFrequencyChange(value: number) {
-    const { refreshIntervalOptions } = this.props;
-    this.setState({
-      refreshFrequency: value || refreshIntervalOptions[0][0],
-    });
-  }
-
-  render() {
-    const {
-      refreshLimit = 0,
-      refreshWarning,
-      editMode,
-      refreshIntervalOptions,
-    } = this.props;
-    const { refreshFrequency = 0 } = this.state;
-    const showRefreshWarning =
-      !!refreshFrequency && !!refreshWarning && refreshFrequency < refreshLimit;
-
-    return (
-      <StyledModalTrigger
-        ref={this.modalRef}
-        triggerNode={this.props.triggerNode}
-        modalTitle={t('Refresh interval')}
-        modalBody={
-          <div>
-            <FormLabel>{t('Refresh frequency')}</FormLabel>
-            <Select
-              ariaLabel={t('Refresh interval')}
-              options={refreshIntervalOptions.map(option => ({
-                value: option[0],
-                label: t(option[1]),
-              }))}
-              value={refreshFrequency}
-              onChange={this.handleFrequencyChange}
-              sortComparator={propertyComparator('value')}
-            />
-            {showRefreshWarning && (
-              <RefreshWarningContainer>
-                <Alert
-                  type="warning"
-                  message={
-                    <>
-                      <div>{refreshWarning}</div>
-                      <br />
-                      <strong>{t('Are you sure you want to proceed?')}</strong>
-                    </>
-                  }
-                />
-              </RefreshWarningContainer>
-            )}
-          </div>
-        }
-        modalFooter={
-          <>
-            <Button
-              buttonStyle="primary"
-              buttonSize="small"
-              onClick={this.onSave}
-            >
-              {editMode ? t('Save') : t('Save for this session')}
-            </Button>
-            <Button onClick={this.onCancel} buttonSize="small">
-              {t('Cancel')}
-            </Button>
-          </>
-        }
-      />
-    );
-  }
-}
+  return (
+    <StyledModalTrigger
+      ref={modalRef.current}
+      triggerNode={props.triggerNode}
+      modalTitle={t('Refresh interval')}
+      modalBody={
+        <div>
+          <FormLabel>{t('Refresh frequency')}</FormLabel>
+          <Select
+            ariaLabel={t('Refresh interval')}
+            options={refreshIntervalOptions.map(option => ({
+              value: option[0],
+              label: t(option[1]),
+            }))}
+            value={refreshFrequency}
+            onChange={handleFrequencyChangeHandler}
+            sortComparator={propertyComparator('value')}
+          />
+          {showRefreshWarning && (
+            <RefreshWarningContainer>
+              <Alert
+                type="warning"
+                message={
+                  <>
+                    <div>{refreshWarning}</div>
+                    <br />
+                    <strong>{t('Are you sure you want to proceed?')}</strong>
+                  </>
+                }
+              />
+            </RefreshWarningContainer>
+          )}
+        </div>
+      }
+      modalFooter={
+        <>
+          <Button
+            buttonStyle="primary"
+            buttonSize="small"
+            onClick={onSaveHandler}
+          >
+            {editMode ? t('Save') : t('Save for this session')}
+          </Button>
+          <Button onClick={onCancelHandler} buttonSize="small">
+            {t('Cancel')}
+          </Button>
+        </>
+      }
+    />
+  );
+};
 
 export default RefreshIntervalModal;

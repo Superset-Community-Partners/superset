@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
+
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { debounce } from 'lodash';
 import { max as d3Max } from 'd3-array';
@@ -125,68 +126,55 @@ const StyledFilterContainer = styled.div`
 /**
  * @deprecated in version 3.0.
  */
-class FilterBox extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      selectedValues: props.origSelectedValues,
-      // this flag is used by non-instant filter, to make the apply button enabled/disabled
-      hasChanged: false,
-    };
-    this.debouncerCache = {};
-    this.maxValueCache = {};
-    this.changeFilter = this.changeFilter.bind(this);
-    this.onFilterMenuOpen = this.onFilterMenuOpen.bind(this);
-    this.onOpenDateFilterControl = this.onOpenDateFilterControl.bind(this);
-    this.onFilterMenuClose = this.onFilterMenuClose.bind(this);
-  }
+const FilterBox = props => {
+  const [selectedValues, setSelectedValues] = useState(
+    props.origSelectedValues,
+  );
+  const [hasChanged, setHasChanged] = useState(false);
 
-  onFilterMenuOpen(column) {
-    return this.props.onFilterMenuOpen(this.props.chartId, column);
-  }
-
-  onFilterMenuClose(column) {
-    return this.props.onFilterMenuClose(this.props.chartId, column);
-  }
-
-  onOpenDateFilterControl() {
-    return this.onFilterMenuOpen(TIME_RANGE);
-  }
-
-  onCloseDateFilterControl = () => this.onFilterMenuClose(TIME_RANGE);
-
-  getControlData(controlName) {
-    const { selectedValues } = this.state;
-    const control = {
-      ...controls[controlName], // TODO: make these controls ('granularity_sqla', 'time_grain_sqla') accessible from getControlsForVizType.
-      name: controlName,
-      key: `control-${controlName}`,
-      value: selectedValues[TIME_FILTER_MAP[controlName]],
-      actions: { setControlValue: this.changeFilter },
-    };
-    const mapFunc = control.mapStateToProps;
-    return mapFunc ? { ...control, ...mapFunc(this.props) } : control;
-  }
-
+  const onFilterMenuOpenHandler = useCallback(column => {
+    return props.onFilterMenuOpen(props.chartId, column);
+  }, []);
+  const onFilterMenuCloseHandler = useCallback(column => {
+    return props.onFilterMenuClose(props.chartId, column);
+  }, []);
+  const onOpenDateFilterControlHandler = useCallback(() => {
+    return onFilterMenuOpenHandler(TIME_RANGE);
+  }, []);
+  const onCloseDateFilterControlHandler = useCallback(
+    () => onFilterMenuCloseHandler(TIME_RANGE),
+    [],
+  );
+  const getControlDataHandler = useCallback(
+    controlName => {
+      const control = {
+        ...controls[controlName], // TODO: make these controls ('granularity_sqla', 'time_grain_sqla') accessible from getControlsForVizType.
+        name: controlName,
+        key: `control-${controlName}`,
+        value: selectedValues[TIME_FILTER_MAP[controlName]],
+        actions: { setControlValue: changeFilterHandler },
+      };
+      const mapFunc = control.mapStateToProps;
+      return mapFunc ? { ...control, ...mapFunc(props) } : control;
+    },
+    [selectedValues],
+  );
   /**
    * Get known max value of a column
    */
-  getKnownMax(key, choices) {
-    this.maxValueCache[key] = Math.max(
-      this.maxValueCache[key] || 0,
-      d3Max(choices || this.props.filtersChoices[key] || [], x => x.metric),
+  const getKnownMaxHandler = useCallback((key, choices) => {
+    maxValueCacheHandler[key] = Math.max(
+      maxValueCacheHandler[key] || 0,
+      d3Max(choices || props.filtersChoices[key] || [], x => x.metric),
     );
-    return this.maxValueCache[key];
-  }
-
-  clickApply() {
-    const { selectedValues } = this.state;
-    this.setState({ hasChanged: false }, () => {
-      this.props.onChange(selectedValues, false);
+    return maxValueCacheHandler[key];
+  }, []);
+  const clickApplyHandler = useCallback(() => {
+    setStateHandler({ hasChanged: false }, () => {
+      props.onChange(selectedValues, false);
     });
-  }
-
-  changeFilter(filter, options) {
+  }, [selectedValues]);
+  const changeFilterHandler = useCallback((filter, options) => {
     const fltr = TIME_FILTER_MAP[filter] || filter;
     let vals = null;
     if (options !== null) {
@@ -200,7 +188,7 @@ class FilterBox extends React.PureComponent {
       }
     }
 
-    this.setState(
+    setStateHandler(
       prevState => ({
         selectedValues: {
           ...prevState.selectedValues,
@@ -209,29 +197,27 @@ class FilterBox extends React.PureComponent {
         hasChanged: true,
       }),
       () => {
-        if (this.props.instantFiltering) {
-          this.props.onChange({ [fltr]: vals }, false);
+        if (props.instantFiltering) {
+          props.onChange({ [fltr]: vals }, false);
         }
       },
     );
-  }
-
+  }, []);
   /**
    * Generate a debounce function that loads options for a specific column
    */
-  debounceLoadOptions(key) {
-    if (!(key in this.debouncerCache)) {
-      this.debouncerCache[key] = debounce((input, callback) => {
-        this.loadOptions(key, input).then(callback);
+  const debounceLoadOptionsHandler = useCallback(key => {
+    if (!(key in debouncerCacheHandler)) {
+      debouncerCacheHandler[key] = debounce((input, callback) => {
+        loadOptionsHandler(key, input).then(callback);
       }, SLOW_DEBOUNCE);
     }
-    return this.debouncerCache[key];
-  }
-
+    return debouncerCacheHandler[key];
+  }, []);
   /**
    * Transform select options, add bar background
    */
-  transformOptions(options, max) {
+  const transformOptionsHandler = useCallback((options, max) => {
     const maxValue = max === undefined ? d3Max(options, x => x.metric) : max;
     return options.map(opt => {
       const perc = Math.round((opt.metric / maxValue) * 100);
@@ -246,13 +232,12 @@ class FilterBox extends React.PureComponent {
       }
       return { value: opt.id, label, style };
     });
-  }
-
-  async loadOptions(key, inputValue = '') {
+  }, []);
+  const loadOptionsHandler = useCallback(async (key, inputValue = '') => {
     const input = inputValue.toLowerCase();
-    const sortAsc = this.props.filtersFields.find(x => x.key === key).asc;
+    const sortAsc = props.filtersFields.find(x => x.key === key).asc;
     const formData = {
-      ...this.props.rawFormData,
+      ...props.rawFormData,
       adhoc_filters: inputValue
         ? [
             {
@@ -288,11 +273,10 @@ class FilterBox extends React.PureComponent {
           : textOrder;
       });
     }
-    return this.transformOptions(options, this.getKnownMax(key, options));
-  }
-
-  renderDateFilter() {
-    const { showDateFilter } = this.props;
+    return transformOptionsHandler(options, getKnownMaxHandler(key, options));
+  }, []);
+  const renderDateFilterHandler = useCallback(() => {
+    const { showDateFilter } = props;
     const label = TIME_FILTER_LABELS.time_range;
     if (showDateFilter) {
       return (
@@ -306,11 +290,11 @@ class FilterBox extends React.PureComponent {
               label={label}
               description={t('Select start and end date')}
               onChange={newValue => {
-                this.changeFilter(TIME_RANGE, newValue);
+                changeFilterHandler(TIME_RANGE, newValue);
               }}
-              onOpenDateFilterControl={this.onOpenDateFilterControl}
-              onCloseDateFilterControl={this.onCloseDateFilterControl}
-              value={this.state.selectedValues[TIME_RANGE] || 'No filter'}
+              onOpenDateFilterControl={onOpenDateFilterControlHandler}
+              onCloseDateFilterControl={onCloseDateFilterControlHandler}
+              value={selectedValues[TIME_RANGE] || 'No filter'}
               endpoints={['inclusive', 'exclusive']}
             />
           </div>
@@ -318,10 +302,9 @@ class FilterBox extends React.PureComponent {
       );
     }
     return null;
-  }
-
-  renderDatasourceFilters() {
-    const { showSqlaTimeGrain, showSqlaTimeColumn } = this.props;
+  }, [selectedValues]);
+  const renderDatasourceFiltersHandler = useCallback(() => {
+    const { showSqlaTimeGrain, showSqlaTimeColumn } = props;
     const datasourceFilters = [];
     const sqlaFilters = [];
     if (showSqlaTimeGrain) sqlaFilters.push('time_grain_sqla');
@@ -331,148 +314,147 @@ class FilterBox extends React.PureComponent {
         <ControlRow
           key="sqla-filters"
           controls={sqlaFilters.map(control => (
-            <Control {...this.getControlData(control)} />
+            <Control {...getControlDataHandler(control)} />
           ))}
         />,
       );
     }
     return datasourceFilters;
-  }
+  }, []);
+  const renderSelectHandler = useCallback(
+    filterConfig => {
+      const { filtersChoices } = props;
 
-  renderSelect(filterConfig) {
-    const { filtersChoices } = this.props;
-    const { selectedValues } = this.state;
-    this.debouncerCache = {};
-    this.maxValueCache = {};
+      debouncerCacheHandler = {};
+      maxValueCacheHandler = {};
 
-    // Add created options to filtersChoices, even though it doesn't exist,
-    // or these options will exist in query sql but invisible to end user.
-    Object.keys(selectedValues)
-      .filter(key => key in filtersChoices)
-      .forEach(key => {
-        // empty values are ignored
-        if (!selectedValues[key]) {
-          return;
-        }
-        const choices = filtersChoices[key] || (filtersChoices[key] = []);
-        const choiceIds = new Set(choices.map(f => f.id));
-        const selectedValuesForKey = Array.isArray(selectedValues[key])
-          ? selectedValues[key]
-          : [selectedValues[key]];
-        selectedValuesForKey
-          .filter(value => value !== null && !choiceIds.has(value))
-          .forEach(value => {
-            choices.unshift({
-              filter: key,
-              id: value,
-              text: value,
-              metric: 0,
-            });
-          });
-      });
-    const {
-      key,
-      label,
-      [FILTER_CONFIG_ATTRIBUTES.MULTIPLE]: isMultiple,
-      [FILTER_CONFIG_ATTRIBUTES.DEFAULT_VALUE]: defaultValue,
-      [FILTER_CONFIG_ATTRIBUTES.CLEARABLE]: isClearable,
-      [FILTER_CONFIG_ATTRIBUTES.SEARCH_ALL_OPTIONS]: searchAllOptions,
-    } = filterConfig;
-    const data = filtersChoices[key] || [];
-    let value = selectedValues[key] || null;
-
-    // Assign default value if required
-    if (value === undefined && defaultValue) {
-      // multiple values are separated by semicolons
-      value = isMultiple ? defaultValue.split(';') : defaultValue;
-    }
-
-    return (
-      <OnPasteSelect
-        cacheOptions
-        loadOptions={this.debounceLoadOptions(key)}
-        defaultOptions={this.transformOptions(data)}
-        key={key}
-        placeholder={t('Type or Select [%s]', label)}
-        isMulti={isMultiple}
-        isClearable={isClearable}
-        value={value}
-        options={this.transformOptions(data)}
-        onChange={newValue => {
-          // avoid excessive re-renders
-          if (newValue !== value) {
-            this.changeFilter(key, newValue);
+      // Add created options to filtersChoices, even though it doesn't exist,
+      // or these options will exist in query sql but invisible to end user.
+      Object.keys(selectedValues)
+        .filter(key => key in filtersChoices)
+        .forEach(key => {
+          // empty values are ignored
+          if (!selectedValues[key]) {
+            return;
           }
-        }}
-        // TODO try putting this back once react-select is upgraded
-        // onFocus={() => this.onFilterMenuOpen(key)}
-        onMenuOpen={() => this.onFilterMenuOpen(key)}
-        onBlur={() => this.onFilterMenuClose(key)}
-        onMenuClose={() => this.onFilterMenuClose(key)}
-        selectWrap={
-          searchAllOptions && data.length >= FILTER_OPTIONS_LIMIT
-            ? AsyncCreatableSelect
-            : CreatableSelect
-        }
-        noResultsText={t('No results found')}
-        forceOverflow
-      />
-    );
-  }
+          const choices = filtersChoices[key] || (filtersChoices[key] = []);
+          const choiceIds = new Set(choices.map(f => f.id));
+          const selectedValuesForKey = Array.isArray(selectedValues[key])
+            ? selectedValues[key]
+            : [selectedValues[key]];
+          selectedValuesForKey
+            .filter(value => value !== null && !choiceIds.has(value))
+            .forEach(value => {
+              choices.unshift({
+                filter: key,
+                id: value,
+                text: value,
+                metric: 0,
+              });
+            });
+        });
+      const {
+        key,
+        label,
+        [FILTER_CONFIG_ATTRIBUTES.MULTIPLE]: isMultiple,
+        [FILTER_CONFIG_ATTRIBUTES.DEFAULT_VALUE]: defaultValue,
+        [FILTER_CONFIG_ATTRIBUTES.CLEARABLE]: isClearable,
+        [FILTER_CONFIG_ATTRIBUTES.SEARCH_ALL_OPTIONS]: searchAllOptions,
+      } = filterConfig;
+      const data = filtersChoices[key] || [];
+      let value = selectedValues[key] || null;
 
-  renderFilters() {
-    const { filtersFields = [] } = this.props;
+      // Assign default value if required
+      if (value === undefined && defaultValue) {
+        // multiple values are separated by semicolons
+        value = isMultiple ? defaultValue.split(';') : defaultValue;
+      }
+
+      return (
+        <OnPasteSelect
+          cacheOptions
+          loadOptions={debounceLoadOptionsHandler(key)}
+          defaultOptions={transformOptionsHandler(data)}
+          key={key}
+          placeholder={t('Type or Select [%s]', label)}
+          isMulti={isMultiple}
+          isClearable={isClearable}
+          value={value}
+          options={transformOptionsHandler(data)}
+          onChange={newValue => {
+            // avoid excessive re-renders
+            if (newValue !== value) {
+              changeFilterHandler(key, newValue);
+            }
+          }}
+          // TODO try putting this back once react-select is upgraded
+          // onFocus={() => this.onFilterMenuOpen(key)}
+          onMenuOpen={() => onFilterMenuOpenHandler(key)}
+          onBlur={() => onFilterMenuCloseHandler(key)}
+          onMenuClose={() => onFilterMenuCloseHandler(key)}
+          selectWrap={
+            searchAllOptions && data.length >= FILTER_OPTIONS_LIMIT
+              ? AsyncCreatableSelect
+              : CreatableSelect
+          }
+          noResultsText={t('No results found')}
+          forceOverflow
+        />
+      );
+    },
+    [selectedValues],
+  );
+  const renderFiltersHandler = useCallback(() => {
+    const { filtersFields = [] } = props;
     return filtersFields.map(filterConfig => {
       const { label, key } = filterConfig;
       return (
         <StyledFilterContainer key={key} className="filter-container">
           <FormLabel htmlFor={`LABEL-${key}`}>{label}</FormLabel>
-          {this.renderSelect(filterConfig)}
+          {renderSelectHandler(filterConfig)}
         </StyledFilterContainer>
       );
     });
-  }
+  }, []);
 
-  render() {
-    const { instantFiltering, width, height } = this.props;
-    const { zIndex, gridUnit } = this.props.theme;
-    return (
-      <>
-        <Global
-          styles={css`
-            .dashboard .filter_box .slice_container > div:not(.alert) {
-              padding-top: 0;
+  const { instantFiltering, width, height } = props;
+  const { zIndex, gridUnit } = props.theme;
+  return (
+    <>
+      <Global
+        styles={css`
+          .dashboard .filter_box .slice_container > div:not(.alert) {
+            padding-top: 0;
+          }
+
+          .filter_box {
+            padding: ${gridUnit * 2 + 2}px 0;
+            overflow: visible !important;
+
+            &:hover {
+              z-index: ${zIndex.max};
             }
-
-            .filter_box {
-              padding: ${gridUnit * 2 + 2}px 0;
-              overflow: visible !important;
-
-              &:hover {
-                z-index: ${zIndex.max};
-              }
-            }
-          `}
-        />
-        <div style={{ width, height, overflow: 'auto' }}>
-          {this.renderDateFilter()}
-          {this.renderDatasourceFilters()}
-          {this.renderFilters()}
-          {!instantFiltering && (
-            <Button
-              buttonSize="small"
-              buttonStyle="primary"
-              onClick={this.clickApply.bind(this)}
-              disabled={!this.state.hasChanged}
-            >
-              {t('Apply')}
-            </Button>
-          )}
-        </div>
-      </>
-    );
-  }
-}
+          }
+        `}
+      />
+      <div style={{ width, height, overflow: 'auto' }}>
+        {renderDateFilterHandler()}
+        {renderDatasourceFiltersHandler()}
+        {renderFiltersHandler()}
+        {!instantFiltering && (
+          <Button
+            buttonSize="small"
+            buttonStyle="primary"
+            onClick={clickApplyHandler.bind(this)}
+            disabled={!hasChanged}
+          >
+            {t('Apply')}
+          </Button>
+        )}
+      </div>
+    </>
+  );
+};
 
 FilterBox.propTypes = propTypes;
 FilterBox.defaultProps = defaultProps;

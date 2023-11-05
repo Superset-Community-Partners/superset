@@ -17,7 +17,8 @@
  * under the License.
  */
 
-import React, { PureComponent } from 'react';
+
+import React from 'react';
 import { isDefined } from '../utils';
 
 function checkNumber(input: unknown): input is number {
@@ -38,14 +39,18 @@ type Props = {
   width: number;
 };
 
-export default class ChartFrame extends PureComponent<Props, {}> {
-  static defaultProps = {
-    renderContent() {},
+const ChartFrame = (inputProps: Props) => {
+
+
+    
+
+    const props = { 
+    renderContent: function() {},
+    ...inputProps,
   };
 
-  render() {
     const { contentWidth, contentHeight, width, height, renderContent } =
-      this.props;
+      props;
 
     const overflowX = checkNumber(contentWidth) && contentWidth > width;
     const overflowY = checkNumber(contentHeight) && contentHeight > height;
@@ -68,6 +73,10 @@ export default class ChartFrame extends PureComponent<Props, {}> {
       );
     }
 
-    return renderContent({ height, width });
-  }
-}
+    return renderContent({ height, width }); 
+};
+
+export default ChartFrame;
+
+
+

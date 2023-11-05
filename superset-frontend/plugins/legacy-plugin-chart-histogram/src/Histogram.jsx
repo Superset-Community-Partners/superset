@@ -17,8 +17,9 @@
  * under the License.
  */
 /* eslint-disable react/sort-prop-types */
-import PropTypes from 'prop-types';
+
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Histogram, BarSeries, XAxis, YAxis } from '@data-ui/histogram';
 import { chartTheme } from '@data-ui/theme';
 import { LegendOrdinal } from '@vx/legend';
@@ -56,100 +57,98 @@ const defaultProps = {
   yAxisLabel: '',
 };
 
-class CustomHistogram extends React.PureComponent {
-  render() {
-    const {
-      className,
-      data,
-      width,
-      height,
-      binCount,
-      colorScheme,
-      normalized,
-      cumulative,
-      opacity,
-      xAxisLabel,
-      yAxisLabel,
-      showLegend,
-      sliceId,
-    } = this.props;
+const CustomHistogram = props => {
+  const {
+    className,
+    data,
+    width,
+    height,
+    binCount,
+    colorScheme,
+    normalized,
+    cumulative,
+    opacity,
+    xAxisLabel,
+    yAxisLabel,
+    showLegend,
+    sliceId,
+  } = props;
 
-    const colorFn = CategoricalColorNamespace.getScale(colorScheme);
-    const keys = data.map(d => d.key);
-    const colorScale = scaleOrdinal({
-      domain: keys,
-      range: keys.map(x => colorFn(x, sliceId)),
-    });
+  const colorFn = CategoricalColorNamespace.getScale(colorScheme);
+  const keys = data.map(d => d.key);
+  const colorScale = scaleOrdinal({
+    domain: keys,
+    range: keys.map(x => colorFn(x, sliceId)),
+  });
 
-    return (
-      <WithLegend
-        className={`superset-legacy-chart-histogram ${className}`}
-        width={width}
-        height={height}
-        position="top"
-        renderLegend={({ direction, style }) =>
-          showLegend && (
-            <LegendOrdinal
-              style={style}
-              scale={colorScale}
-              direction={direction}
-              shape="rect"
-              labelMargin="0 15px 0 0"
-            />
-          )
-        }
-        renderChart={parent => (
-          <Histogram
-            width={parent.width}
-            height={parent.height}
-            ariaLabel="Histogram"
-            normalized={normalized}
-            cumulative={cumulative}
-            binCount={binCount}
-            binType="numeric"
-            margin={{ top: 20, right: 20 }}
-            renderTooltip={({ datum, color }) => (
+  return (
+    <WithLegend
+      className={`superset-legacy-chart-histogram ${className}`}
+      width={width}
+      height={height}
+      position="top"
+      renderLegend={({ direction, style }) =>
+        showLegend && (
+          <LegendOrdinal
+            style={style}
+            scale={colorScale}
+            direction={direction}
+            shape="rect"
+            labelMargin="0 15px 0 0"
+          />
+        )
+      }
+      renderChart={parent => (
+        <Histogram
+          width={parent.width}
+          height={parent.height}
+          ariaLabel="Histogram"
+          normalized={normalized}
+          cumulative={cumulative}
+          binCount={binCount}
+          binType="numeric"
+          margin={{ top: 20, right: 20 }}
+          renderTooltip={({ datum, color }) => (
+            <div>
+              <strong style={{ color }}>
+                {datum.bin0} {t('to')} {datum.bin1}
+              </strong>
               <div>
-                <strong style={{ color }}>
-                  {datum.bin0} {t('to')} {datum.bin1}
-                </strong>
-                <div>
-                  <strong>{t('count')} </strong>
-                  {datum.count}
-                </div>
-                <div>
-                  <strong>{t('cumulative')} </strong>
-                  {datum.cumulative}
-                </div>
-                <div>
-                  <strong>{t('percentile (exclusive)')} </strong>
-                  {`${(
-                    (datum.cumulativeDensity - datum.density) *
-                    100
-                  ).toPrecision(4)}th`}
-                </div>
+                <strong>{t('count')} </strong>
+                {datum.count}
               </div>
-            )}
-            valueAccessor={datum => datum}
-            theme={chartTheme}
-          >
-            {data.map(series => (
-              <BarSeries
-                key={series.key}
-                animated
-                rawData={series.values}
-                fill={colorScale(series.key)}
-                fillOpacity={opacity}
-              />
-            ))}
-            <XAxis label={xAxisLabel} />
-            <YAxis label={yAxisLabel} />
-          </Histogram>
-        )}
-      />
-    );
-  }
-}
+              <div>
+                <strong>{t('cumulative')} </strong>
+                {datum.cumulative}
+              </div>
+              <div>
+                <strong>{t('percentile (exclusive)')} </strong>
+                {`${(
+                  (datum.cumulativeDensity - datum.density) *
+                  100
+                ).toPrecision(4)}th`}
+              </div>
+            </div>
+          )}
+          valueAccessor={datum => datum}
+          theme={chartTheme}
+        >
+          {data.map(series => (
+            <BarSeries
+              key={series.key}
+              animated
+              rawData={series.values}
+              fill={colorScale(series.key)}
+              fillOpacity={opacity}
+            />
+          ))}
+          <XAxis label={xAxisLabel} />
+          <YAxis label={yAxisLabel} />
+        </Histogram>
+      )}
+    />
+  );
+};
 
 CustomHistogram.propTypes = propTypes;
 CustomHistogram.defaultProps = defaultProps;

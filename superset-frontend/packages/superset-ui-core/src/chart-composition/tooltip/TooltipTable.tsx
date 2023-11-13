@@ -17,8 +17,7 @@
  * under the License.
  */
 
-import React from 'react';
-import { CSSProperties, ReactNode } from 'react';
+import React, { CSSProperties, ReactNode } from 'react';
 
 interface TooltipRowData {
   key: string | number;

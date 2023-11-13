@@ -40,7 +40,6 @@ type Props = {
 
 const ChartFrame = (inputProps: Props) => {
   const props = {
-    renderContent: function () {},
     ...inputProps,
   };
 

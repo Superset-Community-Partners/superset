@@ -185,6 +185,7 @@ class Database(
         "is_managed_externally",
         "external_url",
         "encrypted_extra",
+        "impersonate_user",
     ]
     export_children = ["tables"]
 
@@ -492,7 +493,7 @@ class Database(
                     source = utils.QuerySource.DASHBOARD
                 elif "/explore/" in request.referrer:
                     source = utils.QuerySource.CHART
-                elif "/superset/sqllab" in request.referrer:
+                elif "/sqllab/" in request.referrer:
                     source = utils.QuerySource.SQL_LAB
 
             sqlalchemy_url, params = DB_CONNECTION_MUTATOR(
@@ -965,7 +966,7 @@ class Database(
         """
         label_expected = label or sqla_col.name
         # add quotes to tables
-        if self.db_engine_spec.allows_alias_in_select:
+        if self.db_engine_spec.get_allows_alias_in_select(self):
             label = self.db_engine_spec.make_label_compatible(label_expected)
             sqla_col = sqla_col.label(label)
         sqla_col.key = label_expected
@@ -987,7 +988,7 @@ class Log(Model):  # pylint: disable=too-few-public-methods
     user_id = Column(Integer, ForeignKey("ab_user.id"))
     dashboard_id = Column(Integer)
     slice_id = Column(Integer)
-    json = Column(Text)
+    json = Column(utils.MediumText())
     user = relationship(
         security_manager.user_model, backref="logs", foreign_keys=[user_id]
     )

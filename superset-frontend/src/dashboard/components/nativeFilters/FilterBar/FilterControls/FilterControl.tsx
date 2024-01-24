@@ -253,7 +253,10 @@ const FilterControl = ({
   const label = useMemo(
     () => (
       <FilterControlTitleBox>
-        <FilterControlTitle data-test="filter-control-name">
+        <FilterControlTitle
+          id={`filter-title-${name.replace(/\s+/g, '-')}`}
+          data-test="filter-control-name"
+        >
           {name}
         </FilterControlTitle>
         {isRequired && <RequiredFieldIndicator />}
@@ -298,6 +301,7 @@ const FilterControl = ({
           orientation={orientation}
           overflow={overflow}
           validateStatus={validateStatus}
+          filterTitleId={`filter-title-${name.replace(/\s+/g, '-')}`}
         />
       </InPortal>
       <FilterControlContainer

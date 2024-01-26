@@ -157,8 +157,9 @@ function SortIcon<D extends object>({ column }: { column: ColumnInstance<D> }) {
 function SearchInput({ count, value, onChange }: SearchInputProps) {
   return (
     <span className="dt-global-filter">
-      {t('Search')}{' '}
+      <span id="tc-search-label">{t('Search')} </span>
       <input
+        aria-labelledby="tc-search-label"
         className="form-control input-sm"
         placeholder={tn('search.num_records', count)}
         value={value}

@@ -250,13 +250,12 @@ const FilterControl = ({
     FilterControlTitle,
   } = useFilterControlDisplay(orientation, overflow);
 
+  const filterTitleId = `filter-title-${name.replace(/\s+/g, '-')}`;
+
   const label = useMemo(
     () => (
       <FilterControlTitleBox>
-        <FilterControlTitle
-          id={`filter-title-${name.replace(/\s+/g, '-')}`}
-          data-test="filter-control-name"
-        >
+        <FilterControlTitle id={filterTitleId} data-test="filter-control-name">
           {name}
         </FilterControlTitle>
         {isRequired && <RequiredFieldIndicator />}
@@ -301,7 +300,7 @@ const FilterControl = ({
           orientation={orientation}
           overflow={overflow}
           validateStatus={validateStatus}
-          filterTitleId={`filter-title-${name.replace(/\s+/g, '-')}`}
+          filterTitleId={filterTitleId}
         />
       </InPortal>
       <FilterControlContainer
@@ -316,15 +315,17 @@ const FilterControl = ({
           isVisible={!isFilterActive && !isScrolling}
           placement={filterCardPlacement}
         >
-          <div>
-            <FormItem
-              label={label}
-              required={filter?.controlValues?.enableEmptyFilter}
-              validateStatus={validateStatus}
-            >
-              <OutPortal node={portalNode} />
-            </FormItem>
-          </div>
+          <FormItem
+            label={label}
+            required={filter?.controlValues?.enableEmptyFilter}
+            validateStatus={validateStatus}
+          >
+            <OutPortal
+              node={portalNode}
+              ariaLabelledby={`filter-title-${filter.name}`}
+              className="TESTING_OUTPOTAL_NICO"
+            />
+          </FormItem>
         </FilterCard>
       </FilterControlContainer>
     </>

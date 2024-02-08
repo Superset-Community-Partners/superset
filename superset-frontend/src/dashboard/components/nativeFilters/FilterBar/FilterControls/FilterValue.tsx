@@ -96,6 +96,7 @@ const FilterValue: React.FC<FilterControlProps> = ({
   orientation = FilterBarOrientation.VERTICAL,
   overflow = false,
   validateStatus,
+  filterTitleId,
 }) => {
   const { id, targets, filterType, adhoc_filters, time_range } = filter;
   const metadata = getChartMetadataRegistry().get(filterType);
@@ -317,7 +318,7 @@ const FilterValue: React.FC<FilterControlProps> = ({
   }
 
   return (
-    <StyledDiv data-test="form-item-value">
+    <StyledDiv data-test="form-item-value" aria-labelledby={`${filterTitleId}`}>
       {isLoading ? (
         <Loading position="inline-centered" />
       ) : (

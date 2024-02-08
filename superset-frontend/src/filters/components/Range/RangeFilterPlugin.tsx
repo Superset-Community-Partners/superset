@@ -107,6 +107,7 @@ const Wrapper = styled.div<{
           box-shadow: 0 0 0 3px
             ${rgba(theme.colors[validateStatus || 'primary']?.base, 0.2)};
         }
+        &:aria-labelledby = "test"
       }
       & .ant-slider-mark {
         font-size: ${theme.typography.sizes.s}px;
@@ -305,69 +306,71 @@ export default function RangeFilterPlugin(props: PluginFilterRangeProps) {
       {Number.isNaN(Number(min)) || Number.isNaN(Number(max)) ? (
         <h4>{t('Chosen non-numeric column')}</h4>
       ) : (
-        <StyledFormItem extra={formItemExtra}>
-          <Wrapper
-            tabIndex={-1}
-            ref={inputRef}
-            validateStatus={filterState.validateStatus}
-            orientation={filterBarOrientation}
-            isOverflowing={isOverflowingFilterBar}
-            onFocus={setFocusedFilter}
-            onBlur={unsetFocusedFilter}
-            onMouseEnter={setHoveredFilter}
-            onMouseLeave={unsetHoveredFilter}
-            onMouseDown={() => setFilterActive(true)}
-            onMouseUp={() => setFilterActive(false)}
-          >
-            {enableSingleMaxValue && (
-              <AntdSlider
-                min={min}
-                max={max}
-                value={minMax[maxIndex]}
-                tipFormatter={tipFormatter}
-                marks={marks}
-                onAfterChange={value => handleAfterChange([min, value])}
-                onChange={value => handleChange([min, value])}
-              />
-            )}
-            {enableSingleMinValue && (
-              <StyledMinSlider
-                validateStatus={filterState.validateStatus}
-                min={min}
-                max={max}
-                value={minMax[minIndex]}
-                tipFormatter={tipFormatter}
-                marks={marks}
-                onAfterChange={value => handleAfterChange([value, max])}
-                onChange={value => handleChange([value, max])}
-              />
-            )}
-            {enableSingleExactValue && (
-              <AntdSlider
-                min={min}
-                max={max}
-                included={false}
-                value={minMax[minIndex]}
-                tipFormatter={tipFormatter}
-                marks={marks}
-                onAfterChange={value => handleAfterChange([value, value])}
-                onChange={value => handleChange([value, value])}
-              />
-            )}
-            {rangeValue && (
-              <AntdSlider
-                range
-                min={min}
-                max={max}
-                value={minMax}
-                onAfterChange={handleAfterChange}
-                onChange={handleChange}
-                tipFormatter={tipFormatter}
-                marks={marks}
-              />
-            )}
-          </Wrapper>
-        </StyledFormItem>
+        <>
+          <StyledFormItem extra={formItemExtra}>
+            <Wrapper
+              tabIndex={-1}
+              ref={inputRef}
+              validateStatus={filterState.validateStatus}
+              orientation={filterBarOrientation}
+              isOverflowing={isOverflowingFilterBar}
+              onFocus={setFocusedFilter}
+              onBlur={unsetFocusedFilter}
+              onMouseEnter={setHoveredFilter}
+              onMouseLeave={unsetHoveredFilter}
+              onMouseDown={() => setFilterActive(true)}
+              onMouseUp={() => setFilterActive(false)}
+            >
+              {enableSingleMaxValue && (
+                <AntdSlider
+                  min={min}
+                  max={max}
+                  value={minMax[maxIndex]}
+                  tipFormatter={tipFormatter}
+                  marks={marks}
+                  onAfterChange={value => handleAfterChange([min, value])}
+                  onChange={value => handleChange([min, value])}
+                />
+              )}
+              {enableSingleMinValue && (
+                <StyledMinSlider
+                  validateStatus={filterState.validateStatus}
+                  min={min}
+                  max={max}
+                  value={minMax[minIndex]}
+                  tipFormatter={tipFormatter}
+                  marks={marks}
+                  onAfterChange={value => handleAfterChange([value, max])}
+                  onChange={value => handleChange([value, max])}
+                />
+              )}
+              {enableSingleExactValue && (
+                <AntdSlider
+                  min={min}
+                  max={max}
+                  included={false}
+                  value={minMax[minIndex]}
+                  tipFormatter={tipFormatter}
+                  marks={marks}
+                  onAfterChange={value => handleAfterChange([value, value])}
+                  onChange={value => handleChange([value, value])}
+                />
+              )}
+              {rangeValue && (
+                <AntdSlider
+                  range
+                  min={min}
+                  max={max}
+                  value={minMax}
+                  onAfterChange={handleAfterChange}
+                  onChange={handleChange}
+                  tipFormatter={tipFormatter}
+                  marks={marks}
+                />
+              )}
+            </Wrapper>
+          </StyledFormItem>
+        </>
       )}
     </FilterPluginStyle>
   );

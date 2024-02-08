@@ -140,6 +140,7 @@ const FilterControls: FC<FilterControlsProps> = ({
     ({ id }: Filter | Divider, index: number | undefined) => {
       const filterIndex = filtersWithValues.findIndex(f => f.id === id);
       const key = index ?? id;
+
       return (
         // Empty text node is to ensure there's always an element preceding
         // the OutPortal, otherwise react-reverse-portal crashes
@@ -320,15 +321,17 @@ const FilterControls: FC<FilterControlsProps> = ({
     <>
       {portalNodes
         .filter((node, index) => filterIds.has(filtersWithValues[index].id))
-        .map((node, index) => (
-          <InPortal node={node} key={filtersWithValues[index].id}>
-            {filterControlFactory(
-              index,
-              filterBarOrientation,
-              overflowedByIndex[index],
-            )}
-          </InPortal>
-        ))}
+        .map((node, index) => {
+          return (
+            <InPortal node={node} key={filtersWithValues[index].id}>
+              {filterControlFactory(
+                index,
+                filterBarOrientation,
+                overflowedByIndex[index],
+              )}
+            </InPortal>
+          );
+        })}
       {filterBarOrientation === FilterBarOrientation.VERTICAL &&
         renderVerticalContent()}
       {filterBarOrientation === FilterBarOrientation.HORIZONTAL &&

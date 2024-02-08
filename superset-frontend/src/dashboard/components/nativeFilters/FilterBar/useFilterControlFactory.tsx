@@ -50,6 +50,7 @@ export const useFilterControlFactory = (
       index: number,
       filterBarOrientation: FilterBarOrientation,
       overflow: boolean,
+      // ariaLabelledbyId: string,
     ) => {
       const filter = filtersWithValues[index];
       if (isFilterDivider(filter)) {
@@ -62,6 +63,7 @@ export const useFilterControlFactory = (
           />
         );
       }
+
       return (
         <FilterControl
           dataMaskSelected={dataMaskSelected}

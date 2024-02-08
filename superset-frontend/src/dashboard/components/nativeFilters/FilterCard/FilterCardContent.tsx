@@ -33,7 +33,7 @@ export const FilterCardContent = ({
   filter,
   hidePopover,
 }: FilterCardContentProps) => (
-  <div>
+  <div className="NICO WAS HERE PART 2!=============">
     <NameRow filter={filter} hidePopover={hidePopover} />
     <TypeRow filter={filter} />
     <ScopeRow filter={filter} />

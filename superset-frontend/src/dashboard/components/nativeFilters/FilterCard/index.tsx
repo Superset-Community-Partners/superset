@@ -40,6 +40,7 @@ export const FilterCard = ({
       setInternalIsVisible(false);
     }
   }, [externalIsVisible]);
+
   return (
     <Popover
       placement={placement}
